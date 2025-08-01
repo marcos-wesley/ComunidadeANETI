@@ -1086,9 +1086,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin login
   app.post("/api/admin/login", async (req, res) => {
     try {
+      console.log("Admin login attempt:", req.body);
       const { username, password } = req.body;
       
       if (!username || !password) {
+        console.log("Missing username or password");
         return res.status(400).json({ 
           success: false, 
           message: "Username and password are required" 
@@ -1097,7 +1099,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if this is the first admin user being created
       const adminUsers = await storage.getAllAdminUsers();
+      console.log("Existing admin users count:", adminUsers.length);
+      
       if (adminUsers.length === 0) {
+        console.log("Creating first admin user");
         // Create first admin user
         const { hashPassword } = await import("./auth-admin");
         const hashedPassword = await hashPassword(password);
@@ -1130,16 +1135,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Authenticate existing admin user
+      console.log("Authenticating existing admin user:", username);
       const { authenticateAdmin } = await import("./auth-admin");
       const adminUser = await authenticateAdmin(username, password);
       
       if (!adminUser) {
+        console.log("Authentication failed for user:", username);
         return res.status(401).json({ 
           success: false, 
           message: "Invalid credentials" 
         });
       }
 
+      console.log("Authentication successful for user:", username);
       req.session.adminUser = {
         adminUserId: adminUser.id,
         username: adminUser.username,
