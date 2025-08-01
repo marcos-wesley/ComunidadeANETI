@@ -33,15 +33,21 @@ export default function AdminLogin() {
   const onSubmit = async (data: AdminLoginForm) => {
     setIsLoading(true);
     try {
-      const response = await apiRequest("/api/admin/login", {
+      const response = await fetch("/api/admin/login", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify(data),
       });
 
-      if (response.success) {
+      const result = await response.json();
+
+      if (response.ok && result.success) {
         toast({
           title: "Login realizado com sucesso",
-          description: response.message,
+          description: result.message,
         });
         
         // Redirect to admin dashboard
@@ -49,7 +55,7 @@ export default function AdminLogin() {
       } else {
         toast({
           title: "Erro no login",
-          description: response.message || "Credenciais inválidas",
+          description: result.message || "Credenciais inválidas",
           variant: "destructive",
         });
       }
