@@ -183,32 +183,32 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center space-x-4">
-              <Shield className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo ANETI</h1>
-                <p className="text-sm text-gray-500">
-                  Logado como: <span className="font-medium">{adminUser.username}</span> ({adminUser.role})
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              onClick={handleAdminLogout}
-              className="flex items-center space-x-2"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Sair</span>
-            </Button>
-          </div>
-        </div>
-      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Admin Header */}
+        <div className="bg-white shadow-sm border-b rounded-lg mb-6">
+          <div className="px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-4">
+                <Shield className="h-8 w-8 text-blue-600" />
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Painel Administrativo ANETI</h1>
+                  <p className="text-sm text-gray-500">
+                    Logado como: <span className="font-medium">{adminUser.username}</span> ({adminUser.role})
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={handleAdminLogout}
+                className="flex items-center space-x-2"
+              >
+                <LogOut className="h-4 w-4" />
+                <span>Sair</span>
+              </Button>
+            </div>
+          </div>
+        </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview" className="flex items-center space-x-2">

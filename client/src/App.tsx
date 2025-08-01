@@ -41,8 +41,7 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/register" component={RegisterPage} />
-        <ProtectedRoute path="/admin" component={AdminPage} adminOnly />
-        <Route path="/admin/login" component={AdminLogin} />
+
         <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>
@@ -56,7 +55,13 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
-          <MainLayout />
+          <Switch>
+            {/* Admin routes - outside main layout */}
+            <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin" component={AdminPage} />
+            {/* Main app routes */}
+            <Route path="*" component={MainLayout} />
+          </Switch>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
