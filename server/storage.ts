@@ -1690,30 +1690,10 @@ export class DatabaseStorage implements IStorage {
 
   // Admin methods
   async getUserApplication(userId: string): Promise<any> {
+    // First get the application
     const [application] = await db
-      .select({
-        id: memberApplications.id,
-        userId: memberApplications.userId,
-        planId: memberApplications.planId,
-        status: memberApplications.status,
-        paymentStatus: memberApplications.paymentStatus,
-        experienceYears: memberApplications.experienceYears,
-        isStudent: memberApplications.isStudent,
-        adminNotes: memberApplications.adminNotes,
-        reviewedBy: memberApplications.reviewedBy,
-        reviewedAt: memberApplications.reviewedAt,
-        createdAt: memberApplications.createdAt,
-        updatedAt: memberApplications.updatedAt,
-        plan: {
-          id: membershipPlans.id,
-          name: membershipPlans.name,
-          description: membershipPlans.description,
-          price: membershipPlans.price,
-          benefits: membershipPlans.benefits,
-        }
-      })
+      .select()
       .from(memberApplications)
-      .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
       .where(eq(memberApplications.userId, userId))
       .orderBy(desc(memberApplications.createdAt));
 
@@ -1721,19 +1701,26 @@ export class DatabaseStorage implements IStorage {
       return null;
     }
 
+    // Get the plan details separately
+    const [plan] = await db
+      .select()
+      .from(membershipPlans)
+      .where(eq(membershipPlans.id, application.planId));
+
     // Get documents associated with this application
-    const documents = await db
+    const docs = await db
       .select({
         id: documents.id,
-        fileName: documents.fileName,
-        uploadedAt: documents.createdAt,
+        fileName: documents.name,
+        uploadedAt: documents.uploadedAt,
       })
       .from(documents)
       .where(eq(documents.applicationId, application.id));
 
     return {
       ...application,
-      documents,
+      plan: plan || null,
+      documents: docs,
     };
   }
 
