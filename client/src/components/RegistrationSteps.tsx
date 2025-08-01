@@ -7,6 +7,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { StripePayment } from "@/components/StripePayment";
+import { IntegratedStripePayment } from "@/components/IntegratedStripePayment";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY!);
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -280,65 +285,14 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     }
   };
 
-  // Submit complete registration
-  const onSubmit = async (data: RegistrationForm) => {
-    if (isSubmitting) return;
-    
-    setIsSubmitting(true);
-    
+  // Submit application after payment (called from IntegratedStripePayment)
+  const submitApplicationAfterPayment = async (data: RegistrationForm) => {
     try {
-      let finalCustomerId = customerId;
-      let finalSubscriptionId = subscriptionId;
-      
-      // For paid plans, ensure payment is completed before proceeding
-      if (selectedPlanData?.requiresPayment) {
-        // If no client secret yet, create subscription
-        if (!clientSecret) {
-          try {
-            const subscriptionData = await createSubscription();
-            finalCustomerId = subscriptionData.customerId;
-            finalSubscriptionId = subscriptionData.subscriptionId;
-            setCustomerId(finalCustomerId);
-            setSubscriptionId(finalSubscriptionId);
-            setClientSecret(subscriptionData.clientSecret);
-            toast({
-              title: "Pagamento Preparado",
-              description: "Complete o pagamento acima para finalizar.",
-            });
-            setIsSubmitting(false);
-            return;
-          } catch (error) {
-            toast({
-              title: "Erro no Pagamento",
-              description: "Não foi possível preparar o pagamento. Tente novamente.",
-              variant: "destructive",
-            });
-            setIsSubmitting(false);
-            return;
-          }
-        }
-        
-        // Payment form is ready but payment not completed
-        if (!subscriptionId) {
-          toast({
-            title: "Complete o Pagamento",
-            description: "Complete o pagamento acima antes de finalizar.",
-            variant: "destructive",
-          });
-          setIsSubmitting(false);
-          return;
-        }
-        
-        // Payment completed, use the subscription data
-        finalCustomerId = customerId;
-        finalSubscriptionId = subscriptionId;
-      }
-      
-      // Create the application with user data and payment info if applicable
+      // Create the application with user data and payment info
       const applicationData: any = {
         fullName: data.fullName,
-        email: data.email,
-        username: data.username,
+        email: user?.email || "",
+        username: user?.username || "",
         city: data.city,
         state: data.state,
         area: data.area,
@@ -351,16 +305,15 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
 
       // Add subscription info for paid plans
       if (selectedPlanData?.requiresPayment) {
-        applicationData.stripeCustomerId = finalCustomerId;
-        applicationData.stripeSubscriptionId = finalSubscriptionId;
-        applicationData.paymentStatus = "pending";
+        applicationData.stripeCustomerId = customerId;
+        applicationData.stripeSubscriptionId = subscriptionId;
+        applicationData.paymentStatus = "completed";
       }
 
       const applicationRes = await apiRequest("POST", "/api/register-application", applicationData);
-      
       const application = await applicationRes.json();
       
-      // Upload documents - these endpoints need to be public during registration
+      // Upload documents
       await apiRequest("POST", "/api/register-documents", {
         applicationId: application.id,
         documentURL: identityDocument,
@@ -394,6 +347,55 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       });
       
       onComplete();
+      
+    } catch (error) {
+      console.error("Error submitting application:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar solicitação. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Submit complete registration (for free plans or to prepare payment)
+  const onSubmit = async (data: RegistrationForm) => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      // For paid plans, prepare payment first
+      if (selectedPlanData?.requiresPayment && !clientSecret) {
+        try {
+          const subscriptionData = await createSubscription();
+          setCustomerId(subscriptionData.customerId);
+          setSubscriptionId(subscriptionData.subscriptionId);
+          setClientSecret(subscriptionData.clientSecret);
+          
+          toast({
+            title: "Pagamento Preparado",
+            description: "Complete o pagamento abaixo para finalizar.",
+          });
+          
+          setIsSubmitting(false);
+          return;
+        } catch (error) {
+          toast({
+            title: "Erro no Pagamento",
+            description: "Não foi possível preparar o pagamento. Tente novamente.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      }
+
+      // For free plans, submit directly
+      if (!selectedPlanData?.requiresPayment) {
+        await submitApplicationAfterPayment(data);
+      }
+
       
     } catch (error) {
       console.error("Error submitting application:", error);
@@ -883,31 +885,22 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                 </div>
               )}
 
-              {/* Payment section for paid plans */}
+              {/* Integrated Payment for paid plans */}
               {selectedPlanData?.requiresPayment && clientSecret && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Complete o Pagamento</h3>
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
-                    <p className="text-blue-800">
-                      <strong>Valor:</strong> R$ {selectedPlanData.price.toFixed(2)}/ano
-                    </p>
-                    <p className="text-blue-700 text-sm mt-1">
-                      Sua assinatura será renovada automaticamente a cada ano.
-                    </p>
-                  </div>
-                  <StripePayment
+                <Elements stripe={stripePromise} options={{ clientSecret }}>
+                  <IntegratedStripePayment
                     clientSecret={clientSecret}
-                    onPaymentComplete={async (subscriptionId) => {
-                      setSubscriptionId(subscriptionId);
-                      toast({
-                        title: "Pagamento Confirmado!",
-                        description: "Clique em 'Finalizar Solicitação' para enviar.",
-                      });
+                    onPaymentAndSubmit={async () => {
+                      // This will be called after payment is successful
+                      const formData = form.getValues();
+                      await submitApplicationAfterPayment(formData);
                     }}
+                    isSubmitting={isSubmitting}
                     planName={selectedPlanData.name}
                     planPrice={selectedPlanData.price}
+                    disabled={!form.watch("acceptTerms")}
                   />
-                </div>
+                </Elements>
               )}
 
               {/* Payment info for paid plans (before payment form is ready) */}
@@ -916,7 +909,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="text-lg font-semibold text-blue-900 mb-2">Pagamento</h3>
                     <p className="text-blue-800">
-                      O pagamento de <strong>R$ {selectedPlanData.price.toFixed(2)}/ano</strong> será processado ao finalizar a solicitação.
+                      O pagamento de <strong>R$ {selectedPlanData.price.toFixed(2)}/ano</strong> será processado ao confirmar a solicitação.
+                    </p>
+                    <p className="text-blue-700 text-sm mt-1">
+                      Clique em "Preparar Pagamento" para continuar.
                     </p>
                   </div>
                 </div>
@@ -984,27 +980,27 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || !form.watch("acceptTerms") || (selectedPlanData?.requiresPayment && clientSecret && !subscriptionId)}
-            >
-              {isSubmitting ? (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4 animate-spin" />
-                  {selectedPlanData?.requiresPayment && !clientSecret ? "Preparando Pagamento..." : 
-                   selectedPlanData?.requiresPayment && clientSecret && !subscriptionId ? "Complete o Pagamento Acima" :
-                   selectedPlanData?.requiresPayment ? "Finalizando..." : "Enviando..."}
-                </>
-              ) : (
-                <>
-                  {selectedPlanData?.requiresPayment && !clientSecret ? "Preparar Pagamento" :
-                   selectedPlanData?.requiresPayment && clientSecret && !subscriptionId ? "Complete o Pagamento Acima" :
-                   selectedPlanData?.requiresPayment && subscriptionId ? "Finalizar Solicitação" : 
-                   selectedPlanData?.requiresPayment ? "Aguardando Pagamento" : "Enviar Solicitação"}
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </>
+            <>
+              {/* Only show submit button for free plans or to prepare payment */}
+              {(!selectedPlanData?.requiresPayment || !clientSecret) && (
+                <Button 
+                  type="submit" 
+                  disabled={isSubmitting || !form.watch("acceptTerms")}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <CreditCard className="mr-2 h-4 w-4 animate-spin" />
+                      {selectedPlanData?.requiresPayment ? "Preparando Pagamento..." : "Enviando..."}
+                    </>
+                  ) : (
+                    <>
+                      {selectedPlanData?.requiresPayment ? "Preparar Pagamento" : "Enviar Solicitação"}
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </>
+                  )}
+                </Button>
               )}
-            </Button>
+            </>
           )}
         </div>
       </form>
