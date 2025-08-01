@@ -11,8 +11,11 @@ import {
   insertMembershipPlanSchema, 
   insertConversationSchema,
   insertMessageSchema,
-  insertNotificationSchema 
+  insertNotificationSchema,
+  membershipPlans 
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 import express from "express";
 import path from "path";
 import fs from "fs/promises";
@@ -127,21 +130,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Create subscription with trial period or immediate payment
+      // First create a price for this plan if not exists
+      let priceId = plan.stripePriceId;
+      
+      if (!priceId) {
+        // Create product first
+        const product = await stripe.products.create({
+          name: `ANETI - ${plan.name}`,
+          description: plan.description || `Plano ${plan.name} da ANETI`,
+          metadata: {
+            planId: planId
+          }
+        });
+
+        // Create price
+        const price = await stripe.prices.create({
+          unit_amount: plan.price, // price already in cents
+          currency: 'brl',
+          recurring: {
+            interval: 'year'
+          },
+          product: product.id,
+          metadata: {
+            planId: planId
+          }
+        });
+
+        priceId = price.id;
+
+        // Update plan with Stripe IDs
+        await db.update(membershipPlans)
+          .set({ 
+            stripePriceId: price.id, 
+            stripeProductId: product.id 
+          })
+          .where(eq(membershipPlans.id, planId));
+      }
+
+      // Create subscription
       const subscription = await stripe.subscriptions.create({
         customer: customer.id,
         items: [{
-          price_data: {
-            currency: 'brl',
-            product_data: {
-              name: `ANETI - ${plan.name}`,
-              description: plan.description || `Plano ${plan.name} da ANETI`
-            },
-            unit_amount: plan.price, // price already in cents
-            recurring: {
-              interval: 'year' // Annual subscription
-            }
-          }
+          price: priceId
         }],
         payment_behavior: 'default_incomplete',
         payment_settings: {
