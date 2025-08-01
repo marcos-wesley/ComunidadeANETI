@@ -1,3 +1,4 @@
+import { useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, X, Trash2, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { apiRequest } from "@/lib/queryClient";
+import { playNotificationSound } from "@/utils/audioUtils";
 
 interface NotificationActor {
   id: string;
@@ -45,6 +47,17 @@ export function NotificationPanel({ isOpen, onClose }: NotificationPanelProps) {
     queryKey: ["/api/notifications"],
     enabled: isOpen,
   });
+
+  // Track previous notifications to detect new ones
+  const prevNotificationsRef = useRef<Notification[]>([]);
+  
+  // Play sound for new notifications
+  useEffect(() => {
+    if (notifications.length > prevNotificationsRef.current.length && prevNotificationsRef.current.length > 0) {
+      playNotificationSound();
+    }
+    prevNotificationsRef.current = notifications;
+  }, [notifications]);
 
   // Fetch unread count
   const { data: unreadData } = useQuery<{ count: number }>({

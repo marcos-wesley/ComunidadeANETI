@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { Navbar } from "@/components/Navbar";
+import { MessageNotificationSystem } from "@/components/MessageNotificationSystem";
 import HomePage from "./pages/home-page";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
@@ -24,6 +25,7 @@ function MainLayout(): JSX.Element {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {user && <Navbar />}
+      {user && <MessageNotificationSystem />}
       <Switch>
         <ProtectedRoute path="/" component={SocialFeedPage} />
         <ProtectedRoute path="/feed" component={SocialFeedPage} />

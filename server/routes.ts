@@ -4,6 +4,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { NotificationService } from "./notificationService";
 import { 
   insertMemberApplicationSchema, 
   insertDocumentSchema, 
@@ -823,6 +824,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const message = await storage.sendMessage(req.params.id, req.user!.id, content.trim(), replyToId);
+      
+      // Get conversation details for notification
+      const conversation = await storage.getConversation(req.params.id, req.user!.id);
+      if (conversation) {
+        // Send notifications to all other participants
+        const otherParticipants = conversation.participants.filter(p => p.userId !== req.user!.id);
+        
+        for (const participant of otherParticipants) {
+          await NotificationService.createMessageNotification(
+            req.params.id,
+            participant.userId,
+            req.user!.id,
+            req.user!.fullName,
+            conversation.name
+          );
+        }
+      }
+      
       res.json(message);
     } catch (error) {
       console.error("Error sending message:", error);

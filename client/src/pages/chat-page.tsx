@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { playMessageSentSound, playMessageReceivedSound } from "@/utils/audioUtils";
 import { 
   MessageCircle, 
   Send, 
@@ -159,6 +160,23 @@ export default function ChatPage() {
     refetchInterval: 2000, // Refresh every 2 seconds when conversation is open
   });
 
+  // Track previous messages to detect new ones
+  const prevMessagesRef = useRef<MessageWithDetails[]>([]);
+  
+  // Play sound for new received messages
+  useEffect(() => {
+    if (messages.length > prevMessagesRef.current.length && prevMessagesRef.current.length > 0) {
+      // Find new messages that are not from the current user
+      const newMessages = messages.slice(prevMessagesRef.current.length);
+      const hasNewReceivedMessage = newMessages.some(msg => msg.senderId !== user?.id);
+      
+      if (hasNewReceivedMessage) {
+        playMessageReceivedSound();
+      }
+    }
+    prevMessagesRef.current = messages;
+  }, [messages, user?.id]);
+
   // Fetch users for creating conversations
   const { data: users = [] } = useQuery({
     queryKey: ["/api/members"],
@@ -193,6 +211,8 @@ export default function ChatPage() {
     },
     onSuccess: () => {
       setMessageText("");
+      // Play sound when message is sent
+      playMessageSentSound();
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation, "messages"] });
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     },
