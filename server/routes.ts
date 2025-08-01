@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         state: req.body.state || "",
         area: req.body.area || "",
         phone: req.body.phone || "",
-        hashedPassword: "temp-password", // This will be set later
+        password: "temp-password", // This will be set later
         isApproved: false,
       });
 

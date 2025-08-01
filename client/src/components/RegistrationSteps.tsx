@@ -290,19 +290,37 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       let finalCustomerId = customerId;
       let finalSubscriptionId = subscriptionId;
       
-      // For paid plans, create subscription and process payment first
+      // For paid plans, ensure payment is completed
       if (selectedPlanData?.requiresPayment && !subscriptionId) {
-        try {
-          const subscriptionData = await createSubscription();
-          finalCustomerId = subscriptionData.customerId;
-          finalSubscriptionId = subscriptionData.subscriptionId;
-          setCustomerId(finalCustomerId);
-          setSubscriptionId(finalSubscriptionId);
-          setClientSecret(subscriptionData.clientSecret);
-        } catch (error) {
+        // If no client secret yet, create subscription
+        if (!clientSecret) {
+          try {
+            const subscriptionData = await createSubscription();
+            finalCustomerId = subscriptionData.customerId;
+            finalSubscriptionId = subscriptionData.subscriptionId;
+            setCustomerId(finalCustomerId);
+            setSubscriptionId(finalSubscriptionId);
+            setClientSecret(subscriptionData.clientSecret);
+            toast({
+              title: "Pagamento Preparado",
+              description: "Complete o pagamento acima para finalizar.",
+            });
+            setIsSubmitting(false);
+            return;
+          } catch (error) {
+            toast({
+              title: "Erro no Pagamento",
+              description: "Não foi possível preparar o pagamento. Tente novamente.",
+              variant: "destructive",
+            });
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          // Payment form is ready but payment not completed
           toast({
-            title: "Erro no Pagamento",
-            description: "Não foi possível processar o pagamento. Tente novamente.",
+            title: "Complete o Pagamento",
+            description: "Complete o pagamento acima antes de finalizar.",
             variant: "destructive",
           });
           setIsSubmitting(false);
@@ -859,8 +877,40 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                 </div>
               )}
 
-              {/* Payment info for paid plans */}
-              {selectedPlanData?.requiresPayment && (
+              {/* Payment section for paid plans */}
+              {selectedPlanData?.requiresPayment && clientSecret && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Complete o Pagamento</h3>
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4">
+                    <p className="text-blue-800">
+                      <strong>Valor:</strong> R$ {selectedPlanData.price.toFixed(2)}/ano
+                    </p>
+                    <p className="text-blue-700 text-sm mt-1">
+                      Sua assinatura será renovada automaticamente a cada ano.
+                    </p>
+                  </div>
+                  <StripePayment
+                    clientSecret={clientSecret}
+                    onPaymentComplete={async (subscriptionId) => {
+                      setSubscriptionId(subscriptionId);
+                      toast({
+                        title: "Pagamento Confirmado!",
+                        description: "Finalizando sua solicitação...",
+                      });
+                      // Auto-submit the form after payment
+                      setTimeout(() => {
+                        const formData = form.getValues();
+                        onSubmit(formData);
+                      }, 1000);
+                    }}
+                    planName={selectedPlanData.name}
+                    planPrice={selectedPlanData.price}
+                  />
+                </div>
+              )}
+
+              {/* Payment info for paid plans (before payment form is ready) */}
+              {selectedPlanData?.requiresPayment && !clientSecret && (
                 <div className="space-y-4">
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="text-lg font-semibold text-blue-900 mb-2">Pagamento</h3>
@@ -935,16 +985,20 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           ) : (
             <Button 
               type="submit" 
-              disabled={isSubmitting || !form.watch("acceptTerms")}
+              disabled={isSubmitting || !form.watch("acceptTerms") || (selectedPlanData?.requiresPayment && clientSecret && !subscriptionId)}
             >
               {isSubmitting ? (
                 <>
                   <CreditCard className="mr-2 h-4 w-4 animate-spin" />
-                  {selectedPlanData?.requiresPayment ? "Processando Pagamento..." : "Enviando..."}
+                  {selectedPlanData?.requiresPayment && !clientSecret ? "Preparando Pagamento..." : 
+                   selectedPlanData?.requiresPayment && clientSecret && !subscriptionId ? "Complete o Pagamento Acima" :
+                   selectedPlanData?.requiresPayment ? "Finalizando..." : "Enviando..."}
                 </>
               ) : (
                 <>
-                  {selectedPlanData?.requiresPayment ? "Confirmar Pagamento e Finalizar" : "Enviar Solicitação"}
+                  {selectedPlanData?.requiresPayment && !clientSecret ? "Preparar Pagamento" :
+                   selectedPlanData?.requiresPayment && clientSecret && !subscriptionId ? "Complete o Pagamento Acima" :
+                   selectedPlanData?.requiresPayment ? "Finalizar Solicitação" : "Enviar Solicitação"}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </>
               )}
