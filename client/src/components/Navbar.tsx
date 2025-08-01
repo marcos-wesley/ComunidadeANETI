@@ -35,6 +35,7 @@ import {
   User,
   LogOut,
   Plus,
+  Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import logoUrl from "@assets/logo-branca_1754061080203.png";
@@ -132,6 +133,24 @@ export function Navbar(): JSX.Element {
                 </Link>
               );
             })}
+            
+            {/* Admin Link - only visible to admins */}
+            {user?.role === 'admin' && (
+              <Link href="/admin">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={`flex flex-col items-center gap-1 h-auto py-2 px-3 min-w-[70px] ${
+                    isActive('/admin')
+                      ? "text-blue-600 bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600" 
+                      : "text-gray-600 dark:text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+                  }`}
+                >
+                  <Shield className="h-5 w-5" />
+                  <span className="text-xs font-medium">Admin</span>
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Right Side Actions */}

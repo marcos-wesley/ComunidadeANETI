@@ -10,7 +10,7 @@ import HomePage from "./pages/home-page";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
 import RegisterPage from "./pages/register-page";
-import AdminDashboard from "./pages/admin-dashboard";
+import AdminPage from "./pages/admin-page";
 import SocialFeedPage from "./pages/social-feed-page";
 import PublishPage from "./pages/publish-page";
 import MembersPage from "./pages/members-page";
@@ -40,7 +40,7 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/register" component={RegisterPage} />
-        <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly />
+        <ProtectedRoute path="/admin" component={AdminPage} adminOnly />
         <Route path="/auth" component={AuthPage} />
         <Route component={NotFound} />
       </Switch>

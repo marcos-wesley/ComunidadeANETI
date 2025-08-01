@@ -153,6 +153,14 @@ export interface IStorage {
   deleteNotification(notificationId: string): Promise<void>;
   getUnreadNotificationCount(userId: string): Promise<number>;
 
+  // Admin methods
+  getAllApplications(): Promise<any[]>;
+  approveApplication(applicationId: string, adminId: string): Promise<void>;
+  rejectApplication(applicationId: string, adminId: string, reason: string): Promise<void>;
+  banUser(userId: string, adminId: string): Promise<void>;
+  unbanUser(userId: string, adminId: string): Promise<void>;
+  deleteUser(userId: string): Promise<void>;
+
   sessionStore: any;
 }
 
@@ -1598,6 +1606,145 @@ export class DatabaseStorage implements IStorage {
       ));
 
     return Number(result?.count) || 0;
+  }
+
+  // Admin methods
+  async getAllApplications(): Promise<any[]> {
+    return await db
+      .select({
+        id: memberApplications.id,
+        userId: memberApplications.userId,
+        planId: memberApplications.planId,
+        status: memberApplications.status,
+        paymentStatus: memberApplications.paymentStatus,
+        experienceYears: memberApplications.experienceYears,
+        isStudent: memberApplications.isStudent,
+        adminNotes: memberApplications.adminNotes,
+        reviewedBy: memberApplications.reviewedBy,
+        reviewedAt: memberApplications.reviewedAt,
+        createdAt: memberApplications.createdAt,
+        updatedAt: memberApplications.updatedAt,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          email: users.email,
+          username: users.username,
+          city: users.city,
+          state: users.state,
+          area: users.area,
+          phone: users.phone,
+        },
+        plan: {
+          id: membershipPlans.id,
+          name: membershipPlans.name,
+          price: membershipPlans.price,
+        }
+      })
+      .from(memberApplications)
+      .leftJoin(users, eq(memberApplications.userId, users.id))
+      .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+      .orderBy(desc(memberApplications.createdAt));
+  }
+
+  async approveApplication(applicationId: string, adminId: string): Promise<void> {
+    // Update application status
+    await db
+      .update(memberApplications)
+      .set({
+        status: 'approved',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(memberApplications.id, applicationId));
+
+    // Get application details
+    const [application] = await db
+      .select({
+        userId: memberApplications.userId,
+        planId: memberApplications.planId,
+      })
+      .from(memberApplications)
+      .where(eq(memberApplications.id, applicationId));
+
+    if (application) {
+      // Update user status and plan
+      await db
+        .update(users)
+        .set({
+          isApproved: true,
+          currentPlanId: application.planId,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, application.userId));
+
+      // Get plan name and update user
+      const [plan] = await db
+        .select({ name: membershipPlans.name })
+        .from(membershipPlans)
+        .where(eq(membershipPlans.id, application.planId));
+
+      if (plan) {
+        await db
+          .update(users)
+          .set({ planName: plan.name })
+          .where(eq(users.id, application.userId));
+      }
+    }
+  }
+
+  async rejectApplication(applicationId: string, adminId: string, reason: string): Promise<void> {
+    await db
+      .update(memberApplications)
+      .set({
+        status: 'rejected',
+        reviewedBy: adminId,
+        reviewedAt: new Date(),
+        adminNotes: reason,
+        updatedAt: new Date(),
+      })
+      .where(eq(memberApplications.id, applicationId));
+  }
+
+  async banUser(userId: string, adminId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        isActive: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async unbanUser(userId: string, adminId: string): Promise<void> {
+    await db
+      .update(users)
+      .set({
+        isActive: true,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, userId));
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    // Delete user's related data first due to foreign key constraints
+    await db.delete(memberApplications).where(eq(memberApplications.userId, userId));
+    await db.delete(posts).where(eq(posts.authorId, userId));
+    await db.delete(likes).where(eq(likes.userId, userId));
+    await db.delete(comments).where(eq(comments.authorId, userId));
+    await db.delete(connections).where(or(eq(connections.requesterId, userId), eq(connections.receiverId, userId)));
+    await db.delete(experiences).where(eq(experiences.userId, userId));
+    await db.delete(educations).where(eq(educations.userId, userId));
+    await db.delete(certifications).where(eq(certifications.userId, userId));
+    await db.delete(projects).where(eq(projects.userId, userId));
+    await db.delete(skills).where(eq(skills.userId, userId));
+    await db.delete(recommendations).where(eq(recommendations.userId, userId));
+    await db.delete(languages).where(eq(languages.userId, userId));
+    await db.delete(highlights).where(eq(highlights.userId, userId));
+    await db.delete(notifications).where(or(eq(notifications.recipientId, userId), eq(notifications.actorId, userId)));
+    
+    // Finally delete the user
+    await db.delete(users).where(eq(users.id, userId));
   }
 }
 
