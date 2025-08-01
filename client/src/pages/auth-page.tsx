@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { getStateOptions, getCityOptions, getItAreaOptions } from "@shared/location-data";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Nome de usuário é obrigatório"),
@@ -34,6 +36,7 @@ export default function AuthPage() {
   const { user, loginMutation, registerMutation } = useAuth();
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
+  const [selectedState, setSelectedState] = useState<string>("");
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -208,29 +211,54 @@ export default function AuthPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label htmlFor="city">Cidade</Label>
-                      <Input
-                        id="city"
-                        {...registerForm.register("city")}
-                        placeholder="Sua cidade"
-                      />
-                      {registerForm.formState.errors.city && (
+                      <Label htmlFor="state">Estado</Label>
+                      <Select
+                        value={registerForm.watch("state")}
+                        onValueChange={(value) => {
+                          registerForm.setValue("state", value);
+                          setSelectedState(value);
+                          registerForm.setValue("city", ""); // Reset city when state changes
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione o estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getStateOptions().map((state) => (
+                            <SelectItem key={state.value} value={state.value}>
+                              {state.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {registerForm.formState.errors.state && (
                         <p className="text-sm text-red-600 mt-1">
-                          {registerForm.formState.errors.city.message}
+                          {registerForm.formState.errors.state.message}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <Label htmlFor="state">Estado</Label>
-                      <Input
-                        id="state"
-                        {...registerForm.register("state")}
-                        placeholder="UF"
-                      />
-                      {registerForm.formState.errors.state && (
+                      <Label htmlFor="city">Cidade</Label>
+                      <Select
+                        value={registerForm.watch("city")}
+                        onValueChange={(value) => registerForm.setValue("city", value)}
+                        disabled={!selectedState}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder={selectedState ? "Selecione a cidade" : "Selecione o estado primeiro"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getCityOptions(selectedState).map((city) => (
+                            <SelectItem key={city.value} value={city.value}>
+                              {city.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {registerForm.formState.errors.city && (
                         <p className="text-sm text-red-600 mt-1">
-                          {registerForm.formState.errors.state.message}
+                          {registerForm.formState.errors.city.message}
                         </p>
                       )}
                     </div>
@@ -238,11 +266,21 @@ export default function AuthPage() {
 
                   <div>
                     <Label htmlFor="area">Área de Atuação</Label>
-                    <Input
-                      id="area"
-                      {...registerForm.register("area")}
-                      placeholder="Ex: Desenvolvimento, Infraestrutura..."
-                    />
+                    <Select
+                      value={registerForm.watch("area")}
+                      onValueChange={(value) => registerForm.setValue("area", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione sua área de atuação" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getItAreaOptions().map((area) => (
+                          <SelectItem key={area.value} value={area.value}>
+                            {area.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {registerForm.formState.errors.area && (
                       <p className="text-sm text-red-600 mt-1">
                         {registerForm.formState.errors.area.message}

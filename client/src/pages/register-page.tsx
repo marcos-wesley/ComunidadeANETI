@@ -16,20 +16,29 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CloudUpload, Check, Clock } from "lucide-react";
+import { CloudUpload, Check, Clock, User, MapPin, Briefcase } from "lucide-react";
 import type { MembershipPlan } from "@shared/schema";
+import { getStateOptions, getCityOptions, getItAreaOptions } from "@shared/location-data";
+import { useAuth } from "@/hooks/use-auth";
 
 const registrationSchema = z.object({
   planId: z.string().min(1, "Selecione um plano"),
   acceptTerms: z.boolean().refine(val => val === true, "Você deve aceitar os termos"),
+  fullName: z.string().min(1, "Nome completo é obrigatório"),
+  phone: z.string().min(1, "Telefone é obrigatório"),
+  state: z.string().min(1, "Estado é obrigatório"),
+  city: z.string().min(1, "Cidade é obrigatória"),
+  area: z.string().min(1, "Área de atuação é obrigatória"),
 });
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
 
 export default function RegisterPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState<string>("");
+  const [selectedState, setSelectedState] = useState<string>(user?.state || "");
   const [identityDocument, setIdentityDocument] = useState<string>("");
   const [experienceDocument, setExperienceDocument] = useState<string>("");
 
@@ -38,6 +47,11 @@ export default function RegisterPage() {
     defaultValues: {
       planId: "",
       acceptTerms: false,
+      fullName: user?.fullName || "",
+      phone: "",
+      state: user?.state || "",
+      city: user?.city || "",
+      area: user?.area || "",
     },
   });
 
@@ -222,10 +236,156 @@ export default function RegisterPage() {
                 <CardTitle className="text-2xl font-semibold text-foreground">Cadastro de Membro</CardTitle>
               </CardHeader>
               <CardContent>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                  {/* Profile Information Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      Informações Pessoais
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="fullName" className="text-sm font-semibold text-foreground mb-2 block">
+                          Nome Completo *
+                        </Label>
+                        <Input
+                          id="fullName"
+                          {...form.register("fullName")}
+                          placeholder="Digite seu nome completo"
+                          className="bg-background"
+                        />
+                        {form.formState.errors.fullName && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.fullName.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone" className="text-sm font-semibold text-foreground mb-2 block">
+                          Telefone *
+                        </Label>
+                        <Input
+                          id="phone"
+                          {...form.register("phone")}
+                          placeholder="(11) 99999-9999"
+                          className="bg-background"
+                        />
+                        {form.formState.errors.phone && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.phone.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border flex items-center gap-2">
+                      <MapPin className="h-5 w-5 text-primary" />
+                      Localização
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="state" className="text-sm font-semibold text-foreground mb-2 block">
+                          Estado *
+                        </Label>
+                        <Select
+                          value={form.watch("state")}
+                          onValueChange={(value) => {
+                            form.setValue("state", value);
+                            setSelectedState(value);
+                            form.setValue("city", ""); // Reset city when state changes
+                          }}
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Selecione o estado" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getStateOptions().map((state) => (
+                              <SelectItem key={state.value} value={state.value}>
+                                {state.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {form.formState.errors.state && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.state.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="city" className="text-sm font-semibold text-foreground mb-2 block">
+                          Cidade *
+                        </Label>
+                        <Select
+                          value={form.watch("city")}
+                          onValueChange={(value) => form.setValue("city", value)}
+                          disabled={!selectedState}
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder={selectedState ? "Selecione a cidade" : "Selecione o estado primeiro"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getCityOptions(selectedState).map((city) => (
+                              <SelectItem key={city.value} value={city.value}>
+                                {city.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {form.formState.errors.city && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.city.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Professional Area Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border flex items-center gap-2">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                      Área Profissional
+                    </h3>
+                    
+                    <div>
+                      <Label htmlFor="area" className="text-sm font-semibold text-foreground mb-2 block">
+                        Área de Atuação *
+                      </Label>
+                      <Select
+                        value={form.watch("area")}
+                        onValueChange={(value) => form.setValue("area", value)}
+                      >
+                        <SelectTrigger className="bg-background">
+                          <SelectValue placeholder="Selecione sua área de atuação" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {getItAreaOptions().map((area) => (
+                            <SelectItem key={area.value} value={area.value}>
+                              {area.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {form.formState.errors.area && (
+                        <p className="text-sm text-destructive mt-1">
+                          {form.formState.errors.area.message}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Document Upload Section */}
                   <div>
-                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border flex items-center gap-2">
+                      <CloudUpload className="h-5 w-5 text-primary" />
                       Documentos de Comprovação
                     </h3>
                     
