@@ -247,9 +247,9 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
   );
 
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative overflow-hidden border-0 shadow-sm">
       {/* Cover Photo */}
-      <div className="h-48 bg-gradient-to-r from-blue-600 to-blue-800 relative group">
+      <div className="h-56 bg-gradient-to-r from-blue-600 to-blue-800 relative group">
         {profile.coverPhoto && (
           <img 
             src={profile.coverPhoto} 
@@ -260,23 +260,22 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         {isOwnProfile && (
           <div className="absolute top-4 right-4 flex gap-2">
             <CoverPhotoUploader />
-            <Link href="/profile/edit">
-              <Button 
-                variant="secondary" 
-                size="sm"
-              >
-                <Edit3 className="h-4 w-4 mr-2" />
-                Editar Perfil
-              </Button>
-            </Link>
+            <Button 
+              variant="secondary" 
+              size="sm"
+              className="bg-white/90 text-gray-700 hover:bg-white border-0"
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Editar perfil público
+            </Button>
           </div>
         )}
       </div>
 
-      <CardContent className="relative pt-16">
+      <CardContent className="relative px-6 pt-20 pb-6">
         {/* Profile Picture */}
-        <div className="absolute -top-16 left-6">
-          <div className="relative w-32 h-32 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center text-white text-3xl font-bold group">
+        <div className="absolute -top-20 left-6">
+          <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg">
             {profile.profilePicture ? (
               <img 
                 src={profile.profilePicture} 
@@ -294,48 +293,61 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           </div>
         </div>
 
-        <div className="ml-40">
+        <div className="ml-48">
           <div className="flex items-start justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            <div className="flex-1">
+              <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
                 {profile.fullName}
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                @{profile.username}
-              </p>
-              {profile.professionalTitle && (
-                <p className="text-lg font-medium text-gray-800 dark:text-gray-200 mt-2">
-                  {profile.professionalTitle}
+              {profile.position && (
+                <p className="text-xl text-gray-700 dark:text-gray-200 mt-1 font-normal">
+                  {profile.position}
+                </p>
+              )}
+              {profile.company && (
+                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
+                  {profile.company}
                 </p>
               )}
               
-              <div className="flex items-center gap-4 mt-3 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-center gap-1">
-                  <MapPin className="h-4 w-4" />
-                  {profile.city}, {profile.state}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Briefcase className="h-4 w-4" />
-                  {profile.area}
-                </div>
+              <div className="flex items-center gap-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                <MapPin className="h-4 w-4" />
+                {profile.city}, {profile.state}
               </div>
 
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-4 mt-3">
+                <span className="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline">
+                  500+ conexões
+                </span>
                 {profile.planName && (
-                  <Badge variant={getPlanBadgeVariant(profile.planName)}>
-                    {profile.planName}
+                  <Badge variant={getPlanBadgeVariant(profile.planName)} className="text-xs">
+                    Membro {profile.planName}
                   </Badge>
                 )}
               </div>
+
+              {isOwnProfile && (
+                <div className="flex gap-2 mt-4">
+                  <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50">
+                    Disponível para trabalho
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Adicionar seção do perfil
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    Mais
+                  </Button>
+                </div>
+              )}
             </div>
 
             {!isOwnProfile && (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+              <div className="flex gap-2 ml-4">
+                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Mensagem
                 </Button>
-                <Button size="sm">
+                <Button variant="outline" size="sm" className="border-blue-600 text-blue-600 hover:bg-blue-50">
                   <Users className="h-4 w-4 mr-2" />
                   Conectar
                 </Button>
@@ -349,27 +361,35 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 }
 
 function AboutSection({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
+  if (!profile.aboutMe && !isOwnProfile) return null;
+  
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Sobre</CardTitle>
+    <Card className="border-0 shadow-sm">
+      <CardHeader className="flex flex-row items-center justify-between pb-3">
+        <CardTitle className="text-xl font-semibold">Sobre</CardTitle>
         {isOwnProfile && (
-          <Link href="/profile/edit">
-            <Button variant="ghost" size="sm">
-              <Edit3 className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <Edit3 className="h-4 w-4" />
+          </Button>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-0">
         {profile.aboutMe ? (
-          <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+          <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
             {profile.aboutMe}
-          </p>
+          </div>
         ) : (
-          <p className="text-gray-500 italic">
-            {isOwnProfile ? "Adicione uma descrição sobre você" : "Nenhuma descrição disponível"}
-          </p>
+          isOwnProfile && (
+            <div className="py-8 text-center">
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                Descreva suas principais qualificações
+              </p>
+              <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
+                <Edit3 className="h-4 w-4 mr-2" />
+                Adicionar sobre
+              </Button>
+            </div>
+          )
         )}
       </CardContent>
     </Card>

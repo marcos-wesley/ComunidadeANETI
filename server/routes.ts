@@ -681,6 +681,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve images from object storage
+  app.get("/images/:imagePath(*)", async (req, res) => {
+    try {
+      const imagePath = req.params.imagePath;
+      const objectStorageService = new ObjectStorageService();
+      
+      // Construct full path for private object
+      const privateDir = objectStorageService.getPrivateObjectDir();
+      const fullPath = `${privateDir}/${imagePath}`;
+      
+      const pathParts = fullPath.split("/");
+      const bucketName = pathParts[1];
+      const objectName = pathParts.slice(2).join("/");
+      
+      const { objectStorageClient } = require("./objectStorage");
+      const bucket = objectStorageClient.bucket(bucketName);
+      const file = bucket.file(objectName);
+      
+      const [exists] = await file.exists();
+      if (!exists) {
+        return res.status(404).json({ error: "Image not found" });
+      }
+      
+      await objectStorageService.downloadObject(file, res);
+    } catch (error) {
+      console.error("Error serving image:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

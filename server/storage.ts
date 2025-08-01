@@ -246,7 +246,7 @@ export class DatabaseStorage implements IStorage {
     if (profileData.profilePicture !== undefined) updateFields.profilePicture = profileData.profilePicture;
     if (profileData.coverPhoto !== undefined) updateFields.coverPhoto = profileData.coverPhoto;
     
-    updateFields.updatedAt = new Date().toISOString();
+    updateFields.updatedAt = new Date();
     
     console.log("Update fields:", updateFields);
     
