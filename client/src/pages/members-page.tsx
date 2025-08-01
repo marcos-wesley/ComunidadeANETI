@@ -60,16 +60,29 @@ export default function MembersPage(): JSX.Element {
   const limit = 20;
 
   const { data: members = [], isLoading } = useQuery<Member[]>({
-    queryKey: ["/api/members", {
-      page: currentPage,
-      limit,
-      sortBy,
-      state: stateFilter || undefined,
-      plan: planFilter || undefined,
-      gender: genderFilter || undefined,
-      area: areaFilter || undefined,
-      search: searchQuery || undefined,
-    }],
+    queryKey: ["/api/members", currentPage, limit, sortBy, stateFilter, planFilter, genderFilter, areaFilter, searchQuery],
+    queryFn: async () => {
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: limit.toString(),
+        sortBy,
+        ...(stateFilter && { state: stateFilter }),
+        ...(planFilter && { plan: planFilter }),
+        ...(genderFilter && { gender: genderFilter }),
+        ...(areaFilter && { area: areaFilter }),
+        ...(searchQuery && { search: searchQuery }),
+      });
+
+      const res = await fetch(`/api/members?${params.toString()}`, {
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to fetch members');
+      }
+
+      return res.json();
+    },
   });
 
   // Check if user can connect/follow (Junior, Pleno, Sênior only)
@@ -80,7 +93,14 @@ export default function MembersPage(): JSX.Element {
 
   // Get unique values for filters from all members (for filter dropdowns)
   const { data: allMembersForFilters = [] } = useQuery<Member[]>({
-    queryKey: ["/api/members", { limit: 1000 }], // Get more for filter options
+    queryKey: ["/api/members-for-filters"],
+    queryFn: async () => {
+      const res = await fetch('/api/members?limit=1000', {
+        credentials: 'include',
+      });
+      if (!res.ok) return [];
+      return res.json();
+    },
   });
 
   const states = [...new Set(allMembersForFilters.map(m => m.state))].sort();
