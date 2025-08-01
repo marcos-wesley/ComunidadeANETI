@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { FormattedContent } from "./FormattedContent";
+import { ReactionSelector } from "./ReactionSelector";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,6 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { 
   Heart, 
   MessageCircle, 
@@ -25,7 +33,8 @@ import {
   Clock,
   Trash2,
   Flag,
-  Copy
+  Copy,
+  ThumbsUp
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -65,6 +74,7 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
   const [showComments, setShowComments] = useState(false);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post._count.likes);
+  const [userReaction, setUserReaction] = useState<string | undefined>(post.isLiked ? "like" : undefined);
 
   // Like/Unlike mutation
   const likeMutation = useMutation({
@@ -132,41 +142,25 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
     },
   });
 
-  const handleLike = () => {
+  const handleReaction = (reactionType: string) => {
     if (!user) {
       toast({
         title: "Login necessário",
-        description: "Você precisa estar logado para curtir posts.",
+        description: "Você precisa estar logado para reagir a posts.",
         variant: "destructive",
       });
       return;
     }
+    setUserReaction(prev => prev === reactionType ? undefined : reactionType);
     likeMutation.mutate();
   };
 
-  const handleShare = async () => {
-    try {
-      if (navigator.share) {
-        await navigator.share({
-          title: `Post de ${post.author.fullName}`,
-          text: post.content,
-          url: window.location.href,
-        });
-      } else {
-        // Fallback: copy to clipboard
-        await navigator.clipboard.writeText(`${post.content}\n\n- ${post.author.fullName}`);
-        toast({
-          title: "Link copiado",
-          description: "O conteúdo do post foi copiado para a área de transferência.",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Erro ao compartilhar",
-        description: "Não foi possível compartilhar o post.",
-        variant: "destructive",
-      });
-    }
+  const handleShare = () => {
+    // TODO: Implement internal share within network
+    toast({
+      title: "Compartilhar na rede",
+      description: "Funcionalidade de compartilhamento interno em desenvolvimento.",
+    });
   };
 
   const handleDelete = () => {
@@ -255,7 +249,7 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
                 <Copy className="h-4 w-4" />
                 Copiar conteúdo
               </DropdownMenuItem>
-              {user?.id === post.authorId ? (
+              {user?.id === post.authorId || user?.planName === "Diretivo" ? (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
@@ -308,35 +302,73 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
           </div>
         )}
 
+        {/* Reactions Display */}
+        {likesCount > 0 && (
+          <div className="flex items-center gap-2 pb-2">
+            <div className="flex items-center gap-1">
+              <span className="text-xs">👍❤️😂</span>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
+                    {likesCount} reações
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Quem reagiu</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      {likesCount} pessoa{likesCount > 1 ? 's' : ''} reagiu{likesCount > 1 ? 'ram' : ''} a este post
+                    </p>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            {post._count.comments > 0 && (
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
+                    {post._count.comments} comentário{post._count.comments > 1 ? 's' : ''}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Comentários</DialogTitle>
+                  </DialogHeader>
+                  <div className="max-h-96 overflow-y-auto">
+                    <CommentSection postId={post.id} onUpdate={onUpdate} />
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
+          </div>
+        )}
+
         {/* Engagement Actions */}
-        <div className="flex items-center justify-between pt-2 border-t">
-          <div className="flex items-center space-x-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleLike}
+        <div className="flex items-center justify-between border-t pt-3">
+          <div className="flex items-center gap-4">
+            <ReactionSelector
+              currentReaction={userReaction}
+              onReact={handleReaction}
               disabled={likeMutation.isPending}
-              className={`gap-2 ${isLiked ? 'text-red-600 hover:text-red-700' : 'text-muted-foreground'}`}
-            >
-              <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
-              <span className="text-xs">{likesCount}</span>
-            </Button>
+            />
 
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowComments(!showComments)}
-              className="gap-2 text-muted-foreground"
+              className={`gap-2 ${showComments ? 'text-blue-500' : 'text-muted-foreground hover:text-blue-500'}`}
             >
               <MessageCircle className="h-4 w-4" />
-              <span className="text-xs">{post._count.comments}</span>
+              <span className="text-xs">Comentar</span>
             </Button>
 
             <Button
               variant="ghost"
               size="sm"
               onClick={handleShare}
-              className="gap-2 text-muted-foreground"
+              className="gap-2 text-muted-foreground hover:text-green-500"
             >
               <Share2 className="h-4 w-4" />
               <span className="text-xs">Compartilhar</span>

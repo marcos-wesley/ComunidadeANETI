@@ -288,6 +288,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get comments for post
+  app.get("/api/posts/:postId/comments", isAuthenticated, async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const comments = await storage.getCommentsByPost(postId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching comments:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Add comment to post
   app.post("/api/posts/:postId/comments", isAuthenticated, async (req, res) => {
     try {

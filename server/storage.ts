@@ -67,6 +67,7 @@ export interface IStorage {
   reportPost(postId: string, userId: string, reason: string): Promise<void>;
   createComment(comment: InsertComment): Promise<Comment>;
   getCommentWithAuthor(commentId: string): Promise<Comment & { author: Pick<User, 'id' | 'fullName' | 'username'> } | undefined>;
+  getCommentsByPost(postId: string): Promise<(Comment & { author: Pick<User, 'id' | 'fullName' | 'username' | 'planName'> })[]>;
   
   // Connections
   getUserConnections(userId: string): Promise<(Connection & { requester: User; receiver: User })[]>;
@@ -547,6 +548,45 @@ export class DatabaseStorage implements IStorage {
         username: result.authorUsername || '',
       },
     };
+  }
+
+  async getCommentsByPost(postId: string): Promise<(Comment & { author: Pick<User, 'id' | 'fullName' | 'username' | 'planName'> })[]> {
+    const commentsWithAuthor = await db
+      .select({
+        id: comments.id,
+        postId: comments.postId,
+        authorId: comments.authorId,
+        content: comments.content,
+        mentionedUsers: comments.mentionedUsers,
+        isActive: comments.isActive,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        authorName: users.fullName,
+        authorUsername: users.username,
+        authorPlanName: membershipPlans.name,
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.authorId, users.id))
+      .leftJoin(membershipPlans, eq(users.currentPlanId, membershipPlans.id))
+      .where(and(eq(comments.postId, postId), eq(comments.isActive, true)))
+      .orderBy(comments.createdAt);
+
+    return commentsWithAuthor.map(comment => ({
+      id: comment.id,
+      postId: comment.postId,
+      authorId: comment.authorId,
+      content: comment.content,
+      mentionedUsers: comment.mentionedUsers || [],
+      isActive: comment.isActive,
+      createdAt: comment.createdAt,
+      updatedAt: comment.updatedAt,
+      author: {
+        id: comment.authorId,
+        fullName: comment.authorName || '',
+        username: comment.authorUsername || '',
+        planName: comment.authorPlanName || null,
+      },
+    }));
   }
 
   // Connection Methods
