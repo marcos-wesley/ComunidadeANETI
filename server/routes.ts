@@ -1081,6 +1081,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Serve images from local storage (temporary solution)
   app.use('/images', express.static(path.join(process.cwd(), 'public/uploads')));
 
+  // Admin User Authentication Routes (separate from member auth)
+  
+  // Admin login
+  app.post("/api/admin/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Username and password are required" 
+        });
+      }
+
+      // Check if this is the first admin user being created
+      const adminUsers = await storage.getAllAdminUsers();
+      if (adminUsers.length === 0) {
+        // Create first admin user
+        const { hashPassword } = await import("./auth-admin");
+        const hashedPassword = await hashPassword(password);
+        
+        const firstAdmin = await storage.createAdminUser({
+          username,
+          email: `${username}@admin.aneti.org.br`,
+          password: hashedPassword,
+          fullName: "Administrador Principal",
+          role: "super_admin",
+        });
+
+        req.session.adminUser = {
+          adminUserId: firstAdmin.id,
+          username: firstAdmin.username,
+          role: firstAdmin.role,
+          isAuthenticated: true,
+        };
+
+        return res.json({
+          success: true,
+          user: {
+            id: firstAdmin.id,
+            username: firstAdmin.username,
+            fullName: firstAdmin.fullName,
+            role: firstAdmin.role,
+          },
+          message: "First admin user created and logged in successfully",
+        });
+      }
+
+      // Authenticate existing admin user
+      const { authenticateAdmin } = await import("./auth-admin");
+      const adminUser = await authenticateAdmin(username, password);
+      
+      if (!adminUser) {
+        return res.status(401).json({ 
+          success: false, 
+          message: "Invalid credentials" 
+        });
+      }
+
+      req.session.adminUser = {
+        adminUserId: adminUser.id,
+        username: adminUser.username,
+        role: adminUser.role,
+        isAuthenticated: true,
+      };
+
+      res.json({
+        success: true,
+        user: {
+          id: adminUser.id,
+          username: adminUser.username,
+          fullName: adminUser.fullName,
+          role: adminUser.role,
+        },
+        message: "Admin logged in successfully",
+      });
+    } catch (error) {
+      console.error("Admin login error:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Internal server error" 
+      });
+    }
+  });
+
+  // Admin logout
+  app.post("/api/admin/logout", (req, res) => {
+    req.session.adminUser = null;
+    res.json({ success: true, message: "Admin logged out successfully" });
+  });
+
+  // Check admin authentication status
+  app.get("/api/admin/auth/check", (req, res) => {
+    if (req.session?.adminUser?.isAuthenticated) {
+      res.json({
+        isAuthenticated: true,
+        user: {
+          id: req.session.adminUser.adminUserId,
+          username: req.session.adminUser.username,
+          role: req.session.adminUser.role,
+        },
+      });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  });
+
+  // Admin middleware
+  const requireAdminAuth = (req: any, res: any, next: any) => {
+    if (!req.session?.adminUser?.isAuthenticated) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Admin authentication required" 
+      });
+    }
+    req.adminUser = req.session.adminUser;
+    next();
+  };
+
+  // Admin dashboard stats
+  app.get("/api/admin/stats", requireAdminAuth, async (req, res) => {
+    try {
+      const totalMembers = await storage.getAllUsers();
+      const pendingApplications = await storage.getPendingApplications();
+      
+      res.json({
+        totalMembers: totalMembers.length,
+        pendingApplications: pendingApplications.length,
+        adminUser: {
+          username: req.adminUser.username,
+          role: req.adminUser.role,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching admin stats:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch admin statistics" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
