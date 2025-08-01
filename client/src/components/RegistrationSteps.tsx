@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
-import { StripePayment } from "@/components/StripePayment";
+
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -197,13 +197,13 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         
         return true;
       
-      case 4: // Payment or Terms
+      case 4: // Payment step for paid plans, Terms for free plans
         if (selectedPlanData?.requiresPayment) {
-          return !!subscriptionId; // Need payment completion
+          return true; // Just continue to terms step
         }
         return form.getValues('acceptTerms');
       
-      case 5: // Final Terms
+      case 5: // Final Terms (for paid plans)
         return form.getValues('acceptTerms');
       
       default:
@@ -212,19 +212,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   };
 
   // Navigate to next step
-  const nextStep = async () => {
+  const nextStep = () => {
     if (validateStep(currentStep)) {
-      // If moving to payment step (step 4) and plan requires payment, create subscription
-      if (currentStep === 3 && selectedPlanData?.requiresPayment) {
-        try {
-          setIsSubmitting(true);
-          await createSubscription();
-        } catch (error) {
-          return; // Don't proceed if subscription creation fails
-        } finally {
-          setIsSubmitting(false);
-        }
-      }
       setCurrentStep(prev => Math.min(prev + 1, totalSteps));
     } else {
       toast({
@@ -240,15 +229,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
-  // Handle payment completion
-  const handlePaymentComplete = (completedSubscriptionId: string) => {
-    setSubscriptionId(completedSubscriptionId);
-    toast({
-      title: "Pagamento Confirmado!",
-      description: "Agora você pode finalizar sua solicitação de associação.",
-    });
-    setCurrentStep(5); // Move to final step
-  };
+
 
   // Create subscription for paid plans
   const createSubscription = async () => {
@@ -295,6 +276,25 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     setIsSubmitting(true);
     
     try {
+      let finalCustomerId = customerId;
+      let finalSubscriptionId = subscriptionId;
+      
+      // If it's a paid plan and we haven't created subscription yet, create it now
+      if (selectedPlanData?.requiresPayment && !subscriptionId) {
+        try {
+          const subscriptionData = await createSubscription();
+          finalCustomerId = subscriptionData.customerId;
+          finalSubscriptionId = subscriptionData.subscriptionId;
+        } catch (error) {
+          toast({
+            title: "Erro no Pagamento",
+            description: "Não foi possível processar o pagamento. Tente novamente.",
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+      
       // Create the application with payment info if applicable
       const applicationData: any = {
         planId: data.planId,
@@ -304,9 +304,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       };
 
       // Add subscription info for paid plans
-      if (selectedPlanData?.requiresPayment && subscriptionId) {
-        applicationData.stripeSubscriptionId = subscriptionId;
-        applicationData.paymentStatus = "paid";
+      if (selectedPlanData?.requiresPayment) {
+        applicationData.stripeCustomerId = finalCustomerId;
+        applicationData.stripeSubscriptionId = finalSubscriptionId;
+        applicationData.paymentStatus = "pending";
       }
 
       const applicationRes = await apiRequest("POST", "/api/member-applications", applicationData);
@@ -763,36 +764,47 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           </Card>
         )}
 
-        {/* Step 4: Payment (for paid plans only) */}
+        {/* Step 4: Payment Info (for paid plans only) */}
         {currentStep === 4 && selectedPlanData?.requiresPayment && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Pagamento da Anuidade
+                Informações de Pagamento
               </CardTitle>
+              <CardDescription>
+                Confirme os dados do seu plano. O pagamento será processado na próxima etapa.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {clientSecret ? (
-                <StripePayment
-                  clientSecret={clientSecret}
-                  onPaymentComplete={handlePaymentComplete}
-                  planName={selectedPlanData.name}
-                  planPrice={selectedPlanData.price}
-                />
-              ) : (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
-                  <p>Preparando pagamento...</p>
-                  <Button 
-                    type="button" 
-                    onClick={createSubscription}
-                    className="mt-4"
-                  >
-                    Iniciar Pagamento
-                  </Button>
+              <div className="space-y-6">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <h3 className="font-medium text-blue-900 mb-2">Resumo do Plano</h3>
+                  <div className="space-y-2 text-sm text-blue-800">
+                    <div className="flex justify-between">
+                      <span>Plano:</span>
+                      <span className="font-medium">{selectedPlanData.name}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Valor anual:</span>
+                      <span className="font-medium">
+                        R$ {(selectedPlanData.price / 100).toFixed(2).replace('.', ',')}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Renovação:</span>
+                      <span className="font-medium">Automática</span>
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <h4 className="font-medium text-green-900 mb-2">Próximo Passo</h4>
+                  <p className="text-sm text-green-800">
+                    O pagamento será processado automaticamente após aceitar os termos e condições na próxima etapa.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -882,25 +894,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           </Button>
 
           {/* Show different buttons based on current step */}
-          {currentStep === 4 && selectedPlanData?.requiresPayment && !subscriptionId ? (
-            <Button 
-              type="button" 
-              onClick={createSubscription}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                <>
-                  <CreditCard className="mr-2 h-4 w-4 animate-spin" />
-                  Preparando...
-                </>
-              ) : (
-                <>
-                  Prosseguir para Pagamento
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          ) : currentStep < totalSteps && !(currentStep === 4 && selectedPlanData?.requiresPayment) ? (
+          {currentStep < totalSteps ? (
             <Button 
               type="button" 
               onClick={nextStep}
@@ -909,21 +903,21 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
               Próximo
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
-          ) : ((currentStep === 4 && !selectedPlanData?.requiresPayment) || currentStep === 5) ? (
+          ) : (
             <Button type="submit" disabled={isSubmitting || !form.watch("acceptTerms")}>
               {isSubmitting ? (
                 <>
                   <CreditCard className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
+                  {selectedPlanData?.requiresPayment ? "Processando Pagamento..." : "Enviando..."}
                 </>
               ) : (
                 <>
-                  Enviar Solicitação
+                  {selectedPlanData?.requiresPayment ? "Confirmar e Pagar" : "Enviar Solicitação"}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </>
               )}
             </Button>
-          ) : null}
+          )}
         </div>
       </form>
     </div>
