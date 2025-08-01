@@ -26,7 +26,7 @@ import {
   type PostWithDetails
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, sql, inArray, ne, asc } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -750,8 +750,8 @@ export class DatabaseStorage implements IStorage {
           eq(users.isActive, true),
           eq(users.isApproved, true),
           or(
-            like(users.fullName, `%${query}%`),
-            like(users.username, `%${query}%`)
+            ilike(users.fullName, `%${query}%`),
+            ilike(users.username, `%${query}%`)
           )
         )
       )
@@ -798,9 +798,10 @@ export class DatabaseStorage implements IStorage {
         filters.gender ? eq(users.gender, filters.gender) : undefined,
         filters.area ? like(users.area, `%${filters.area}%`) : undefined,
         filters.search ? or(
-          like(users.fullName, `%${filters.search}%`),
-          like(users.area, `%${filters.search}%`),
-          like(users.position, `%${filters.search}%`)
+          ilike(users.fullName, `%${filters.search}%`),
+          ilike(users.area, `%${filters.search}%`),
+          ilike(users.position, `%${filters.search}%`),
+          ilike(users.username, `%${filters.search}%`)
         ) : undefined
       ))
       .orderBy(
