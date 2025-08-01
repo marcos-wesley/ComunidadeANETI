@@ -300,6 +300,12 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         setIsSubmitting(false);
         return;
       }
+
+      // Set subscription info for paid plans
+      if (selectedPlanData?.requiresPayment) {
+        finalCustomerId = customerId;
+        finalSubscriptionId = subscriptionId;
+      }
       
       // Create the application with payment info if applicable
       const applicationData: any = {
@@ -316,12 +322,12 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         applicationData.paymentStatus = "pending";
       }
 
-      const applicationRes = await apiRequest("POST", "/api/member-applications", applicationData);
+      const applicationRes = await apiRequest("POST", "/api/register-application", applicationData);
       
       const application = await applicationRes.json();
       
-      // Upload identity document
-      await apiRequest("POST", "/api/documents", {
+      // Upload documents - these endpoints need to be public during registration
+      await apiRequest("POST", "/api/register-documents", {
         applicationId: application.id,
         documentURL: identityDocument,
         name: "Documento de Identidade",
@@ -330,7 +336,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       
       // Upload experience documents
       for (let i = 0; i < experienceDocuments.length; i++) {
-        await apiRequest("POST", "/api/documents", {
+        await apiRequest("POST", "/api/register-documents", {
           applicationId: application.id,
           documentURL: experienceDocuments[i],
           name: `Comprovante de Experiência ${i + 1}`,
@@ -340,7 +346,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       
       // Upload student document if applicable
       if (data.isStudent && studentDocument) {
-        await apiRequest("POST", "/api/documents", {
+        await apiRequest("POST", "/api/register-documents", {
           applicationId: application.id,
           documentURL: studentDocument,
           name: "Comprovante de Matrícula",
@@ -931,7 +937,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           ) : (
             <Button 
               type="submit" 
-              disabled={isSubmitting || !form.watch("acceptTerms") || (selectedPlanData?.requiresPayment && !clientSecret && !subscriptionId)}
+              disabled={isSubmitting || !form.watch("acceptTerms") || (selectedPlanData?.requiresPayment && !subscriptionId)}
             >
               {isSubmitting ? (
                 <>

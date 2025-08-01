@@ -232,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({received: true});
   });
 
-  // Create document record after upload
+  // Create document record after upload (authenticated users)
   app.post("/api/documents", isAuthenticated, async (req, res) => {
     if (!req.body.documentURL || !req.body.applicationId || !req.body.name || !req.body.type) {
       return res.status(400).json({ error: "Missing required fields" });
@@ -266,6 +266,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create document record during registration (public endpoint)
+  app.post("/api/register-documents", async (req, res) => {
+    if (!req.body.documentURL || !req.body.applicationId || !req.body.name || !req.body.type) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    try {
+      const document = await storage.createDocument({
+        applicationId: req.body.applicationId,
+        name: req.body.name,
+        type: req.body.type,
+        filePath: req.body.documentURL,
+        fileSize: req.body.fileSize,
+        mimeType: req.body.mimeType,
+      });
+
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error creating registration document:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Membership plans
   app.get("/api/membership-plans", async (req, res) => {
     try {
@@ -293,7 +316,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Member applications
+  // Member applications (for logged in users)
   app.post("/api/member-applications", isAuthenticated, async (req, res) => {
     try {
       const validatedData = insertMemberApplicationSchema.parse({
@@ -305,6 +328,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(application);
     } catch (error) {
       console.error("Error creating member application:", error);
+      res.status(400).json({ error: "Invalid application data" });
+    }
+  });
+
+  // Registration application (public endpoint)
+  app.post("/api/register-application", async (req, res) => {
+    try {
+      const validatedData = insertMemberApplicationSchema.parse(req.body);
+      
+      const application = await storage.createMemberApplication(validatedData);
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("Error creating registration application:", error);
       res.status(400).json({ error: "Invalid application data" });
     }
   });

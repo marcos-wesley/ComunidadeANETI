@@ -36,9 +36,6 @@ const StripePaymentForm = ({ onPaymentComplete, planName, planPrice }: StripePay
     try {
       const { error } = await stripe.confirmPayment({
         elements,
-        confirmParams: {
-          return_url: `${window.location.origin}/register?step=4`,
-        },
         redirect: 'if_required'
       });
 
