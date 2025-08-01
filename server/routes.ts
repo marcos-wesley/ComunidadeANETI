@@ -14,6 +14,9 @@ import multer from "multer";
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
+  
+  // Serve uploaded images statically
+  app.use('/images', express.static(path.join(process.cwd(), 'public/uploads')));
 
   // Object storage for document serving
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
