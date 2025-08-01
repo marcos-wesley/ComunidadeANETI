@@ -42,6 +42,7 @@ import logoUrl from "@assets/logo-branca_1754061080203.png";
 import { FloatingChat } from "./FloatingChat";
 import { NotificationBell } from "./NotificationBell";
 import { MessageNotificationBell } from "./MessageNotificationBell";
+import { AdminRefreshButton } from "./AdminRefreshButton";
 
 const navItems = [
   { path: "/feed", icon: Home, label: "Feed", key: "feed" },
@@ -191,6 +192,9 @@ export function Navbar(): JSX.Element {
 
             {/* Notifications */}
             <NotificationBell />
+            
+            {/* Admin Refresh Button - temporary */}
+            <AdminRefreshButton />
 
             {/* Profile Menu */}
             <DropdownMenu>
