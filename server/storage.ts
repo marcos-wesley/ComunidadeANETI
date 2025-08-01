@@ -229,11 +229,14 @@ export class DatabaseStorage implements IStorage {
     console.log("DatabaseStorage.updateUserProfile called with id:", id);
     console.log("Profile data:", profileData);
     
-    const updateFields: any = {};
+    const updateFields: any = { updatedAt: new Date() };
     
-    // Map form fields to database fields
+    // Only add fields that are being updated
+    if (profileData.profilePicture !== undefined) updateFields.profilePicture = profileData.profilePicture;
+    if (profileData.coverPhoto !== undefined) updateFields.coverPhoto = profileData.coverPhoto;
     if (profileData.fullName !== undefined) updateFields.fullName = profileData.fullName;
     if (profileData.bio !== undefined) updateFields.bio = profileData.bio;
+    if (profileData.aboutMe !== undefined) updateFields.aboutMe = profileData.aboutMe;
     if (profileData.position !== undefined) updateFields.position = profileData.position;
     if (profileData.company !== undefined) updateFields.company = profileData.company;
     if (profileData.area !== undefined) updateFields.area = profileData.area;
@@ -243,10 +246,7 @@ export class DatabaseStorage implements IStorage {
     if (profileData.linkedin !== undefined) updateFields.linkedin = profileData.linkedin;
     if (profileData.github !== undefined) updateFields.github = profileData.github;
     if (profileData.website !== undefined) updateFields.website = profileData.website;
-    if (profileData.profilePicture !== undefined) updateFields.profilePicture = profileData.profilePicture;
-    if (profileData.coverPhoto !== undefined) updateFields.coverPhoto = profileData.coverPhoto;
-    
-    updateFields.updatedAt = new Date();
+    if (profileData.professionalTitle !== undefined) updateFields.professionalTitle = profileData.professionalTitle;
     
     console.log("Update fields:", updateFields);
     
