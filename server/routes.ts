@@ -682,29 +682,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Serve images from object storage
-  app.get("/images/:imagePath(*)", async (req, res) => {
+  app.get("/images/:type/:filename", async (req, res) => {
     try {
-      const imagePath = req.params.imagePath;
+      const { type, filename } = req.params;
+      console.log(`Serving image: ${type}/${filename}`);
+      
       const objectStorageService = new ObjectStorageService();
       
-      // Construct full path for private object
-      const privateDir = objectStorageService.getPrivateObjectDir();
-      const fullPath = `${privateDir}/${imagePath}`;
+      // Get private directory from environment
+      const privateDir = process.env.PRIVATE_OBJECT_DIR || "";
+      if (!privateDir) {
+        return res.status(500).json({ error: "Object storage not configured" });
+      }
       
-      const pathParts = fullPath.split("/");
+      // Construct the full object path
+      const objectPath = `${privateDir}/${type}/${filename}`;
+      console.log(`Object path: ${objectPath}`);
+      
+      // Parse bucket and object name
+      const pathParts = objectPath.split("/");
       const bucketName = pathParts[1];
       const objectName = pathParts.slice(2).join("/");
       
-      const { objectStorageClient } = require("./objectStorage");
-      const bucket = objectStorageClient.bucket(bucketName);
+      console.log(`Bucket: ${bucketName}, Object: ${objectName}`);
+      
+      // Get file from storage
+      const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
       const file = bucket.file(objectName);
       
       const [exists] = await file.exists();
       if (!exists) {
+        console.log("Image not found in storage");
         return res.status(404).json({ error: "Image not found" });
       }
       
-      await objectStorageService.downloadObject(file, res);
+      // Set appropriate headers
+      res.set({
+        "Content-Type": "image/jpeg",
+        "Cache-Control": "public, max-age=3600"
+      });
+      
+      // Stream the file
+      const stream = file.createReadStream();
+      stream.pipe(res);
+      
+      stream.on("error", (err) => {
+        console.error("Stream error:", err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: "Error streaming file" });
+        }
+      });
+      
     } catch (error) {
       console.error("Error serving image:", error);
       res.status(500).json({ error: "Internal server error" });
