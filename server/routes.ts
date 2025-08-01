@@ -1520,6 +1520,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific member details for admin
+  app.get("/api/admin/members/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Member not found" 
+        });
+      }
+
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching member details:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch member details" 
+      });
+    }
+  });
+
+  // Update member information (admin only)
+  app.put("/api/admin/members/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const updateData = req.body;
+      
+      // Remove sensitive fields that shouldn't be updated via this endpoint
+      delete updateData.password;
+      delete updateData.id;
+      delete updateData.createdAt;
+      
+      const updatedUser = await storage.updateUser(userId, {
+        ...updateData,
+        updatedAt: new Date()
+      });
+      
+      if (!updatedUser) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Member not found" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Member information updated successfully",
+        user: updatedUser
+      });
+    } catch (error) {
+      console.error("Error updating member:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update member information" 
+      });
+    }
+  });
+
+  // Change member password (admin only)
+  app.put("/api/admin/members/:id/password", requireAdminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const { newPassword } = req.body;
+      
+      if (!newPassword || newPassword.length < 6) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Password must be at least 6 characters long" 
+        });
+      }
+
+      // Import hash function from auth
+      const { hashPassword } = await import('./auth-admin');
+      const hashedPassword = await hashPassword(newPassword);
+      
+      const updatedUser = await storage.updateUserPassword(userId, hashedPassword);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Member not found" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Password updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating member password:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update member password" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

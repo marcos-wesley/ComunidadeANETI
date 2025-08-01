@@ -23,8 +23,10 @@ import {
   Shield,
   LogOut,
   BarChart3,
-  Eye
+  Eye,
+  Edit
 } from "lucide-react";
+import { EditMemberModal } from "@/components/EditMemberModal";
 
 interface AdminUser {
   id: string;
@@ -479,6 +481,19 @@ export default function AdminPage() {
                               <Eye className="h-4 w-4" />
                               <span>Ver Detalhes</span>
                             </Button>
+                            <EditMemberModal
+                              member={member}
+                              trigger={
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="flex items-center space-x-1"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                  <span>Editar</span>
+                                </Button>
+                              }
+                            />
                             {!member.isActive ? (
                               <Button
                                 size="sm"
