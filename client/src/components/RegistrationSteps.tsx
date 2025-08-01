@@ -133,18 +133,48 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       .substring(0, 30); // Limit length
   };
 
+  // Debounce function for API calls
+  const debounce = (func: Function, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return function executedFunction(...args: any[]) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+
   // Check if email is available
   const checkEmailAvailability = async (email: string) => {
     if (!email || emailChecking) return;
     
+    // Basic email validation first
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return; // Let the form validation handle this
+    }
+    
     setEmailChecking(true);
     try {
-      const response = await apiRequest("POST", "/api/check-email", { email });
+      const response = await fetch("/api/check-email", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      
       const result = await response.json();
       
       if (!result.available) {
-        form.setError("email", { message: "Este email já está em uso" });
+        form.setError("email", { 
+          type: "manual",
+          message: "Este email já está em uso" 
+        });
       } else {
+        // Clear the error for email field specifically
         form.clearErrors("email");
       }
     } catch (error) {
@@ -154,18 +184,32 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     }
   };
 
+  // Debounced email check
+  const debouncedEmailCheck = debounce(checkEmailAvailability, 800);
+
   // Check if username is available
   const checkUsernameAvailability = async (username: string) => {
-    if (!username || usernameChecking) return;
+    if (!username || usernameChecking || username.length < 3) return;
     
     setUsernameChecking(true);
     try {
-      const response = await apiRequest("POST", "/api/check-username", { username });
+      const response = await fetch("/api/check-username", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username }),
+      });
+      
       const result = await response.json();
       
       if (!result.available) {
-        form.setError("username", { message: "Este nome de usuário já está em uso" });
+        form.setError("username", { 
+          type: "manual",
+          message: "Este nome de usuário já está em uso" 
+        });
       } else {
+        // Clear the error for username field specifically
         form.clearErrors("username");
       }
     } catch (error) {
@@ -174,6 +218,9 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       setUsernameChecking(false);
     }
   };
+
+  // Debounced username check
+  const debouncedUsernameCheck = debounce(checkUsernameAvailability, 800);
 
   // Update selected plan when form changes
   useEffect(() => {
@@ -533,9 +580,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   <Input
                     id="email"
                     type="email"
-                    {...form.register("email")}
+                    {...form.register("email", {
+                      onBlur: (e) => debouncedEmailCheck(e.target.value)
+                    })}
                     placeholder="seu@email.com"
-                    onBlur={(e) => checkEmailAvailability(e.target.value)}
                   />
                   {emailChecking && <p className="text-blue-500 text-sm mt-1">Verificando disponibilidade...</p>}
                   {form.formState.errors.email && (
@@ -591,9 +639,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   <div className="flex gap-2">
                     <Input
                       id="username"
-                      {...form.register("username")}
+                      {...form.register("username", {
+                        onBlur: (e) => debouncedUsernameCheck(e.target.value)
+                      })}
                       placeholder="usuario.exemplo"
-                      onBlur={(e) => checkUsernameAvailability(e.target.value)}
                     />
                     <Button
                       type="button"

@@ -58,6 +58,14 @@ export const memberApplications = pgTable("member_applications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
   planId: varchar("plan_id").references(() => membershipPlans.id).notNull(),
+  email: text("email").notNull(),
+  username: text("username").notNull(),
+  password: text("password").notNull(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone").notNull(),
+  state: text("state").notNull(),
+  city: text("city").notNull(),
+  area: text("area").notNull(),
   status: text("status").default("pending"), // pending, approved, rejected
   paymentStatus: text("payment_status").default("pending"), // pending, paid, failed, gratuito
   paymentId: text("payment_id"),
