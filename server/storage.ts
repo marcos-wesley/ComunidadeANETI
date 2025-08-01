@@ -905,6 +905,7 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(users.isActive, true),
         ne(users.id, currentUserId),
+        eq(memberApplications.status, "approved"),
         // Apply filters
         filters.state ? eq(users.state, filters.state) : undefined,
         filters.plan ? eq(membershipPlans.name, filters.plan) : undefined,
