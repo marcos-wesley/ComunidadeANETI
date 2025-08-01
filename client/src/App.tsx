@@ -9,13 +9,15 @@ import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
 import RegisterPage from "./pages/register-page";
 import AdminDashboard from "./pages/admin-dashboard";
+import SocialFeedPage from "./pages/social-feed-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
-function Router() {
+function Router(): JSX.Element {
   return (
     <Switch>
       <ProtectedRoute path="/" component={HomePage} />
       <ProtectedRoute path="/register" component={RegisterPage} />
+      <ProtectedRoute path="/feed" component={SocialFeedPage} />
       <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly />
       <Route path="/auth" component={AuthPage} />
       <Route component={NotFound} />

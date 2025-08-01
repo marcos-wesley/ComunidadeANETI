@@ -42,7 +42,7 @@ export default function HomePage() {
           </Card>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-12">
           <Card className="shadow-aneti hover:shadow-aneti-lg transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-sm font-semibold text-muted-foreground">Perfil</CardTitle>
@@ -100,6 +100,26 @@ export default function HomePage() {
               <p className="text-sm text-muted-foreground mt-1">
                 Vence em Dez/2024
               </p>
+            </CardContent>
+          </Card>
+
+          <Card className="shadow-aneti hover:shadow-aneti-lg transition-shadow">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
+              <CardTitle className="text-sm font-semibold text-muted-foreground">Feed Social</CardTitle>
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Users className="h-4 w-4 text-accent" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-foreground">Ativo</div>
+              <p className="text-sm text-muted-foreground mt-1">
+                Conecte-se com outros membros
+              </p>
+              <Link href="/feed">
+                <Button size="sm" className="mt-3 w-full">
+                  Acessar Feed
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

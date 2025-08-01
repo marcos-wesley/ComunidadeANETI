@@ -186,6 +186,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Social Feed API Routes
+  
+  // Get feed posts
+  app.get("/api/posts", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const posts = await storage.getFeedPosts(userId!);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching posts:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Create new post
+  app.post("/api/posts", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { content, mediaType, mediaUrl, visibility, mentionedUsers } = req.body;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      // Check if user can post globally (only Diretivo plan)
+      if (visibility === "global") {
+        const user = await storage.getUser(userId!);
+        if (user?.planName !== "Diretivo") {
+          return res.status(403).json({ error: "Only Diretivo members can post globally" });
+        }
+      }
+
+      const post = await storage.createPost({
+        authorId: userId!,
+        content,
+        mediaType,
+        mediaUrl,
+        visibility: visibility || "connections",
+        mentionedUsers: mentionedUsers || [],
+      });
+
+      const postWithDetails = await storage.getPostWithDetails(post.id);
+      res.status(201).json(postWithDetails);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Like/Unlike post
+  app.post("/api/posts/:postId/like", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { postId } = req.params;
+
+      const result = await storage.toggleLike(userId!, postId);
+      res.json({ liked: result.liked, likesCount: result.likesCount });
+    } catch (error) {
+      console.error("Error toggling like:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Add comment to post
+  app.post("/api/posts/:postId/comments", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { postId } = req.params;
+      const { content, mentionedUsers } = req.body;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: "Comment content is required" });
+      }
+
+      const comment = await storage.createComment({
+        postId,
+        authorId: userId!,
+        content,
+        mentionedUsers: mentionedUsers || [],
+      });
+
+      const commentWithAuthor = await storage.getCommentWithAuthor(comment.id);
+      res.status(201).json(commentWithAuthor);
+    } catch (error) {
+      console.error("Error creating comment:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get user connections
+  app.get("/api/connections", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const connections = await storage.getUserConnections(userId!);
+      res.json(connections);
+    } catch (error) {
+      console.error("Error fetching connections:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Send connection request
+  app.post("/api/connections", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { receiverId } = req.body;
+
+      if (!receiverId) {
+        return res.status(400).json({ error: "Receiver ID is required" });
+      }
+
+      if (userId === receiverId) {
+        return res.status(400).json({ error: "Cannot connect to yourself" });
+      }
+
+      const connection = await storage.createConnectionRequest(userId!, receiverId);
+      res.status(201).json(connection);
+    } catch (error) {
+      console.error("Error creating connection request:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Accept/Reject connection request
+  app.put("/api/connections/:connectionId", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { connectionId } = req.params;
+      const { status } = req.body; // 'accepted' or 'rejected'
+
+      if (!['accepted', 'rejected'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const connection = await storage.updateConnectionStatus(connectionId, status, userId!);
+      res.json(connection);
+    } catch (error) {
+      console.error("Error updating connection:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Search users for mentions
+  app.get("/api/users/search", isAuthenticated, async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+
+      const users = await storage.searchUsers(q);
+      res.json(users);
+    } catch (error) {
+      console.error("Error searching users:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
