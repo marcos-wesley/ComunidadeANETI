@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import logoUrl from "@assets/logo-branca_1754061080203.png";
+import { FloatingChat } from "./FloatingChat";
 
 const navItems = [
   { path: "/feed", icon: Home, label: "Feed", key: "feed" },
@@ -56,6 +57,7 @@ export function Navbar(): JSX.Element {
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [showSearch, setShowSearch] = useState(false);
+  const [showFloatingChat, setShowFloatingChat] = useState(false);
 
   const handleLogout = () => {
     logoutMutation.mutate();
@@ -164,21 +166,20 @@ export function Navbar(): JSX.Element {
             </Dialog>
 
             {/* Messages */}
-            <Link href="/chat">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-10 w-10 p-0 text-gray-600 dark:text-gray-400 hover:text-blue-600 relative"
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 p-0 text-gray-600 dark:text-gray-400 hover:text-blue-600 relative"
+              onClick={() => setShowFloatingChat(!showFloatingChat)}
+            >
+              <Mail className="h-5 w-5" />
+              <Badge 
+                variant="destructive" 
+                className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
               >
-                <Mail className="h-5 w-5" />
-                <Badge 
-                  variant="destructive" 
-                  className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
-                >
-                  3
-                </Badge>
-              </Button>
-            </Link>
+                3
+              </Badge>
+            </Button>
 
             {/* Notifications */}
             <Button
@@ -300,6 +301,12 @@ export function Navbar(): JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* Floating Chat */}
+      <FloatingChat 
+        isOpen={showFloatingChat} 
+        onToggle={() => setShowFloatingChat(!showFloatingChat)} 
+      />
     </nav>
   );
 }
