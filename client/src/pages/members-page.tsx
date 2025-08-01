@@ -87,6 +87,13 @@ export default function MembersPage(): JSX.Element {
 
   // Check if user can connect/follow (Junior, Pleno, Sênior only)
   const canConnect = user?.planName && ['Júnior', 'Pleno', 'Sênior'].includes(user.planName);
+  
+  console.log('User plan check:', { 
+    userPlan: user?.planName, 
+    canConnect, 
+    userExists: !!user,
+    allowedPlans: ['Júnior', 'Pleno', 'Sênior']
+  });
 
   // Members are already filtered by backend
   const filteredMembers = members;
@@ -431,8 +438,14 @@ export default function MembersPage(): JSX.Element {
                   <Button 
                     size="sm" 
                     className="flex-1"
-                    onClick={() => handleConnect(member.id)}
-                    disabled={!canConnect || connectMutation.isPending}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Button clicked!', member.id, canConnect);
+                      handleConnect(member.id);
+                    }}
+                    disabled={false}
+                    style={{ pointerEvents: 'auto' }}
                   >
                     <UserPlus className="h-4 w-4 mr-1" />
                     Conectar
@@ -442,8 +455,14 @@ export default function MembersPage(): JSX.Element {
                 <Button
                   size="sm"
                   variant={member.isFollowing ? "default" : "outline"}
-                  onClick={() => handleFollow(member.id, member.isFollowing || false)}
-                  disabled={!canConnect || followMutation.isPending || unfollowMutation.isPending}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Follow button clicked!', member.id, canConnect);
+                    handleFollow(member.id, member.isFollowing || false);
+                  }}
+                  disabled={false}
+                  style={{ pointerEvents: 'auto' }}
                 >
                   {member.isFollowing ? (
                     <>
