@@ -876,6 +876,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Edit message
+  app.put("/api/messages/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { content } = req.body;
+      if (!content || content.trim() === '') {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+
+      const message = await storage.editMessage(req.params.id, req.user!.id, content.trim());
+      res.json(message);
+    } catch (error) {
+      console.error("Error editing message:", error);
+      res.status(500).json({ error: "Failed to edit message" });
+    }
+  });
+
+  // Delete message
+  app.delete("/api/messages/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteMessage(req.params.id, req.user!.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
+  // Delete conversation
+  app.delete("/api/conversations/:id", isAuthenticated, async (req, res) => {
+    try {
+      await storage.deleteConversation(req.params.id, req.user!.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting conversation:", error);
+      res.status(500).json({ error: "Failed to delete conversation" });
+    }
+  });
+
   // Notification Routes
   
   // Get user notifications

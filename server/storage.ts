@@ -141,6 +141,9 @@ export interface IStorage {
   sendMessage(conversationId: string, senderId: string, content: string, replyToId?: string): Promise<Message>;
   markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
   searchConversations(userId: string, query: string): Promise<ConversationWithDetails[]>;
+  editMessage(messageId: string, userId: string, content: string): Promise<Message>;
+  deleteMessage(messageId: string, userId: string): Promise<void>;
+  deleteConversation(conversationId: string, userId: string): Promise<void>;
 
   // Notifications
   getUserNotifications(userId: string, limit?: number): Promise<NotificationWithDetails[]>;
@@ -864,6 +867,107 @@ export class DatabaseStorage implements IStorage {
 
     return searchResults;
   }
+
+  async editMessage(messageId: string, userId: string, content: string): Promise<Message> {
+    // First check if the message belongs to the user
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.id, messageId), eq(messages.senderId, userId)));
+
+    if (!message) {
+      throw new Error("Message not found or you don't have permission to edit it");
+    }
+
+    // Update the message
+    const [updatedMessage] = await db
+      .update(messages)
+      .set({ 
+        content, 
+        isEdited: true, 
+        editedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(messages.id, messageId))
+      .returning();
+
+    return updatedMessage;
+  }
+
+  async deleteMessage(messageId: string, userId: string): Promise<void> {
+    // First check if the message belongs to the user
+    const [message] = await db
+      .select()
+      .from(messages)
+      .where(and(eq(messages.id, messageId), eq(messages.senderId, userId)));
+
+    if (!message) {
+      throw new Error("Message not found or you don't have permission to delete it");
+    }
+
+    // Mark message as deleted instead of actually deleting it
+    await db
+      .update(messages)
+      .set({ 
+        isDeleted: true, 
+        deletedAt: new Date(),
+        updatedAt: new Date()
+      })
+      .where(eq(messages.id, messageId));
+  }
+
+  async deleteConversation(conversationId: string, userId: string): Promise<void> {
+    // Check if user is a participant in the conversation
+    const [participant] = await db
+      .select()
+      .from(conversationParticipants)
+      .where(
+        and(
+          eq(conversationParticipants.conversationId, conversationId),
+          eq(conversationParticipants.userId, userId)
+        )
+      );
+
+    if (!participant) {
+      throw new Error("Conversation not found or you don't have permission to delete it");
+    }
+
+    // For group conversations, only remove the user from participants
+    // For direct conversations, check if user is the creator
+    const [conversation] = await db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, conversationId));
+
+    if (!conversation) {
+      throw new Error("Conversation not found");
+    }
+
+    if (conversation.type === "group") {
+      // Remove user from participants
+      await db
+        .update(conversationParticipants)
+        .set({ isActive: false })
+        .where(
+          and(
+            eq(conversationParticipants.conversationId, conversationId),
+            eq(conversationParticipants.userId, userId)
+          )
+        );
+    } else {
+      // For direct conversations, mark all messages as deleted and deactivate conversation
+      await db
+        .update(messages)
+        .set({ isDeleted: true, deletedAt: new Date() })
+        .where(eq(messages.conversationId, conversationId));
+
+      await db
+        .update(conversations)
+        .set({ isActive: false })
+        .where(eq(conversations.id, conversationId));
+    }
+  }
+
   async getMembersWithStatus(currentUserId: string, options: {
     page?: number;
     limit?: number;
@@ -1314,7 +1418,7 @@ export class DatabaseStorage implements IStorage {
         eq(messages.conversationId, conversationId),
         eq(messages.isDeleted, false)
       ))
-      .orderBy(desc(messages.createdAt))
+      .orderBy(asc(messages.createdAt))
       .limit(limit)
       .offset(offset);
 

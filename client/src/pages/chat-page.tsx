@@ -3,10 +3,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -27,7 +27,12 @@ import {
   Reply,
   Phone,
   Video,
-  Settings
+  Settings,
+  Edit,
+  Trash2,
+  Check,
+  X,
+  CheckCheck
 } from "lucide-react";
 
 type ConversationWithDetails = {
@@ -145,6 +150,8 @@ export default function ChatPage() {
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
@@ -288,6 +295,101 @@ export default function ChatPage() {
       conversationId: selectedConversation,
       content: messageText.trim(),
     });
+  };
+
+  // Edit message mutation
+  const editMessageMutation = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const response = await apiRequest("PUT", `/api/messages/${messageId}`, {
+        content,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setEditingMessageId(null);
+      setEditingText("");
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation, "messages"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível editar a mensagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      await apiRequest("DELETE", `/api/messages/${messageId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation, "messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível deletar a mensagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete conversation mutation
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      await apiRequest("DELETE", `/api/conversations/${conversationId}`);
+    },
+    onSuccess: () => {
+      setSelectedConversation(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({
+        title: "Sucesso",
+        description: "Conversa deletada com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível deletar a conversa",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleEditMessage = (messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setEditingText(currentContent);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingText.trim() || !editingMessageId) return;
+    
+    editMessageMutation.mutate({
+      messageId: editingMessageId,
+      content: editingText.trim(),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (confirm("Tem certeza que deseja deletar esta mensagem?")) {
+      deleteMessageMutation.mutate(messageId);
+    }
+  };
+
+  const handleDeleteConversation = () => {
+    if (!selectedConversation) return;
+    
+    if (confirm("Tem certeza que deseja deletar toda esta conversa? Esta ação não pode ser desfeita.")) {
+      deleteConversationMutation.mutate(selectedConversation);
+    }
   };
 
   const handleCreateConversation = () => {
@@ -474,12 +576,25 @@ export default function ChatPage() {
                           <h3 className="font-medium text-gray-900 dark:text-white truncate">
                             {title}
                           </h3>
-                          <span className="text-xs text-gray-500">
-                            {formatDistanceToNow(new Date(conversation.lastMessageAt), {
-                              locale: ptBR,
-                              addSuffix: true,
-                            })}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-gray-500">
+                              {formatDistanceToNow(new Date(conversation.lastMessageAt), {
+                                locale: ptBR,
+                                addSuffix: true,
+                              })}
+                            </span>
+                            {/* Unread message indicator */}
+                            {(() => {
+                              const currentParticipant = conversation.participants.find(p => p.userId === user.id);
+                              const hasUnreadMessages = conversation.lastMessage && 
+                                currentParticipant &&
+                                new Date(conversation.lastMessage.createdAt) > new Date(currentParticipant.lastReadAt);
+                              
+                              return hasUnreadMessages ? (
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                              ) : null;
+                            })()}
+                          </div>
                         </div>
                         {conversation.lastMessage && (
                           <p className="text-sm text-gray-600 dark:text-gray-400 truncate">
@@ -549,8 +664,13 @@ export default function ChatPage() {
                   <Button variant="ghost" size="sm">
                     <Video className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="sm">
-                    <Settings className="h-4 w-4" />
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={handleDeleteConversation}
+                    className="text-red-500 hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
@@ -566,7 +686,7 @@ export default function ChatPage() {
                     Nenhuma mensagem ainda. Seja o primeiro a enviar uma mensagem!
                   </div>
                 ) : (
-                  messages.reverse().map((message) => {
+                  messages.map((message) => {
                     const isOwnMessage = message.senderId === user.id;
                     
                     return (
@@ -586,7 +706,7 @@ export default function ChatPage() {
                               )}
                             </Avatar>
                           )}
-                          <div className={`rounded-lg px-3 py-2 ${
+                          <div className={`rounded-lg px-3 py-2 relative group ${
                             isOwnMessage 
                               ? "bg-blue-500 text-white" 
                               : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -596,15 +716,95 @@ export default function ChatPage() {
                                 {message.sender.fullName}
                               </p>
                             )}
-                            <p className="text-sm">{message.content}</p>
-                            <p className={`text-xs mt-1 ${
+                            
+                            {/* Message content or edit input */}
+                            {editingMessageId === message.id ? (
+                              <div className="space-y-2">
+                                <Input
+                                  value={editingText}
+                                  onChange={(e) => setEditingText(e.target.value)}
+                                  className="text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                                  autoFocus
+                                />
+                                <div className="flex gap-2">
+                                  <Button size="sm" onClick={handleSaveEdit} disabled={editMessageMutation.isPending}>
+                                    <Check className="h-3 w-3" />
+                                  </Button>
+                                  <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <p className="text-sm">{message.content}</p>
+                                {message.isEdited && (
+                                  <p className={`text-xs italic ${
+                                    isOwnMessage ? "text-blue-100" : "text-gray-400"
+                                  }`}>
+                                    editado
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                            
+                            {/* Timestamp and read status */}
+                            <div className={`flex items-center justify-between text-xs mt-1 ${
                               isOwnMessage ? "text-blue-100" : "text-gray-500"
                             }`}>
-                              {formatDistanceToNow(new Date(message.createdAt), {
-                                locale: ptBR,
-                                addSuffix: true,
-                              })}
-                            </p>
+                              <span>
+                                {formatDistanceToNow(new Date(message.createdAt), {
+                                  locale: ptBR,
+                                  addSuffix: true,
+                                })}
+                              </span>
+                              
+                              {/* Read indicators for own messages */}
+                              {isOwnMessage && (
+                                <div className="flex items-center gap-1">
+                                  {(() => {
+                                    // Check if all participants have read the message
+                                    const conversation = selectedConversationData;
+                                    if (!conversation) return null;
+                                    
+                                    const otherParticipants = conversation.participants.filter(p => p.userId !== user.id);
+                                    const allRead = otherParticipants.every(p => 
+                                      new Date(p.lastReadAt) >= new Date(message.createdAt)
+                                    );
+                                    
+                                    if (allRead) {
+                                      return <CheckCheck className="h-3 w-3 text-blue-300" />;
+                                    } else {
+                                      return <Check className="h-3 w-3 text-blue-300" />;
+                                    }
+                                  })()}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Action buttons - only show for own messages */}
+                            {isOwnMessage && editingMessageId !== message.id && (
+                              <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="flex gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 hover:bg-white/20"
+                                    onClick={() => handleEditMessage(message.id, message.content)}
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-6 w-6 p-0 hover:bg-red-500/20"
+                                    onClick={() => handleDeleteMessage(message.id)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
