@@ -167,6 +167,9 @@ export interface IStorage {
   deleteNotification(notificationId: string): Promise<void>;
   getUnreadNotificationCount(userId: string): Promise<number>;
 
+  // Application methods
+  getUserApplication(userId: string): Promise<any>;
+
   // Admin methods
   getAllApplications(): Promise<any[]>;
   approveApplication(applicationId: string, adminId: string): Promise<void>;
@@ -1686,6 +1689,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Admin methods
+  async getUserApplication(userId: string): Promise<any> {
+    const [application] = await db
+      .select({
+        id: memberApplications.id,
+        userId: memberApplications.userId,
+        planId: memberApplications.planId,
+        status: memberApplications.status,
+        paymentStatus: memberApplications.paymentStatus,
+        experienceYears: memberApplications.experienceYears,
+        isStudent: memberApplications.isStudent,
+        adminNotes: memberApplications.adminNotes,
+        reviewedBy: memberApplications.reviewedBy,
+        reviewedAt: memberApplications.reviewedAt,
+        createdAt: memberApplications.createdAt,
+        updatedAt: memberApplications.updatedAt,
+        plan: {
+          id: membershipPlans.id,
+          name: membershipPlans.name,
+          description: membershipPlans.description,
+          price: membershipPlans.price,
+          benefits: membershipPlans.benefits,
+        }
+      })
+      .from(memberApplications)
+      .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+      .where(eq(memberApplications.userId, userId))
+      .orderBy(desc(memberApplications.createdAt));
+
+    if (!application) {
+      return null;
+    }
+
+    // Get documents associated with this application
+    const documents = await db
+      .select({
+        id: documents.id,
+        fileName: documents.fileName,
+        uploadedAt: documents.createdAt,
+      })
+      .from(documents)
+      .where(eq(documents.applicationId, application.id));
+
+    return {
+      ...application,
+      documents,
+    };
+  }
+
   async getAllApplications(): Promise<any[]> {
     return await db
       .select({

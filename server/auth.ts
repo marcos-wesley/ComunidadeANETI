@@ -108,6 +108,30 @@ export function setupAuth(app: Express) {
     if (!req.isAuthenticated()) return res.sendStatus(401);
     res.json(req.user);
   });
+
+  app.get("/api/user/application", async (req, res) => {
+    if (!req.isAuthenticated()) return res.sendStatus(401);
+    
+    try {
+      const userId = req.user!.id;
+      const application = await storage.getUserApplication(userId);
+      
+      if (!application) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "No application found for this user" 
+        });
+      }
+
+      res.json(application);
+    } catch (error) {
+      console.error("Error fetching user application:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch application details" 
+      });
+    }
+  });
 }
 
 // Middleware to check if user is authenticated
