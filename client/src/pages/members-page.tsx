@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -50,7 +50,8 @@ type Member = {
 export default function MembersPage(): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // Input local state
+  const [searchQuery, setSearchQuery] = useState(""); // Query que vai para a API
   const [stateFilter, setStateFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
@@ -58,6 +59,16 @@ export default function MembersPage(): JSX.Element {
   const [sortBy, setSortBy] = useState<'recent' | 'newest' | 'alphabetical'>('recent');
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 20;
+
+  // Debounce da pesquisa - 500ms delay
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setSearchQuery(searchInput);
+      setCurrentPage(1); // Reset para primeira página ao pesquisar
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchInput]);
 
   const { data: members = [], isLoading } = useQuery<Member[]>({
     queryKey: ["/api/members", currentPage, limit, sortBy, stateFilter, planFilter, genderFilter, areaFilter, searchQuery],
@@ -273,10 +284,9 @@ export default function MembersPage(): JSX.Element {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Buscar por nome, cargo ou área de atuação..."
-              value={searchQuery}
+              value={searchInput}
               onChange={(e) => {
-                setSearchQuery(e.target.value);
-                handleFilterChange();
+                setSearchInput(e.target.value);
               }}
               className="pl-10"
             />
@@ -351,6 +361,7 @@ export default function MembersPage(): JSX.Element {
                   setPlanFilter("");
                   setGenderFilter("");
                   setAreaFilter("");
+                  setSearchInput(""); // Limpa o input também
                   setSearchQuery("");
                   handleFilterChange();
                 }}
