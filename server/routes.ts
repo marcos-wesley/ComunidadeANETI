@@ -5,6 +5,11 @@ import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { insertMemberApplicationSchema, insertDocumentSchema, insertMembershipPlanSchema } from "@shared/schema";
+import express from "express";
+import path from "path";
+import fs from "fs/promises";
+import { randomUUID } from "crypto";
+import multer from "multer";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -481,27 +486,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get upload URL for profile image
-  app.post("/api/profile/upload-profile-image", isAuthenticated, async (req, res) => {
-    try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getProfileImageUploadURL();
-      res.json({ uploadURL });
-    } catch (error) {
-      console.error("Error getting profile image upload URL:", error);
-      res.status(500).json({ error: "Internal server error" });
+  // Configure multer for local file uploads
+  const uploadStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+      const uploadType = req.url.includes('profile-image') ? 'profile-images' : 'cover-images';
+      const uploadPath = path.join(process.cwd(), 'public/uploads', uploadType);
+      cb(null, uploadPath);
+    },
+    filename: (req, file, cb) => {
+      const uniqueId = randomUUID();
+      const extension = path.extname(file.originalname);
+      cb(null, `${uniqueId}${extension}`);
     }
   });
 
-  // Get upload URL for cover image
-  app.post("/api/profile/upload-cover-image", isAuthenticated, async (req, res) => {
+  const upload = multer({ 
+    storage: uploadStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed'));
+      }
+    }
+  });
+
+  // Upload profile image directly
+  app.post("/api/profile/upload-profile-image", isAuthenticated, upload.single('image'), async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getCoverImageUploadURL();
-      res.json({ uploadURL });
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const imagePath = `/images/profile-images/${req.file.filename}`;
+      res.json({ uploadURL: `http://localhost:5000${imagePath}`, imagePath });
     } catch (error) {
-      console.error("Error getting cover image upload URL:", error);
-      res.status(500).json({ error: "Internal server error" });
+      console.error("Error uploading profile image:", error);
+      res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+
+  // Upload cover image directly
+  app.post("/api/profile/upload-cover-image", isAuthenticated, upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No file uploaded" });
+      }
+      
+      const imagePath = `/images/cover-images/${req.file.filename}`;
+      res.json({ uploadURL: `http://localhost:5000${imagePath}`, imagePath });
+    } catch (error) {
+      console.error("Error uploading cover image:", error);
+      res.status(500).json({ error: "Failed to upload image" });
     }
   });
 
@@ -509,17 +546,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/profile/profile-picture", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const { imageURL } = req.body;
+      const { imagePath } = req.body;
 
-      if (!imageURL) {
-        return res.status(400).json({ error: "imageURL is required" });
+      if (!imagePath) {
+        return res.status(400).json({ error: "imagePath is required" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const normalizedPath = objectStorageService.normalizeObjectPath(imageURL);
-
       const updatedUser = await storage.updateUserProfile(userId, {
-        profilePicture: normalizedPath
+        profilePicture: imagePath
       });
 
       if (!updatedUser) {
@@ -527,7 +561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
-        profilePicture: normalizedPath,
+        profilePicture: imagePath,
         message: "Profile picture updated successfully"
       });
     } catch (error) {
@@ -540,17 +574,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/profile/cover-photo", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const { imageURL } = req.body;
+      const { imagePath } = req.body;
 
-      if (!imageURL) {
-        return res.status(400).json({ error: "imageURL is required" });
+      if (!imagePath) {
+        return res.status(400).json({ error: "imagePath is required" });
       }
 
-      const objectStorageService = new ObjectStorageService();
-      const normalizedPath = objectStorageService.normalizeObjectPath(imageURL);
-
       const updatedUser = await storage.updateUserProfile(userId, {
-        coverPhoto: normalizedPath
+        coverPhoto: imagePath
       });
 
       if (!updatedUser) {
@@ -558,7 +589,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       res.json({
-        coverPhoto: normalizedPath,
+        coverPhoto: imagePath,
         message: "Cover photo updated successfully"
       });
     } catch (error) {
@@ -681,63 +712,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Serve images from object storage
-  app.get("/images/:type/:filename", async (req, res) => {
-    try {
-      const { type, filename } = req.params;
-      console.log(`Serving image: ${type}/${filename}`);
-      
-      const objectStorageService = new ObjectStorageService();
-      
-      // Get private directory from environment
-      const privateDir = process.env.PRIVATE_OBJECT_DIR || "";
-      if (!privateDir) {
-        return res.status(500).json({ error: "Object storage not configured" });
-      }
-      
-      // Construct the full object path
-      const objectPath = `${privateDir}/${type}/${filename}`;
-      console.log(`Object path: ${objectPath}`);
-      
-      // Parse bucket and object name
-      const pathParts = objectPath.split("/");
-      const bucketName = pathParts[1];
-      const objectName = pathParts.slice(2).join("/");
-      
-      console.log(`Bucket: ${bucketName}, Object: ${objectName}`);
-      
-      // Get file from storage
-      const bucket = objectStorageService.objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-      
-      const [exists] = await file.exists();
-      if (!exists) {
-        console.log("Image not found in storage");
-        return res.status(404).json({ error: "Image not found" });
-      }
-      
-      // Set appropriate headers
-      res.set({
-        "Content-Type": "image/jpeg",
-        "Cache-Control": "public, max-age=3600"
-      });
-      
-      // Stream the file
-      const stream = file.createReadStream();
-      stream.pipe(res);
-      
-      stream.on("error", (err) => {
-        console.error("Stream error:", err);
-        if (!res.headersSent) {
-          res.status(500).json({ error: "Error streaming file" });
-        }
-      });
-      
-    } catch (error) {
-      console.error("Error serving image:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
+  // Serve images from local storage (temporary solution)
+  app.use('/images', express.static(path.join(process.cwd(), 'public/uploads')));
 
   const httpServer = createServer(app);
   return httpServer;

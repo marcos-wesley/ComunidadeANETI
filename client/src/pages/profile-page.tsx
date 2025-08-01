@@ -153,65 +153,26 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
     }
   };
 
-  const profilePictureMutation = useMutation({
-    mutationFn: async (imageURL: string) => {
-      const res = await apiRequest("PUT", "/api/profile/profile-picture", { imageURL });
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
-      toast({
-        title: "Sucesso",
-        description: "Foto de perfil atualizada com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao atualizar foto de perfil",
-        variant: "destructive",
-      });
-    },
-  });
 
-  const coverPhotoMutation = useMutation({
-    mutationFn: async (imageURL: string) => {
-      const res = await apiRequest("PUT", "/api/profile/cover-photo", { imageURL });
-      return await res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
-      toast({
-        title: "Sucesso",
-        description: "Foto de capa atualizada com sucesso!",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao atualizar foto de capa",
-        variant: "destructive",
-      });
-    },
-  });
 
   const ProfilePictureUploader = () => (
     <ObjectUploader
-      maxNumberOfFiles={1}
-      maxFileSize={5242880} // 5MB
-      allowedFileTypes={['image/*']}
-      onGetUploadParameters={async () => {
-        const res = await apiRequest("POST", "/api/profile/upload-profile-image");
-        const data = await res.json();
-        return {
-          method: 'PUT' as const,
-          url: data.uploadURL,
-        };
-      }}
-      onComplete={(result) => {
-        if (result.successful && result.successful[0]) {
-          const uploadURL = result.successful[0].uploadURL as string;
-          profilePictureMutation.mutate(uploadURL);
+      uploadEndpoint="/api/profile/upload-profile-image"
+      onComplete={async (result) => {
+        const updateResponse = await fetch("/api/profile/profile-picture", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ imagePath: result.imagePath })
+        });
+        
+        if (updateResponse.ok) {
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          toast({
+            title: "Sucesso",
+            description: "Foto de perfil atualizada com sucesso!",
+          });
         }
       }}
       buttonClassName="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 p-2 rounded-full"
@@ -222,21 +183,22 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
   const CoverPhotoUploader = () => (
     <ObjectUploader
-      maxNumberOfFiles={1}
-      maxFileSize={5242880} // 5MB
-      allowedFileTypes={['image/*']}
-      onGetUploadParameters={async () => {
-        const res = await apiRequest("POST", "/api/profile/upload-cover-image");
-        const data = await res.json();
-        return {
-          method: 'PUT' as const,
-          url: data.uploadURL,
-        };
-      }}
-      onComplete={(result) => {
-        if (result.successful && result.successful[0]) {
-          const uploadURL = result.successful[0].uploadURL as string;
-          coverPhotoMutation.mutate(uploadURL);
+      uploadEndpoint="/api/profile/upload-cover-image"
+      onComplete={async (result) => {
+        const updateResponse = await fetch("/api/profile/cover-photo", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ imagePath: result.imagePath })
+        });
+        
+        if (updateResponse.ok) {
+          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          toast({
+            title: "Sucesso",
+            description: "Foto de capa atualizada com sucesso!",
+          });
         }
       }}
       buttonClassName="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
