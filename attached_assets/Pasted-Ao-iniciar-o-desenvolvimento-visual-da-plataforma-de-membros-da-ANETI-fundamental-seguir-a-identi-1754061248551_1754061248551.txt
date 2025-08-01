@@ -1,0 +1,50 @@
+Ao iniciar o desenvolvimento visual da plataforma de membros da ANETI, é fundamental seguir a identidade visual institucional e aplicar um design moderno, elegante e limpo.
+
+📌 Sobre a ANETI:
+A ANETI – Associação Nacional dos Especialistas em TI – representa profissionais de tecnologia com foco em inovação, excelência, ética e valorização profissional. A identidade visual deve refletir seriedade, sofisticação e clareza.
+
+🟦 Cores oficiais:
+- **Primária:** #012d6a (azul institucional – tecnologia, confiança, profundidade)
+- **Secundária:** #25a244 (verde inovação – crescimento, conexão, energia)
+- **Neutras complementares:**
+  - Branco (#ffffff)
+  - Cinza claro (#f5f5f5)
+  - Cinza médio (#e0e0e0)
+  - Preto suave para textos (#1f1f1f)
+
+🎨 Paleta visual recomendada:
+- Fundo: branco ou cinza claro
+- Títulos e botões principais: azul institucional
+- Destaques, links ou ações secundárias: verde inovação
+- Tipografia: Inter, Roboto ou Open Sans – moderna e de fácil leitura
+
+🖼️ Logos oficiais:
+- **Logo Azul (para fundo branco)**
+- **Logo Branca (para fundo escuro)**  
+➡️ Inserir as logos nos arquivos ou assets do projeto conforme for enviado.
+
+🧠 Diretrizes de design:
+- Layout **moderno, elegante e limpo**
+- Utilize **espaçamento adequado**, sem elementos visuais poluídos
+- Elementos devem ter **bordas suaves (border-radius)** e **sombras leves**
+- Componentes devem ser reutilizáveis e organizados por propósito
+- Mantenha consistência visual entre web e mobile
+- Pode-se usar Tailwind CSS, Chakra UI ou qualquer solução com suporte a **temas e responsividade**
+- Evite cores fora da paleta e fontes muito decorativas
+
+📁 Organização:
+Crie um sistema de temas globais (`theme.js`, `tailwind.config.js` ou equivalente) com os tokens:
+- `primary: '#012d6a'`
+- `secondary: '#25a244'`
+- `background: '#ffffff'`
+- `textPrimary: '#1f1f1f'`
+- `neutralLight: '#f5f5f5'`
+
+🧩 Estilo visual deve refletir:
+✅ Tecnologia  
+✅ Profissionalismo  
+✅ Inovação  
+✅ Clareza  
+✅ Acessibilidade
+
+A identidade da ANETI é um ativo institucional. Todo visual da plataforma deve estar alinhado a ela.
