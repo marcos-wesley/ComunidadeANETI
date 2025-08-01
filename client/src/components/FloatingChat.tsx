@@ -36,13 +36,13 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
-  const { data: conversations = [] } = useQuery({
+  const { data: conversations = [] } = useQuery<any[]>({
     queryKey: ["/api/conversations"],
     refetchInterval: 5000, // Refresh every 5 seconds
   });
 
   // Fetch messages for selected conversation
-  const { data: messages = [] } = useQuery({
+  const { data: messages = [] } = useQuery<any[]>({
     queryKey: ["/api/conversations", selectedConversation, "messages"],
     enabled: !!selectedConversation,
     refetchInterval: 2000,
@@ -68,7 +68,7 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
     );
     
     setFilteredUsers(filtered);
-  }, [userSearchQuery]);
+  }, [userSearchQuery, users]);
 
   // Auto scroll to bottom of messages
   useEffect(() => {

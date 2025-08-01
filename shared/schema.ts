@@ -241,7 +241,7 @@ export const messages = pgTable("messages", {
   content: text("content").notNull(),
   messageType: text("message_type").default("text"), // text, image, file, system
   attachmentUrl: text("attachment_url"),
-  replyToId: varchar("reply_to_id").references(() => messages.id),
+  replyToId: varchar("reply_to_id"),
   isEdited: boolean("is_edited").default(false),
   editedAt: timestamp("edited_at"),
   isDeleted: boolean("is_deleted").default(false),
@@ -423,13 +423,7 @@ export const insertLikeSchema = createInsertSchema(likes).omit({
   createdAt: true,
 });
 
-// Types
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-export type MembershipPlan = typeof membershipPlans.$inferSelect;
-export type MemberApplication = typeof memberApplications.$inferSelect;
-export type Document = typeof documents.$inferSelect;
-export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+
 
 // Social Feed Types
 export type Post = typeof posts.$inferSelect;
@@ -528,7 +522,7 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   messageType: true,
 });
 
-// Types
+// Main types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type MembershipPlan = typeof membershipPlans.$inferSelect;
