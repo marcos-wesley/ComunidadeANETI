@@ -1,27 +1,29 @@
 import { useState, useRef } from "react";
-import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, FileText } from "lucide-react";
 
 interface ObjectUploaderProps {
-  uploadEndpoint: string;
-  onComplete?: (result: { imagePath: string; uploadURL: string }) => void;
-  buttonClassName?: string;
-  children: ReactNode;
-  accept?: string;
+  getUploadParameters: () => Promise<{ method: string; url: string; }>;
+  onUploadComplete: (result: any) => void;
+  allowedFileTypes: string[];
+  maxFiles: number;
+  restrictions: {
+    maxFileSize: number;
+  };
 }
 
 /**
- * A simple file upload component for images
+ * Document upload component for PDF and image files
  */
 export function ObjectUploader({
-  uploadEndpoint,
-  onComplete,
-  buttonClassName,
-  children,
-  accept = "image/*"
+  getUploadParameters,
+  onUploadComplete,
+  allowedFileTypes,
+  maxFiles,
+  restrictions
 }: ObjectUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleButtonClick = () => {
@@ -29,29 +31,68 @@ export function ObjectUploader({
   };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+
+    // Check if we can add more files
+    if (uploadedFiles.length + files.length > maxFiles) {
+      alert(`Máximo de ${maxFiles} arquivo(s) permitido(s)`);
+      return;
+    }
 
     setIsUploading(true);
     
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      for (const file of files) {
+        // Check file size
+        if (file.size > restrictions.maxFileSize) {
+          alert(`Arquivo ${file.name} é muito grande. Máximo: ${(restrictions.maxFileSize / (1024 * 1024)).toFixed(1)}MB`);
+          continue;
+        }
 
-      const response = await fetch(uploadEndpoint, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include'
-      });
+        // Check file type
+        const isValidType = allowedFileTypes.some(type => {
+          if (type === 'image/*') return file.type.startsWith('image/');
+          if (type === 'application/pdf') return file.type === 'application/pdf';
+          return file.type === type;
+        });
 
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+        if (!isValidType) {
+          alert(`Tipo de arquivo ${file.name} não permitido. Tipos aceitos: ${allowedFileTypes.join(', ')}`);
+          continue;
+        }
+
+        // Get upload parameters
+        const uploadParams = await getUploadParameters();
+        
+        // Upload file
+        const response = await fetch(uploadParams.url, {
+          method: uploadParams.method,
+          body: file,
+          headers: {
+            'Content-Type': file.type,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+
+        // Add to uploaded files list
+        const newFile = `${file.name}_${Date.now()}`;
+        setUploadedFiles(prev => [...prev, newFile]);
+        
+        // Call completion callback
+        onUploadComplete({
+          fileName: file.name,
+          fileId: newFile,
+          size: file.size,
+          type: file.type
+        });
       }
-
-      const result = await response.json();
-      onComplete?.(result);
     } catch (error) {
       console.error('Upload error:', error);
+      alert('Erro no upload. Tente novamente.');
     } finally {
       setIsUploading(false);
       // Reset the input
@@ -62,28 +103,65 @@ export function ObjectUploader({
   };
 
   return (
-    <div>
+    <div className="space-y-4">
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept={accept}
+        accept={allowedFileTypes.join(',')}
+        multiple={maxFiles > 1}
         style={{ display: 'none' }}
       />
-      <Button 
-        onClick={handleButtonClick} 
-        className={buttonClassName}
-        disabled={isUploading}
+      
+      <div 
+        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary cursor-pointer transition-colors"
+        onClick={handleButtonClick}
       >
         {isUploading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Enviando...
-          </>
+          <div className="flex flex-col items-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+            <span className="text-sm text-muted-foreground">Enviando arquivo...</span>
+          </div>
         ) : (
-          children
+          <div className="flex flex-col items-center">
+            <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg mb-3">
+              <Upload className="h-6 w-6 text-primary" />
+            </div>
+            <span className="text-sm font-medium text-gray-900 mb-1">
+              Clique para selecionar arquivo
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {allowedFileTypes.includes('application/pdf') ? 'PDF ou imagem' : 'Imagem'} • 
+              Máx. {(restrictions.maxFileSize / (1024 * 1024)).toFixed(0)}MB •
+              {maxFiles > 1 ? ` Até ${maxFiles} arquivos` : ' 1 arquivo'}
+            </span>
+          </div>
         )}
-      </Button>
+      </div>
+
+      {uploadedFiles.length > 0 && (
+        <div className="space-y-2">
+          <span className="text-sm font-medium">Arquivos enviados:</span>
+          {uploadedFiles.map((file, index) => (
+            <div key={index} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded">
+              <FileText className="h-4 w-4 text-green-600" />
+              <span className="text-sm text-green-700 flex-1">Arquivo {index + 1}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+                }}
+                className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
+              >
+                ×
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

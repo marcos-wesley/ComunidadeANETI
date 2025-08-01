@@ -182,9 +182,6 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         return !!form.getValues('planId');
       
       case 3: // Documents
-        // Identity document is always required
-        if (!identityDocument) return false;
-        
         const selectedPlan = membershipPlans.find(p => p.id === form.getValues('planId'));
         const planName = selectedPlan?.name;
         
