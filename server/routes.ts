@@ -481,6 +481,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get upload URL for profile image
+  app.post("/api/profile/upload-profile-image", isAuthenticated, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getProfileImageUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting profile image upload URL:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get upload URL for cover image
+  app.post("/api/profile/upload-cover-image", isAuthenticated, async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getCoverImageUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting cover image upload URL:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update profile picture after upload
+  app.put("/api/profile/profile-picture", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { imageURL } = req.body;
+
+      if (!imageURL) {
+        return res.status(400).json({ error: "imageURL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = objectStorageService.normalizeObjectPath(imageURL);
+
+      const updatedUser = await storage.updateUserProfile(userId, {
+        profilePicture: normalizedPath
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.json({
+        profilePicture: normalizedPath,
+        message: "Profile picture updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating profile picture:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update cover photo after upload
+  app.put("/api/profile/cover-photo", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { imageURL } = req.body;
+
+      if (!imageURL) {
+        return res.status(400).json({ error: "imageURL is required" });
+      }
+
+      const objectStorageService = new ObjectStorageService();
+      const normalizedPath = objectStorageService.normalizeObjectPath(imageURL);
+
+      const updatedUser = await storage.updateUserProfile(userId, {
+        coverPhoto: normalizedPath
+      });
+
+      if (!updatedUser) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+
+      res.json({
+        coverPhoto: normalizedPath,
+        message: "Cover photo updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating cover photo:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
       const { 

@@ -243,6 +243,8 @@ export class DatabaseStorage implements IStorage {
     if (profileData.linkedin !== undefined) updateFields.linkedin = profileData.linkedin;
     if (profileData.github !== undefined) updateFields.github = profileData.github;
     if (profileData.website !== undefined) updateFields.website = profileData.website;
+    if (profileData.profilePicture !== undefined) updateFields.profilePicture = profileData.profilePicture;
+    if (profileData.coverPhoto !== undefined) updateFields.coverPhoto = profileData.coverPhoto;
     
     updateFields.updatedAt = new Date().toISOString();
     

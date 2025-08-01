@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useParams, Link } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +25,9 @@ import {
   MessageSquare,
   Star,
   Briefcase,
-  Languages
+  Languages,
+  Camera,
+  Upload
 } from "lucide-react";
 
 type UserProfile = {
@@ -131,6 +136,9 @@ type Highlight = {
 };
 
 function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
@@ -145,10 +153,103 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
     }
   };
 
+  const profilePictureMutation = useMutation({
+    mutationFn: async (imageURL: string) => {
+      const res = await apiRequest("PUT", "/api/profile/profile-picture", { imageURL });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+      toast({
+        title: "Sucesso",
+        description: "Foto de perfil atualizada com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar foto de perfil",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const coverPhotoMutation = useMutation({
+    mutationFn: async (imageURL: string) => {
+      const res = await apiRequest("PUT", "/api/profile/cover-photo", { imageURL });
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+      toast({
+        title: "Sucesso",
+        description: "Foto de capa atualizada com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao atualizar foto de capa",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const ProfilePictureUploader = () => (
+    <ObjectUploader
+      maxNumberOfFiles={1}
+      maxFileSize={5242880} // 5MB
+      allowedFileTypes={['image/*']}
+      onGetUploadParameters={async () => {
+        const res = await apiRequest("POST", "/api/profile/upload-profile-image");
+        const data = await res.json();
+        return {
+          method: 'PUT' as const,
+          url: data.uploadURL,
+        };
+      }}
+      onComplete={(result) => {
+        if (result.successful && result.successful[0]) {
+          const uploadURL = result.successful[0].uploadURL as string;
+          profilePictureMutation.mutate(uploadURL);
+        }
+      }}
+      buttonClassName="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 p-2 rounded-full"
+    >
+      <Camera className="h-4 w-4" />
+    </ObjectUploader>
+  );
+
+  const CoverPhotoUploader = () => (
+    <ObjectUploader
+      maxNumberOfFiles={1}
+      maxFileSize={5242880} // 5MB
+      allowedFileTypes={['image/*']}
+      onGetUploadParameters={async () => {
+        const res = await apiRequest("POST", "/api/profile/upload-cover-image");
+        const data = await res.json();
+        return {
+          method: 'PUT' as const,
+          url: data.uploadURL,
+        };
+      }}
+      onComplete={(result) => {
+        if (result.successful && result.successful[0]) {
+          const uploadURL = result.successful[0].uploadURL as string;
+          coverPhotoMutation.mutate(uploadURL);
+        }
+      }}
+      buttonClassName="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+    >
+      <Upload className="h-4 w-4 mr-2" />
+      Alterar capa
+    </ObjectUploader>
+  );
+
   return (
     <Card className="relative overflow-hidden">
       {/* Cover Photo */}
-      <div className="h-48 bg-gradient-to-r from-blue-600 to-blue-800 relative">
+      <div className="h-48 bg-gradient-to-r from-blue-600 to-blue-800 relative group">
         {profile.coverPhoto && (
           <img 
             src={profile.coverPhoto} 
@@ -157,21 +258,25 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           />
         )}
         {isOwnProfile && (
-          <Button 
-            variant="secondary" 
-            size="sm" 
-            className="absolute top-4 right-4"
-          >
-            <Edit3 className="h-4 w-4 mr-2" />
-            Editar Perfil
-          </Button>
+          <div className="absolute top-4 right-4 flex gap-2">
+            <CoverPhotoUploader />
+            <Link href="/profile/edit">
+              <Button 
+                variant="secondary" 
+                size="sm"
+              >
+                <Edit3 className="h-4 w-4 mr-2" />
+                Editar Perfil
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 
       <CardContent className="relative pt-16">
         {/* Profile Picture */}
         <div className="absolute -top-16 left-6">
-          <div className="w-32 h-32 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center text-white text-3xl font-bold">
+          <div className="relative w-32 h-32 rounded-full border-4 border-white bg-blue-600 flex items-center justify-center text-white text-3xl font-bold group">
             {profile.profilePicture ? (
               <img 
                 src={profile.profilePicture} 
@@ -180,6 +285,11 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
               />
             ) : (
               getInitials(profile.fullName)
+            )}
+            {isOwnProfile && (
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <ProfilePictureUploader />
+              </div>
             )}
           </div>
         </div>
