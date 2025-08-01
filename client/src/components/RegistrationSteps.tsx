@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
-
+import { StripePayment } from "@/components/StripePayment";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -285,6 +285,13 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           const subscriptionData = await createSubscription();
           finalCustomerId = subscriptionData.customerId;
           finalSubscriptionId = subscriptionData.subscriptionId;
+          // Set the client secret to show payment form
+          setClientSecret(subscriptionData.clientSecret);
+          toast({
+            title: "Pagamento Necessário",
+            description: "Complete o pagamento para finalizar sua solicitação.",
+          });
+          return; // Don't submit yet, wait for payment
         } catch (error) {
           toast({
             title: "Erro no Pagamento",
@@ -293,6 +300,16 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           });
           return;
         }
+      }
+
+      // For paid plans, ensure payment is completed
+      if (selectedPlanData?.requiresPayment && !subscriptionId) {
+        toast({
+          title: "Pagamento Pendente",
+          description: "Complete o pagamento antes de finalizar.",
+          variant: "destructive",
+        });
+        return;
       }
       
       // Create the application with payment info if applicable
@@ -815,7 +832,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Check className="h-5 w-5" />
-                Termos e Envio
+                {selectedPlanData?.requiresPayment ? "Pagamento e Finalização" : "Termos e Envio"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -833,12 +850,26 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                         {selectedPlanData.price === 0 ? "Gratuito" : `R$ ${(selectedPlanData.price / 100).toFixed(2).replace('.', ',')}`}
                       </span>
                     </div>
-                    {selectedPlanData.requiresPayment && (
-                      <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded text-amber-800 text-xs">
-                        <strong>Atenção:</strong> Após enviar sua solicitação, você receberá um link para pagamento. Sua associação será ativada após a aprovação dos documentos e confirmação do pagamento.
-                      </div>
-                    )}
                   </div>
+                </div>
+              )}
+
+              {/* Payment section for paid plans */}
+              {selectedPlanData?.requiresPayment && clientSecret && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Complete o Pagamento</h3>
+                  <StripePayment
+                    clientSecret={clientSecret}
+                    onPaymentComplete={(subscriptionId) => {
+                      setSubscriptionId(subscriptionId);
+                      toast({
+                        title: "Pagamento Confirmado!",
+                        description: "Sua solicitação será processada automaticamente.",
+                      });
+                    }}
+                    planName={selectedPlanData.name}
+                    planPrice={selectedPlanData.price}
+                  />
                 </div>
               )}
 
@@ -904,15 +935,20 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
               <ChevronRight className="ml-2 h-4 w-4" />
             </Button>
           ) : (
-            <Button type="submit" disabled={isSubmitting || !form.watch("acceptTerms")}>
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !form.watch("acceptTerms") || (selectedPlanData?.requiresPayment && !clientSecret && !subscriptionId)}
+            >
               {isSubmitting ? (
                 <>
                   <CreditCard className="mr-2 h-4 w-4 animate-spin" />
-                  {selectedPlanData?.requiresPayment ? "Processando Pagamento..." : "Enviando..."}
+                  {selectedPlanData?.requiresPayment && !subscriptionId ? "Preparando Pagamento..." : 
+                   selectedPlanData?.requiresPayment ? "Finalizando..." : "Enviando..."}
                 </>
               ) : (
                 <>
-                  {selectedPlanData?.requiresPayment ? "Confirmar e Pagar" : "Enviar Solicitação"}
+                  {selectedPlanData?.requiresPayment && !subscriptionId ? "Preparar Pagamento" :
+                   selectedPlanData?.requiresPayment ? "Finalizar Solicitação" : "Enviar Solicitação"}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </>
               )}
