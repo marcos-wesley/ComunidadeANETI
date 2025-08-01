@@ -36,6 +36,16 @@ import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 
 const registrationSchema = z.object({
+  email: z.string().email("Email inválido"),
+  username: z.string()
+    .min(3, "Nome de usuário deve ter pelo menos 3 caracteres")
+    .max(30, "Nome de usuário deve ter no máximo 30 caracteres")
+    .regex(/^[a-zA-Z0-9._-]+$/, "Nome de usuário pode conter apenas letras, números, pontos, hífens e underscores"),
+  password: z.string()
+    .min(8, "Senha deve ter pelo menos 8 caracteres")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/, 
+      "Senha deve conter pelo menos: 1 letra minúscula, 1 maiúscula, 1 número e 1 caractere especial"),
+  confirmPassword: z.string(),
   fullName: z.string().min(1, "Nome completo é obrigatório"),
   phone: z.string().min(1, "Telefone é obrigatório"),
   state: z.string().min(1, "Estado é obrigatório"),
@@ -45,6 +55,9 @@ const registrationSchema = z.object({
   isStudent: z.boolean(),
   planId: z.string().min(1, "Selecione um plano"),
   acceptTerms: z.boolean().refine(val => val === true, "Você deve aceitar os termos"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
@@ -73,6 +86,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   
   // Loading states
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailChecking, setEmailChecking] = useState(false);
+  const [usernameChecking, setUsernameChecking] = useState(false);
   
   // Payment state
   const [clientSecret, setClientSecret] = useState<string>("");
@@ -82,6 +97,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
     defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
       fullName: user?.fullName || "",
       phone: user?.phone || "",
       state: user?.state || "",
@@ -101,6 +120,60 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
 
   // Get selected plan details
   const selectedPlanData = membershipPlans.find(plan => plan.id === selectedPlan);
+
+  // Generate username from full name
+  const generateUsername = (fullName: string) => {
+    if (!fullName) return "";
+    return fullName
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remove accents
+      .replace(/[^a-z0-9\s]/g, "") // Remove special chars
+      .replace(/\s+/g, ".") // Replace spaces with dots
+      .substring(0, 30); // Limit length
+  };
+
+  // Check if email is available
+  const checkEmailAvailability = async (email: string) => {
+    if (!email || emailChecking) return;
+    
+    setEmailChecking(true);
+    try {
+      const response = await apiRequest("POST", "/api/check-email", { email });
+      const result = await response.json();
+      
+      if (!result.available) {
+        form.setError("email", { message: "Este email já está em uso" });
+      } else {
+        form.clearErrors("email");
+      }
+    } catch (error) {
+      console.error("Error checking email:", error);
+    } finally {
+      setEmailChecking(false);
+    }
+  };
+
+  // Check if username is available
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || usernameChecking) return;
+    
+    setUsernameChecking(true);
+    try {
+      const response = await apiRequest("POST", "/api/check-username", { username });
+      const result = await response.json();
+      
+      if (!result.available) {
+        form.setError("username", { message: "Este nome de usuário já está em uso" });
+      } else {
+        form.clearErrors("username");
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+    } finally {
+      setUsernameChecking(false);
+    }
+  };
 
   // Update selected plan when form changes
   useEffect(() => {
@@ -453,13 +526,41 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Email and authentication fields */}
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <Label htmlFor="email">Email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    {...form.register("email")}
+                    placeholder="seu@email.com"
+                    onBlur={(e) => checkEmailAvailability(e.target.value)}
+                  />
+                  {emailChecking && <p className="text-blue-500 text-sm mt-1">Verificando disponibilidade...</p>}
+                  {form.formState.errors.email && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.email.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="fullName">Nome Completo *</Label>
                   <Input
                     id="fullName"
                     {...form.register("fullName")}
-                    placeholder="Seu nome completo"
+                    placeholder="Digite seu nome completo"
+                    onChange={(e) => {
+                      form.setValue("fullName", e.target.value);
+                      // Auto-generate username if username field is empty
+                      if (!form.getValues("username")) {
+                        const generatedUsername = generateUsername(e.target.value);
+                        form.setValue("username", generatedUsername);
+                      }
+                    }}
                   />
                   {form.formState.errors.fullName && (
                     <p className="text-sm text-destructive mt-1">
@@ -478,6 +579,79 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   {form.formState.errors.phone && (
                     <p className="text-sm text-destructive mt-1">
                       {form.formState.errors.phone.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Username field */}
+              <div className="grid grid-cols-1 gap-6">
+                <div>
+                  <Label htmlFor="username">Nome de Usuário *</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="username"
+                      {...form.register("username")}
+                      placeholder="usuario.exemplo"
+                      onBlur={(e) => checkUsernameAvailability(e.target.value)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const generated = generateUsername(form.getValues("fullName"));
+                        form.setValue("username", generated);
+                        checkUsernameAvailability(generated);
+                      }}
+                      disabled={!form.getValues("fullName")}
+                    >
+                      Gerar
+                    </Button>
+                  </div>
+                  {usernameChecking && <p className="text-blue-500 text-sm mt-1">Verificando disponibilidade...</p>}
+                  {form.formState.errors.username && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.username.message}
+                    </p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-1">
+                    Pode conter letras, números, pontos, hífens e underscores
+                  </p>
+                </div>
+              </div>
+
+              {/* Password fields */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="password">Senha *</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...form.register("password")}
+                    placeholder="Crie uma senha forte"
+                  />
+                  {form.formState.errors.password && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.password.message}
+                    </p>
+                  )}
+                  <p className="text-gray-500 text-xs mt-1">
+                    Mínimo 8 caracteres com: maiúscula, minúscula, número e símbolo
+                  </p>
+                </div>
+
+                <div>
+                  <Label htmlFor="confirmPassword">Confirmar Senha *</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    {...form.register("confirmPassword")}
+                    placeholder="Digite a senha novamente"
+                  />
+                  {form.formState.errors.confirmPassword && (
+                    <p className="text-sm text-destructive mt-1">
+                      {form.formState.errors.confirmPassword.message}
                     </p>
                   )}
                 </div>

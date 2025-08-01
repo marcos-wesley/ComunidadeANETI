@@ -100,6 +100,8 @@ export interface IStorage {
   getMemberApplication(id: string): Promise<MemberApplication | undefined>;
   getMemberApplicationsByUser(userId: string): Promise<MemberApplication[]>;
   getPendingApplications(): Promise<(MemberApplication & { user: User; plan: MembershipPlan })[]>;
+  getApplicationByEmail(email: string): Promise<MemberApplication | undefined>;
+  getApplicationByUsername(username: string): Promise<MemberApplication | undefined>;
   createMemberApplication(application: InsertMemberApplication): Promise<MemberApplication>;
   updateMemberApplication(id: string, updates: Partial<MemberApplication>): Promise<MemberApplication | undefined>;
 
@@ -375,6 +377,16 @@ export class DatabaseStorage implements IStorage {
       .update(memberApplications)
       .set({ paymentStatus: status })
       .where(eq(memberApplications.stripeSubscriptionId, subscriptionId));
+  }
+
+  async getApplicationByEmail(email: string): Promise<MemberApplication | undefined> {
+    const [application] = await db.select().from(memberApplications).where(eq(memberApplications.email, email));
+    return application;
+  }
+
+  async getApplicationByUsername(username: string): Promise<MemberApplication | undefined> {
+    const [application] = await db.select().from(memberApplications).where(eq(memberApplications.username, username));
+    return application;
   }
 
   // Documents

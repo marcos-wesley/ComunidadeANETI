@@ -109,6 +109,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Check email availability (public endpoint)
+  app.post("/api/check-email", async (req, res) => {
+    try {
+      const { email } = req.body;
+      
+      if (!email) {
+        return res.status(400).json({ error: "Email é obrigatório" });
+      }
+
+      const existingUser = await storage.getUserByEmail(email);
+      const existingApplication = await storage.getApplicationByEmail(email);
+      
+      const available = !existingUser && !existingApplication;
+      
+      res.json({ available });
+    } catch (error) {
+      console.error("Error checking email:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Check username availability (public endpoint)
+  app.post("/api/check-username", async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ error: "Nome de usuário é obrigatório" });
+      }
+
+      const existingUser = await storage.getUserByUsername(username);
+      const existingApplication = await storage.getApplicationByUsername(username);
+      
+      const available = !existingUser && !existingApplication;
+      
+      res.json({ available });
+    } catch (error) {
+      console.error("Error checking username:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
   // Create Stripe subscription for paid plans
   app.post("/api/create-subscription", async (req, res) => {
     try {
