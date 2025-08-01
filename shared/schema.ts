@@ -30,6 +30,9 @@ export const users = pgTable("users", {
   role: text("role").default("member"), // member, admin
   currentPlanId: varchar("current_plan_id").references(() => membershipPlans.id),
   planName: text("plan_name"),
+  stripeCustomerId: varchar("stripe_customer_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  subscriptionStatus: varchar("subscription_status"), // active, canceled, past_due, etc.
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
@@ -46,6 +49,8 @@ export const membershipPlans = pgTable("membership_plans", {
   rules: text("rules"), // validation rules description
   isActive: boolean("is_active").default(true),
   isAvailableForRegistration: boolean("is_available_for_registration").default(true),
+  stripePriceId: varchar("stripe_price_id"), // Stripe price ID for subscriptions
+  stripeProductId: varchar("stripe_product_id"), // Stripe product ID
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -57,6 +62,8 @@ export const memberApplications = pgTable("member_applications", {
   paymentStatus: text("payment_status").default("pending"), // pending, paid, failed, gratuito
   paymentId: text("payment_id"),
   mercadoPagoPreferenceId: text("mercado_pago_preference_id"),
+  stripeSubscriptionId: varchar("stripe_subscription_id"),
+  stripePaymentIntentId: varchar("stripe_payment_intent_id"),
   experienceYears: integer("experience_years"),
   isStudent: boolean("is_student").default(false),
   studentProof: text("student_proof"), // path to student documentation

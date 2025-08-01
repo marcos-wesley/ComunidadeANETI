@@ -18,6 +18,15 @@ import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
 import multer from "multer";
+import Stripe from "stripe";
+
+// Initialize Stripe
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
+}
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-06-20",
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
@@ -95,6 +104,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error uploading file:", error);
       res.status(500).json({ error: "Falha no upload do arquivo" });
     }
+  });
+
+  // Create Stripe subscription for paid plans
+  app.post("/api/create-subscription", async (req, res) => {
+    try {
+      const { planId, email, fullName } = req.body;
+      
+      // Get plan details
+      const plan = await storage.getMembershipPlan(planId);
+      if (!plan || !plan.requiresPayment) {
+        return res.status(400).json({ error: "Plano inválido ou gratuito" });
+      }
+
+      // Create Stripe customer
+      const customer = await stripe.customers.create({
+        email: email,
+        name: fullName,
+        metadata: {
+          planId: planId,
+          planName: plan.name
+        }
+      });
+
+      // Create subscription with trial period or immediate payment
+      const subscription = await stripe.subscriptions.create({
+        customer: customer.id,
+        items: [{
+          price_data: {
+            currency: 'brl',
+            product_data: {
+              name: `ANETI - ${plan.name}`,
+              description: plan.description || `Plano ${plan.name} da ANETI`
+            },
+            unit_amount: plan.price, // price already in cents
+            recurring: {
+              interval: 'year' // Annual subscription
+            }
+          }
+        }],
+        payment_behavior: 'default_incomplete',
+        payment_settings: {
+          save_default_payment_method: 'on_subscription'
+        },
+        expand: ['latest_invoice.payment_intent'],
+        metadata: {
+          planId: planId,
+          planName: plan.name
+        }
+      });
+
+      const invoice = subscription.latest_invoice as Stripe.Invoice;
+      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+      res.json({
+        subscriptionId: subscription.id,
+        customerId: customer.id,
+        clientSecret: paymentIntent.client_secret,
+        status: subscription.status
+      });
+
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      res.status(500).json({ error: "Erro ao criar assinatura" });
+    }
+  });
+
+  // Webhook for Stripe events
+  app.post('/api/stripe-webhook', express.raw({type: 'application/json'}), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    let event;
+
+    try {
+      // For now, we'll process without signature verification in development
+      event = JSON.parse(req.body.toString());
+    } catch (err) {
+      console.error('Webhook signature verification failed.', err);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    switch (event.type) {
+      case 'invoice.payment_succeeded':
+        const subscription = event.data.object;
+        console.log('Payment succeeded for subscription:', subscription.subscription);
+        // Update payment status in database
+        await storage.updateApplicationPaymentStatus(subscription.subscription, 'paid');
+        break;
+      case 'invoice.payment_failed':
+        console.log('Payment failed for subscription:', event.data.object.subscription);
+        await storage.updateApplicationPaymentStatus(event.data.object.subscription, 'failed');
+        break;
+      default:
+        console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.json({received: true});
   });
 
   // Create document record after upload

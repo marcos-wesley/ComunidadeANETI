@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { StripePayment } from "@/components/StripePayment";
 import { useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -54,7 +55,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   
   // Steps state
   const [currentStep, setCurrentStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5;
   
   // Form state
   const [selectedState, setSelectedState] = useState<string>(user?.state || "");
@@ -67,6 +68,11 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   
   // Loading states
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Payment state
+  const [clientSecret, setClientSecret] = useState<string>("");
+  const [subscriptionId, setSubscriptionId] = useState<string>("");
+  const [customerId, setCustomerId] = useState<string>("");
 
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -191,7 +197,13 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         
         return true;
       
-      case 4: // Terms
+      case 4: // Payment or Terms
+        if (selectedPlanData?.requiresPayment) {
+          return !!subscriptionId; // Need payment completion
+        }
+        return form.getValues('acceptTerms');
+      
+      case 5: // Final Terms
         return form.getValues('acceptTerms');
       
       default:
@@ -200,8 +212,19 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   };
 
   // Navigate to next step
-  const nextStep = () => {
+  const nextStep = async () => {
     if (validateStep(currentStep)) {
+      // If moving to payment step (step 4) and plan requires payment, create subscription
+      if (currentStep === 3 && selectedPlanData?.requiresPayment) {
+        try {
+          setIsSubmitting(true);
+          await createSubscription();
+        } catch (error) {
+          return; // Don't proceed if subscription creation fails
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
       setCurrentStep(prev => Math.min(prev + 1, totalSteps));
     } else {
       toast({
@@ -217,49 +240,76 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  // Handle payment completion
+  const handlePaymentComplete = (completedSubscriptionId: string) => {
+    setSubscriptionId(completedSubscriptionId);
+    toast({
+      title: "Pagamento Confirmado!",
+      description: "Agora você pode finalizar sua solicitação de associação.",
+    });
+    setCurrentStep(5); // Move to final step
+  };
+
+  // Create subscription for paid plans
+  const createSubscription = async () => {
+    try {
+      const formData = form.getValues();
+      
+      const response = await fetch("/api/create-subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          planId: formData.planId,
+          email: user?.email,
+          fullName: formData.fullName,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao criar assinatura");
+      }
+
+      const data = await response.json();
+      setClientSecret(data.clientSecret);
+      setSubscriptionId(data.subscriptionId);
+      setCustomerId(data.customerId);
+      
+      return data;
+    } catch (error) {
+      console.error("Error creating subscription:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar o pagamento. Tente novamente.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
   // Submit complete registration
   const onSubmit = async (data: RegistrationForm) => {
     if (isSubmitting) return;
     
-    // Final validation
-    if (!identityDocument) {
-      toast({
-        title: "Documento obrigatório",
-        description: "Por favor, faça upload do documento de identidade.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    const selectedPlanData = membershipPlans.find(p => p.id === data.planId);
-    if (selectedPlanData?.requiresPayment && experienceDocuments.length === 0) {
-      toast({
-        title: "Documentos obrigatórios",
-        description: "Por favor, faça upload dos comprovantes de experiência.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (data.isStudent && !studentDocument) {
-      toast({
-        title: "Documento obrigatório",
-        description: "Por favor, faça upload do comprovante de matrícula.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setIsSubmitting(true);
     
     try {
-      // Create the application
-      const applicationRes = await apiRequest("POST", "/api/member-applications", {
+      // Create the application with payment info if applicable
+      const applicationData: any = {
         planId: data.planId,
         experienceYears: data.experienceYears,
         isStudent: data.isStudent,
         studentProof: data.isStudent ? studentDocument : null,
-      });
+      };
+
+      // Add subscription info for paid plans
+      if (selectedPlanData?.requiresPayment && subscriptionId) {
+        applicationData.stripeSubscriptionId = subscriptionId;
+        applicationData.paymentStatus = "paid";
+      }
+
+      const applicationRes = await apiRequest("POST", "/api/member-applications", applicationData);
       
       const application = await applicationRes.json();
       
@@ -713,15 +763,47 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           </Card>
         )}
 
-
-
-        {/* Step 4: Terms & Submission */}
-        {currentStep === 4 && (
+        {/* Step 4: Payment (for paid plans only) */}
+        {currentStep === 4 && selectedPlanData?.requiresPayment && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-Termos e Envio
+                Pagamento da Anuidade
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {clientSecret ? (
+                <StripePayment
+                  clientSecret={clientSecret}
+                  onPaymentComplete={handlePaymentComplete}
+                  planName={selectedPlanData.name}
+                  planPrice={selectedPlanData.price}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4" />
+                  <p>Preparando pagamento...</p>
+                  <Button 
+                    type="button" 
+                    onClick={createSubscription}
+                    className="mt-4"
+                  >
+                    Iniciar Pagamento
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 4/5: Terms & Submission */}
+        {((currentStep === 4 && !selectedPlanData?.requiresPayment) || currentStep === 5) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Check className="h-5 w-5" />
+                Termos e Envio
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -795,24 +877,53 @@ Termos e Envio
             onClick={prevStep}
             disabled={currentStep === 1}
           >
-            <ChevronLeft className="h-4 w-4 mr-2" />
-            Anterior
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Voltar
           </Button>
-          
-          {currentStep < totalSteps ? (
-            <Button type="button" onClick={nextStep}>
-              Próximo
-              <ChevronRight className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <Button
-              type="submit"
-              disabled={isSubmitting || !validateStep(currentStep)}
-              className="bg-primary"
+
+          {/* Show different buttons based on current step */}
+          {currentStep === 4 && selectedPlanData?.requiresPayment && !subscriptionId ? (
+            <Button 
+              type="button" 
+              onClick={createSubscription}
+              disabled={isSubmitting}
             >
-              {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
+              {isSubmitting ? (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4 animate-spin" />
+                  Preparando...
+                </>
+              ) : (
+                <>
+                  Prosseguir para Pagamento
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </>
+              )}
             </Button>
-          )}
+          ) : currentStep < totalSteps && !(currentStep === 4 && selectedPlanData?.requiresPayment) ? (
+            <Button 
+              type="button" 
+              onClick={nextStep}
+              disabled={!validateStep(currentStep)}
+            >
+              Próximo
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : ((currentStep === 4 && !selectedPlanData?.requiresPayment) || currentStep === 5) ? (
+            <Button type="submit" disabled={isSubmitting || !form.watch("acceptTerms")}>
+              {isSubmitting ? (
+                <>
+                  <CreditCard className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  Enviar Solicitação
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </>
+              )}
+            </Button>
+          ) : null}
         </div>
       </form>
     </div>

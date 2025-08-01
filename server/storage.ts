@@ -370,6 +370,13 @@ export class DatabaseStorage implements IStorage {
     return application || undefined;
   }
 
+  async updateApplicationPaymentStatus(subscriptionId: string, status: string): Promise<void> {
+    await db
+      .update(memberApplications)
+      .set({ paymentStatus: status })
+      .where(eq(memberApplications.stripeSubscriptionId, subscriptionId));
+  }
+
   // Documents
   async getDocumentsByApplication(applicationId: string): Promise<Document[]> {
     return await db.select().from(documents).where(eq(documents.applicationId, applicationId));
