@@ -717,16 +717,82 @@ export class DatabaseStorage implements IStorage {
 
     return searchResults;
   }
-  async getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]> {
-    return await db.select({
-      id: users.id,
-      fullName: users.fullName,
-      username: users.username,
-      planName: users.planName,
-    })
-    .from(users)
-    .where(eq(users.isApproved, true))
-    .orderBy(users.fullName);
+  async getMembersWithStatus(currentUserId: string) {
+    // Get all members except current user
+    const allMembers = await db
+      .select({
+        id: users.id,
+        username: users.username,
+        fullName: users.fullName,
+        area: users.area,
+        position: users.position,
+        gender: users.gender,
+        city: users.city,
+        state: users.state,
+        planName: membershipPlans.name,
+      })
+      .from(users)
+      .leftJoin(memberApplications, eq(users.id, memberApplications.userId))
+      .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+      .where(and(
+        eq(users.isActive, true),
+        ne(users.id, currentUserId),
+        eq(memberApplications.status, "approved")
+      ));
+
+    // Get connection status for each member
+    const memberIds = allMembers.map(m => m.id);
+    
+    if (memberIds.length === 0) {
+      return [];
+    }
+
+    const userConnections = await db
+      .select({
+        receiverId: connections.receiverId,
+        requesterId: connections.requesterId,
+        status: connections.status,
+      })
+      .from(connections)
+      .where(
+        or(
+          and(eq(connections.requesterId, currentUserId), inArray(connections.receiverId, memberIds)),
+          and(eq(connections.receiverId, currentUserId), inArray(connections.requesterId, memberIds))
+        )
+      );
+
+    // Map the data together with simulated follows for now
+    return allMembers.map(member => {
+      const connection = userConnections.find(c => 
+        (c.requesterId === currentUserId && c.receiverId === member.id) ||
+        (c.receiverId === currentUserId && c.requesterId === member.id)
+      );
+
+      let connectionStatus: "none" | "pending" | "connected" = "none";
+      if (connection) {
+        connectionStatus = connection.status === "accepted" ? "connected" : "pending";
+      }
+
+      return {
+        ...member,
+        isFollowing: false, // Will implement follow system later
+        connectionStatus,
+        followersCount: 0,
+        connectionsCount: 0,
+      };
+    });
+  }
+
+  async createFollow(followerId: string, followingId: string) {
+    // For now, just return a success response
+    // Will implement actual follow system when tables are created
+    return { followerId, followingId, success: true };
+  }
+
+  async removeFollow(followerId: string, followingId: string) {
+    // For now, just return success
+    // Will implement actual follow system when tables are created
+    return { success: true };
   }
 }
 

@@ -13,6 +13,8 @@ export const users = pgTable("users", {
   city: text("city").notNull(),
   state: text("state").notNull(),
   area: text("area").notNull(),
+  position: text("position"),
+  gender: text("gender"),
   isApproved: boolean("is_approved").default(false),
   isActive: boolean("is_active").default(true),
   role: text("role").default("member"), // member, admin

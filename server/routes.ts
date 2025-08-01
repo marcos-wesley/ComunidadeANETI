@@ -379,14 +379,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all members for mentions
+  // Get all members for directory with connection status
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
-      const members = await storage.getAllMembers();
+      const members = await storage.getMembersWithStatus(req.user!.id);
       res.json(members);
     } catch (error) {
       console.error("Error fetching members:", error);
       res.status(500).json({ message: "Failed to fetch members" });
+    }
+  });
+
+  // Follow a user
+  app.post("/api/follows", isAuthenticated, async (req, res) => {
+    try {
+      const { followingId } = req.body;
+      
+      if (!followingId) {
+        return res.status(400).json({ error: "Following ID is required" });
+      }
+
+      if (followingId === req.user!.id) {
+        return res.status(400).json({ error: "Cannot follow yourself" });
+      }
+
+      // Check if user can follow (Junior, Pleno, Sênior only)
+      const userPlan = req.user!.planName;
+      if (!userPlan || !['Júnior', 'Pleno', 'Sênior'].includes(userPlan)) {
+        return res.status(403).json({ error: "Only Junior, Pleno, and Sênior members can follow others" });
+      }
+
+      const follow = await storage.createFollow(req.user!.id, followingId);
+      res.status(201).json(follow);
+    } catch (error) {
+      console.error("Error creating follow:", error);
+      res.status(500).json({ error: "Failed to follow user" });
+    }
+  });
+
+  // Unfollow a user
+  app.delete("/api/follows/:userId", isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      await storage.removeFollow(req.user!.id, userId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error removing follow:", error);
+      res.status(500).json({ error: "Failed to unfollow user" });
     }
   });
 
