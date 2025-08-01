@@ -849,12 +849,17 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   <h3 className="text-lg font-semibold">Complete o Pagamento</h3>
                   <StripePayment
                     clientSecret={clientSecret}
-                    onPaymentComplete={(subscriptionId) => {
+                    onPaymentComplete={async (subscriptionId) => {
                       setSubscriptionId(subscriptionId);
                       toast({
                         title: "Pagamento Confirmado!",
-                        description: "Sua solicitação será processada automaticamente.",
+                        description: "Finalizando sua solicitação...",
                       });
+                      // Auto-submit the form after payment
+                      setTimeout(() => {
+                        const formData = form.getValues();
+                        onSubmit(formData);
+                      }, 1000);
                     }}
                     planName={selectedPlanData.name}
                     planPrice={selectedPlanData.price}

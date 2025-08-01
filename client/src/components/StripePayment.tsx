@@ -50,13 +50,11 @@ const StripePaymentForm = ({ onPaymentComplete, planName, planPrice }: StripePay
         });
       } else {
         toast({
-          title: "Pagamento Realizado!",
-          description: "Sua assinatura foi criada com sucesso.",
+          title: "Pagamento Confirmado!",
+          description: "Seu pagamento foi processado com sucesso.",
         });
-        // Get subscription ID from URL params or metadata
-        const urlParams = new URLSearchParams(window.location.search);
-        const subscriptionId = urlParams.get('subscription_id') || 'completed';
-        onPaymentComplete(subscriptionId);
+        // Call completion callback to finalize registration
+        onPaymentComplete('payment_completed');
       }
     } catch (error) {
       console.error('Payment error:', error);
