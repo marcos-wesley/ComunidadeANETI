@@ -1187,29 +1187,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDirectConversation(userId1: string, userId2: string): Promise<Conversation> {
-    // Check if direct conversation already exists
-    const existingConv = await db
-      .select({ conversationId: conversationParticipants.conversationId })
+    // Check if direct conversation already exists between these two users
+    const existingConversations = await db
+      .select({
+        conversationId: conversationParticipants.conversationId,
+        count: sql<number>`count(*)`
+      })
       .from(conversationParticipants)
       .innerJoin(conversations, eq(conversationParticipants.conversationId, conversations.id))
       .where(and(
         eq(conversations.type, "direct"),
-        eq(conversations.isActive, true)
+        eq(conversations.isActive, true),
+        or(
+          eq(conversationParticipants.userId, userId1),
+          eq(conversationParticipants.userId, userId2)
+        )
       ))
       .groupBy(conversationParticipants.conversationId)
-      .having(
-        and(
-          sql`count(*) = 2`,
-          sql`array_agg(${conversationParticipants.userId}) @> ARRAY[${userId1}, ${userId2}]`
-        )
-      );
+      .having(sql`count(*) = 2`);
 
-    if (existingConv.length > 0) {
-      const [conv] = await db
-        .select()
-        .from(conversations)
-        .where(eq(conversations.id, existingConv[0].conversationId));
-      return conv;
+    // Check if any of these conversations has both users
+    for (const conv of existingConversations) {
+      const participants = await db
+        .select({ userId: conversationParticipants.userId })
+        .from(conversationParticipants)
+        .where(eq(conversationParticipants.conversationId, conv.conversationId));
+      
+      const userIds = participants.map(p => p.userId);
+      if (userIds.includes(userId1) && userIds.includes(userId2)) {
+        const [existingConv] = await db
+          .select()
+          .from(conversations)
+          .where(eq(conversations.id, conv.conversationId));
+        return existingConv;
+      }
     }
 
     // Create new conversation
