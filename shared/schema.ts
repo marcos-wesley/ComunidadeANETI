@@ -250,6 +250,24 @@ export const messages = pgTable("messages", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Notifications system
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(), // who receives the notification
+  type: text("type").notNull(), // like, comment, message, connection_request, connection_accepted, post_mention, comment_mention, application_approved, application_rejected
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  actionUrl: text("action_url"), // URL to navigate when notification is clicked
+  relatedEntityId: varchar("related_entity_id"), // ID of the related post, comment, user, etc.
+  relatedEntityType: text("related_entity_type"), // post, comment, user, application, etc.
+  actorId: varchar("actor_id").references(() => users.id), // who performed the action that triggered the notification
+  isRead: boolean("is_read").default(false),
+  isDeleted: boolean("is_deleted").default(false),
+  metadata: json("metadata").$type<Record<string, any>>(), // additional data for the notification
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   applications: many(memberApplications),
@@ -262,6 +280,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   conversationParticipants: many(conversationParticipants),
   sentMessages: many(messages),
   createdConversations: many(conversations),
+  receivedNotifications: many(notifications, { relationName: "user" }),
+  triggeredNotifications: many(notifications, { relationName: "actor" }),
 }));
 
 export const memberApplicationsRelations = relations(memberApplications, ({ one, many }) => ({
@@ -368,6 +388,19 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   replyTo: one(messages, {
     fields: [messages.replyToId],
     references: [messages.id],
+  }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, {
+    fields: [notifications.userId],
+    references: [users.id],
+    relationName: "user",
+  }),
+  actor: one(users, {
+    fields: [notifications.actorId],
+    references: [users.id],
+    relationName: "actor",
   }),
 }));
 
@@ -522,6 +555,14 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   messageType: true,
 });
 
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isRead: true,
+  isDeleted: true,
+});
+
 // Main types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -558,6 +599,10 @@ export type InsertConversationParticipant = z.infer<typeof insertConversationPar
 export type Message = typeof messages.$inferSelect;
 export type InsertMessage = z.infer<typeof insertMessageSchema>;
 
+// Notification types
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+
 // Extended chat types
 export type ConversationWithDetails = Conversation & {
   participants: (ConversationParticipant & { user: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'> })[];
@@ -568,4 +613,9 @@ export type ConversationWithDetails = Conversation & {
 export type MessageWithDetails = Message & {
   sender: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'>;
   replyTo?: Message & { sender: Pick<User, 'id' | 'fullName' | 'username'> };
+};
+
+// Extended notification types
+export type NotificationWithDetails = Notification & {
+  actor?: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'>;
 };

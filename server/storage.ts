@@ -18,6 +18,7 @@ import {
   conversations,
   conversationParticipants,
   messages,
+  notifications,
   type User, 
   type InsertUser, 
   type MembershipPlan, 
@@ -58,7 +59,10 @@ import {
   type Message,
   type InsertMessage,
   type ConversationWithDetails,
-  type MessageWithDetails
+  type MessageWithDetails,
+  type Notification,
+  type InsertNotification,
+  type NotificationWithDetails
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
@@ -137,6 +141,14 @@ export interface IStorage {
   sendMessage(conversationId: string, senderId: string, content: string, replyToId?: string): Promise<Message>;
   markMessagesAsRead(conversationId: string, userId: string): Promise<void>;
   searchConversations(userId: string, query: string): Promise<ConversationWithDetails[]>;
+
+  // Notifications
+  getUserNotifications(userId: string, limit?: number): Promise<NotificationWithDetails[]>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  markNotificationAsRead(notificationId: string): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  deleteNotification(notificationId: string): Promise<void>;
+  getUnreadNotificationCount(userId: string): Promise<number>;
 
   sessionStore: any;
 }
@@ -1399,6 +1411,89 @@ export class DatabaseStorage implements IStorage {
     );
 
     return conversationsWithDetails;
+  }
+
+  // Notifications
+  async getUserNotifications(userId: string, limit: number = 50): Promise<NotificationWithDetails[]> {
+    const results = await db
+      .select({
+        id: notifications.id,
+        userId: notifications.userId,
+        type: notifications.type,
+        title: notifications.title,
+        message: notifications.message,
+        actionUrl: notifications.actionUrl,
+        relatedEntityId: notifications.relatedEntityId,
+        relatedEntityType: notifications.relatedEntityType,
+        actorId: notifications.actorId,
+        isRead: notifications.isRead,
+        isDeleted: notifications.isDeleted,
+        metadata: notifications.metadata,
+        createdAt: notifications.createdAt,
+        updatedAt: notifications.updatedAt,
+        actor: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(notifications)
+      .leftJoin(users, eq(notifications.actorId, users.id))
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isDeleted, false)
+      ))
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+
+    return results;
+  }
+
+  async createNotification(notification: InsertNotification): Promise<Notification> {
+    const [result] = await db
+      .insert(notifications)
+      .values(notification)
+      .returning();
+
+    return result;
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(eq(notifications.id, notificationId));
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isRead: true, updatedAt: new Date() })
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+  }
+
+  async deleteNotification(notificationId: string): Promise<void> {
+    await db
+      .update(notifications)
+      .set({ isDeleted: true, updatedAt: new Date() })
+      .where(eq(notifications.id, notificationId));
+  }
+
+  async getUnreadNotificationCount(userId: string): Promise<number> {
+    const [result] = await db
+      .select({ count: sql<number>`count(*)::integer` })
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false),
+        eq(notifications.isDeleted, false)
+      ));
+
+    return Number(result?.count) || 0;
   }
 }
 

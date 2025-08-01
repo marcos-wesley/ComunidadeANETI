@@ -39,6 +39,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import logoUrl from "@assets/logo-branca_1754061080203.png";
 import { FloatingChat } from "./FloatingChat";
+import { NotificationBell } from "./NotificationBell";
 
 const navItems = [
   { path: "/feed", icon: Home, label: "Feed", key: "feed" },
@@ -182,19 +183,7 @@ export function Navbar(): JSX.Element {
             </Button>
 
             {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-10 w-10 p-0 text-gray-600 dark:text-gray-400 hover:text-blue-600 relative"
-            >
-              <Bell className="h-5 w-5" />
-              <Badge 
-                variant="destructive" 
-                className="absolute -top-1 -right-1 h-5 w-5 p-0 text-xs flex items-center justify-center"
-              >
-                7
-              </Badge>
-            </Button>
+            <NotificationBell />
 
             {/* Profile Menu */}
             <DropdownMenu>
