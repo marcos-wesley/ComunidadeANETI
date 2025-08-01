@@ -79,23 +79,44 @@ export default function AdminPage() {
     checkAdminAuth();
   }, []);
 
-  // Fetch admin stats
+  // Fetch admin stats with custom fetcher
   const { data: stats, isLoading: loadingStats } = useQuery({
     queryKey: ["/api/admin/stats"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/stats", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch stats");
+      return response.json();
+    },
     enabled: !!adminUser,
     retry: 1,
   });
 
-  // Fetch applications
+  // Fetch applications with custom fetcher
   const { data: applications = [], isLoading: loadingApplications } = useQuery({
     queryKey: ["/api/admin/applications"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/applications", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch applications");
+      return response.json();
+    },
     enabled: !!adminUser,
     retry: 1,
   });
 
-  // Fetch members
+  // Fetch members with custom fetcher
   const { data: members = [], isLoading: loadingMembers } = useQuery({
     queryKey: ["/api/admin/members"],
+    queryFn: async () => {
+      const response = await fetch("/api/admin/members", {
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to fetch members");
+      return response.json();
+    },
     enabled: !!adminUser,
     retry: 1,
   });
