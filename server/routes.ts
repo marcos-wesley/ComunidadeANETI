@@ -328,6 +328,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all members for mentions
+  app.get("/api/members", isAuthenticated, async (req, res) => {
+    try {
+      const members = await storage.getAllMembers();
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching members:", error);
+      res.status(500).json({ message: "Failed to fetch members" });
+    }
+  });
+
   // Search users for mentions
   app.get("/api/users/search", isAuthenticated, async (req, res) => {
     try {

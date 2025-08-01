@@ -72,6 +72,7 @@ export interface IStorage {
   
   // Users search
   searchUsers(query: string): Promise<Pick<User, 'id' | 'fullName' | 'username'>[]>;
+  getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
 
   sessionStore: any;
 }
@@ -647,6 +648,17 @@ export class DatabaseStorage implements IStorage {
       .limit(10);
 
     return searchResults;
+  }
+  async getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]> {
+    return await db.select({
+      id: users.id,
+      fullName: users.fullName,
+      username: users.username,
+      planName: users.planName,
+    })
+    .from(users)
+    .where(eq(users.isApproved, true))
+    .orderBy(users.fullName);
   }
 }
 
