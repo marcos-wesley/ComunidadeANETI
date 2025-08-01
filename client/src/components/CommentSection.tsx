@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FormattedContent } from "./FormattedContent";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
@@ -128,7 +129,10 @@ export function CommentSection({ postId, onUpdate }: CommentSectionProps): JSX.E
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm leading-relaxed">{comment.content}</p>
+                  <FormattedContent 
+                    content={comment.content} 
+                    className="text-sm leading-relaxed"
+                  />
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { FormattedContent } from "./FormattedContent";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -157,8 +158,8 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
 
       <CardContent className="space-y-4">
         {/* Post Content */}
-        <div className="text-sm leading-relaxed whitespace-pre-wrap">
-          {post.content}
+        <div className="text-sm leading-relaxed">
+          <FormattedContent content={post.content} />
         </div>
 
         {/* Media Content */}

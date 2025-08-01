@@ -187,30 +187,63 @@ export function PostEditor({ onPostCreated }: PostEditorProps): JSX.Element {
     
     let formattedText = selectedText;
     let newContent = content;
+    let cursorOffset = 0;
     
     switch (format) {
       case 'bold':
-        formattedText = `**${selectedText}**`;
+        if (selectedText) {
+          formattedText = `**${selectedText}**`;
+          cursorOffset = selectedText.length + 4;
+        } else {
+          formattedText = `****`;
+          cursorOffset = 2;
+        }
         break;
       case 'italic':
-        formattedText = `*${selectedText}*`;
+        if (selectedText) {
+          formattedText = `*${selectedText}*`;
+          cursorOffset = selectedText.length + 2;
+        } else {
+          formattedText = `**`;
+          cursorOffset = 1;
+        }
         break;
       case 'quote':
-        formattedText = `> ${selectedText}`;
+        formattedText = selectedText ? `> ${selectedText}` : `> `;
+        cursorOffset = formattedText.length;
         break;
       case 'code':
-        formattedText = `\`${selectedText}\``;
+        if (selectedText) {
+          formattedText = `\`${selectedText}\``;
+          cursorOffset = selectedText.length + 2;
+        } else {
+          formattedText = `\`\``;
+          cursorOffset = 1;
+        }
         break;
       case 'link':
-        formattedText = `[${selectedText}](url)`;
+        if (selectedText) {
+          formattedText = `[${selectedText}](https://)`;
+          cursorOffset = selectedText.length + 13;
+        } else {
+          formattedText = `[](https://)`;
+          cursorOffset = 1;
+        }
         break;
     }
     
     newContent = content.substring(0, start) + formattedText + content.substring(end);
     setContent(newContent);
     
-    // Reset focus
-    textarea.focus();
+    // Set cursor position after formatting
+    setTimeout(() => {
+      if (selectedText) {
+        textarea.selectionStart = textarea.selectionEnd = start + cursorOffset;
+      } else {
+        textarea.selectionStart = textarea.selectionEnd = start + cursorOffset;
+      }
+      textarea.focus();
+    }, 0);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
