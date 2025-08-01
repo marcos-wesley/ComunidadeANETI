@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -303,15 +303,21 @@ export default function AuthPage() {
 
               <Separator />
 
-              <Button
-                variant="ghost"
-                className="w-full"
-                onClick={() => setIsLogin(!isLogin)}
-              >
-                {isLogin
-                  ? "Não tem uma conta? Criar conta"
-                  : "Já tem uma conta? Fazer login"}
-              </Button>
+              {isLogin ? (
+                <Link href="/register">
+                  <Button variant="ghost" className="w-full">
+                    Não tem uma conta? Criar conta
+                  </Button>
+                </Link>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => setIsLogin(true)}
+                >
+                  Já tem uma conta? Fazer login
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
