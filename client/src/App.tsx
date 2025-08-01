@@ -14,6 +14,7 @@ import SocialFeedPage from "./pages/social-feed-page";
 import PublishPage from "./pages/publish-page";
 import MembersPage from "./pages/members-page";
 import ProfilePage from "./pages/profile-page";
+import EditProfilePage from "./pages/edit-profile-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function MainLayout(): JSX.Element {
@@ -28,7 +29,7 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/publish" component={PublishPage} />
         <ProtectedRoute path="/members" component={MembersPage} />
         <ProtectedRoute path="/profile/:userId" component={ProfilePage} />
-        <ProtectedRoute path="/profile/edit" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Editar Perfil - Em desenvolvimento</h1></div>} />
+        <ProtectedRoute path="/profile/edit" component={EditProfilePage} />
         <ProtectedRoute path="/profile" component={ProfilePage} />
         <ProtectedRoute path="/groups" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Grupos - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/forums" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Fóruns - Em desenvolvimento</h1></div>} />

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "wouter";
+import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -244,9 +244,11 @@ function AboutSection({ profile, isOwnProfile }: { profile: UserProfile; isOwnPr
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Sobre</CardTitle>
         {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
-          </Button>
+          <Link href="/profile/edit">
+            <Button variant="ghost" size="sm">
+              <Edit3 className="h-4 w-4" />
+            </Button>
+          </Link>
         )}
       </CardHeader>
       <CardContent>
@@ -272,9 +274,11 @@ function HighlightsSection({ highlights, isOwnProfile }: { highlights: Highlight
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Destaques</CardTitle>
         {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
-          </Button>
+          <Link href="/profile/edit">
+            <Button variant="ghost" size="sm">
+              <Edit3 className="h-4 w-4" />
+            </Button>
+          </Link>
         )}
       </CardHeader>
       <CardContent>
