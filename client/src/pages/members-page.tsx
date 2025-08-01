@@ -55,30 +55,42 @@ export default function MembersPage(): JSX.Element {
   const [planFilter, setPlanFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
   const [areaFilter, setAreaFilter] = useState("");
+  const [sortBy, setSortBy] = useState<'recent' | 'newest' | 'alphabetical'>('recent');
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 20;
 
   const { data: members = [], isLoading } = useQuery<Member[]>({
-    queryKey: ["/api/members"],
+    queryKey: ["/api/members", {
+      page: currentPage,
+      limit,
+      sortBy,
+      state: stateFilter || undefined,
+      plan: planFilter || undefined,
+      gender: genderFilter || undefined,
+      area: areaFilter || undefined,
+      search: searchQuery || undefined,
+    }],
   });
 
   // Check if user can connect/follow (Junior, Pleno, Sênior only)
   const canConnect = user?.planName && ['Júnior', 'Pleno', 'Sênior'].includes(user.planName);
 
-  const filteredMembers = members.filter(member => {
-    const matchesSearch = member.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         member.area.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         (member.position && member.position.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesState = !stateFilter || member.state === stateFilter;
-    const matchesPlan = !planFilter || member.planName === planFilter;
-    const matchesGender = !genderFilter || member.gender === genderFilter;
-    const matchesArea = !areaFilter || member.area.toLowerCase().includes(areaFilter.toLowerCase());
-    
-    return matchesSearch && matchesState && matchesPlan && matchesGender && matchesArea;
+  // Members are already filtered by backend
+  const filteredMembers = members;
+
+  // Get unique values for filters from all members (for filter dropdowns)
+  const { data: allMembersForFilters = [] } = useQuery<Member[]>({
+    queryKey: ["/api/members", { limit: 1000 }], // Get more for filter options
   });
 
-  // Get unique values for filters
-  const states = [...new Set(members.map(m => m.state))].sort();
-  const plans = [...new Set(members.map(m => m.planName).filter(Boolean))].sort();
-  const areas = [...new Set(members.map(m => m.area))].sort();
+  const states = [...new Set(allMembersForFilters.map(m => m.state))].sort();
+  const plans = [...new Set(allMembersForFilters.map(m => m.planName).filter(Boolean))].sort();
+  const areas = [...new Set(allMembersForFilters.map(m => m.area))].sort();
+
+  // Reset to first page when filters change
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
 
   // Connection mutations
   const connectMutation = useMutation({
@@ -210,61 +222,75 @@ export default function MembersPage(): JSX.Element {
             <Input
               placeholder="Buscar por nome, cargo ou área de atuação..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                handleFilterChange();
+              }}
               className="pl-10"
             />
           </div>
           
           <div className="flex flex-wrap gap-3">
-            <Select value={stateFilter} onValueChange={setStateFilter}>
+            <Select value={sortBy} onValueChange={(value: 'recent' | 'newest' | 'alphabetical') => setSortBy(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Ativo recentemente</SelectItem>
+                <SelectItem value="newest">Membros mais novos</SelectItem>
+                <SelectItem value="alphabetical">Alfabético</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={stateFilter || "all"} onValueChange={(value) => { setStateFilter(value === "all" ? "" : value); handleFilterChange(); }}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Estado" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os estados</SelectItem>
+                <SelectItem value="all">Todos os estados</SelectItem>
                 {states.map(state => (
                   <SelectItem key={state} value={state}>{state}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={planFilter} onValueChange={setPlanFilter}>
+            <Select value={planFilter || "all"} onValueChange={(value) => { setPlanFilter(value === "all" ? "" : value); handleFilterChange(); }}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Plano" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os planos</SelectItem>
+                <SelectItem value="all">Todos os planos</SelectItem>
                 {plans.map(plan => (
                   <SelectItem key={plan} value={plan}>{plan}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={genderFilter} onValueChange={setGenderFilter}>
+            <Select value={genderFilter || "all"} onValueChange={(value) => { setGenderFilter(value === "all" ? "" : value); handleFilterChange(); }}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Gênero" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="masculino">Masculino</SelectItem>
                 <SelectItem value="feminino">Feminino</SelectItem>
                 <SelectItem value="outro">Outro</SelectItem>
               </SelectContent>
             </Select>
 
-            <Select value={areaFilter} onValueChange={setAreaFilter}>
+            <Select value={areaFilter || "all"} onValueChange={(value) => { setAreaFilter(value === "all" ? "" : value); handleFilterChange(); }}>
               <SelectTrigger className="w-48">
                 <SelectValue placeholder="Área de atuação" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as áreas</SelectItem>
+                <SelectItem value="all">Todas as áreas</SelectItem>
                 {areas.map(area => (
                   <SelectItem key={area} value={area}>{area}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            {(stateFilter || planFilter || genderFilter || areaFilter) && (
+            {(stateFilter || planFilter || genderFilter || areaFilter || searchQuery) && (
               <Button
                 variant="outline"
                 size="sm"
@@ -273,6 +299,8 @@ export default function MembersPage(): JSX.Element {
                   setPlanFilter("");
                   setGenderFilter("");
                   setAreaFilter("");
+                  setSearchQuery("");
+                  handleFilterChange();
                 }}
               >
                 Limpar filtros
@@ -413,7 +441,7 @@ export default function MembersPage(): JSX.Element {
         ))}
       </div>
 
-      {filteredMembers.length === 0 && (
+      {filteredMembers.length === 0 && !isLoading && (
         <Card>
           <CardContent className="p-8 text-center">
             <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
@@ -425,6 +453,31 @@ export default function MembersPage(): JSX.Element {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {filteredMembers.length > 0 && (
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </Button>
+          
+          <span className="text-sm text-muted-foreground">
+            Página {currentPage} • {filteredMembers.length} membros
+          </span>
+          
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={filteredMembers.length < limit}
+          >
+            Próxima
+          </Button>
+        </div>
       )}
     </div>
   );

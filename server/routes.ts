@@ -382,7 +382,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all members for directory with connection status
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
-      const members = await storage.getMembersWithStatus(req.user!.id);
+      const { 
+        page = '1', 
+        limit = '20', 
+        sortBy = 'recent',
+        state,
+        plan,
+        gender,
+        area,
+        search
+      } = req.query;
+
+      const options = {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        sortBy: sortBy as 'recent' | 'newest' | 'alphabetical',
+        filters: {
+          state: state as string,
+          plan: plan as string,
+          gender: gender as string,
+          area: area as string,
+          search: search as string,
+        }
+      };
+
+      const members = await storage.getMembersWithStatus(req.user!.id, options);
       res.json(members);
     } catch (error) {
       console.error("Error fetching members:", error);

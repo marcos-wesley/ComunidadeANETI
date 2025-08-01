@@ -26,7 +26,7 @@ import {
   type PostWithDetails
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, or, like, sql, inArray, ne, asc } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -717,7 +717,19 @@ export class DatabaseStorage implements IStorage {
 
     return searchResults;
   }
-  async getMembersWithStatus(currentUserId: string) {
+  async getMembersWithStatus(currentUserId: string, options: {
+    page?: number;
+    limit?: number;
+    sortBy?: 'recent' | 'newest' | 'alphabetical';
+    filters?: {
+      state?: string;
+      plan?: string;
+      gender?: string;
+      area?: string;
+      search?: string;
+    };
+  } = {}) {
+    const { page = 1, limit = 20, sortBy = 'recent', filters = {} } = options;
     // Get all members except current user
     const allMembers = await db
       .select({
@@ -737,8 +749,25 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(users.isActive, true),
         ne(users.id, currentUserId),
-        eq(memberApplications.status, "approved")
-      ));
+        eq(memberApplications.status, "approved"),
+        // Apply filters
+        filters.state ? eq(users.state, filters.state) : undefined,
+        filters.plan ? eq(membershipPlans.name, filters.plan) : undefined,
+        filters.gender ? eq(users.gender, filters.gender) : undefined,
+        filters.area ? like(users.area, `%${filters.area}%`) : undefined,
+        filters.search ? or(
+          like(users.fullName, `%${filters.search}%`),
+          like(users.area, `%${filters.search}%`),
+          like(users.position, `%${filters.search}%`)
+        ) : undefined
+      ))
+      .orderBy(
+        sortBy === 'alphabetical' ? asc(users.fullName) :
+        sortBy === 'newest' ? desc(users.createdAt) :
+        desc(users.updatedAt) // 'recent' - most recently active
+      )
+      .limit(limit)
+      .offset((page - 1) * limit);
 
     // Get connection status for each member
     const memberIds = allMembers.map(m => m.id);
