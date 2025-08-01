@@ -411,8 +411,9 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       // Create the application with user data and payment info
       const applicationData: any = {
         fullName: data.fullName,
-        email: user?.email || "",
-        username: user?.username || "",
+        email: data.email,
+        username: data.username,
+        password: data.password,
         city: data.city,
         state: data.state,
         area: data.area,
