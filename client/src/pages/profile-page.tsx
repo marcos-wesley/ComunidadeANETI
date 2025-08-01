@@ -214,9 +214,13 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
       <div className="h-56 bg-gradient-to-r from-blue-600 to-blue-800 relative group">
         {profile.coverPhoto && (
           <img 
-            src={profile.coverPhoto} 
+            src={`http://localhost:5000${profile.coverPhoto}`} 
             alt="Foto de capa" 
             className="w-full h-full object-cover"
+            onError={(e) => {
+              console.error('Erro ao carregar imagem de capa:', profile.coverPhoto);
+              e.currentTarget.style.display = 'none';
+            }}
           />
         )}
         {isOwnProfile && (
@@ -240,9 +244,13 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg">
             {profile.profilePicture ? (
               <img 
-                src={profile.profilePicture} 
+                src={`http://localhost:5000${profile.profilePicture}`} 
                 alt={profile.fullName}
                 className="w-full h-full rounded-full object-cover"
+                onError={(e) => {
+                  console.error('Erro ao carregar foto de perfil:', profile.profilePicture);
+                  e.currentTarget.style.display = 'none';
+                }}
               />
             ) : (
               getInitials(profile.fullName)
