@@ -54,10 +54,15 @@ export default function AdminPage() {
   useEffect(() => {
     const checkAdminAuth = async () => {
       try {
-        const response = await apiRequest("/api/admin/auth/check");
+        const response = await fetch("/api/admin/auth/check", {
+          method: "GET",
+          credentials: "include",
+        });
         
-        if (response.isAuthenticated) {
-          setAdminUser(response.user);
+        const result = await response.json();
+        
+        if (response.ok && result.isAuthenticated) {
+          setAdminUser(result.user);
         } else {
           window.location.href = "/admin/login";
           return;
@@ -97,7 +102,10 @@ export default function AdminPage() {
 
   const handleAdminLogout = async () => {
     try {
-      await apiRequest("/api/admin/logout", { method: "POST" });
+      await fetch("/api/admin/logout", { 
+        method: "POST",
+        credentials: "include",
+      });
       toast({
         title: "Logout realizado",
         description: "Você foi desconectado do painel administrativo",
@@ -116,10 +124,11 @@ export default function AdminPage() {
   // Approve application
   const approveApplicationMutation = useMutation({
     mutationFn: async (applicationId: string) => {
-      const response = await apiRequest(`/api/admin/applications/${applicationId}/approve`, {
+      const response = await fetch(`/api/admin/applications/${applicationId}/approve`, {
         method: "POST",
+        credentials: "include",
       });
-      return response;
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
@@ -143,11 +152,15 @@ export default function AdminPage() {
   // Reject application
   const rejectApplicationMutation = useMutation({
     mutationFn: async ({ applicationId, reason }: { applicationId: string; reason: string }) => {
-      const response = await apiRequest(`/api/admin/applications/${applicationId}/reject`, {
+      const response = await fetch(`/api/admin/applications/${applicationId}/reject`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
         body: JSON.stringify({ reason }),
       });
-      return response;
+      return await response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
