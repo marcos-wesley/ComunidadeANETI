@@ -26,7 +26,8 @@ import {
   UserX,
   Mail,
   Filter,
-  Star
+  Star,
+  Eye
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -387,12 +388,15 @@ export default function MembersPage(): JSX.Element {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/profile/${member.id}`} className="flex items-center cursor-pointer">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem>
                       <Mail className="h-4 w-4 mr-2" />
                       Enviar mensagem
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      Ver perfil completo
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>

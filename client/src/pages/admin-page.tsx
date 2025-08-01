@@ -470,6 +470,15 @@ export default function AdminPage() {
                             </div>
                           </div>
                           <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setLocation(`/profile/${member.id}`)}
+                              className="flex items-center space-x-1"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span>Ver Detalhes</span>
+                            </Button>
                             {!member.isActive ? (
                               <Button
                                 size="sm"
