@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,8 @@ import {
   Trash2,
   Shield,
   LogOut,
-  BarChart3
+  BarChart3,
+  Eye
 } from "lucide-react";
 
 interface AdminUser {
@@ -46,6 +48,7 @@ interface AdminStats {
 
 export default function AdminPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members'>('overview');
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -389,6 +392,15 @@ export default function AdminPage() {
                             </div>
                           </div>
                           <div className="flex space-x-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => setLocation(`/admin/applications/${app.id}`)}
+                              className="flex items-center space-x-1"
+                            >
+                              <Eye className="h-4 w-4" />
+                              <span>Ver Detalhes</span>
+                            </Button>
                             <Button
                               size="sm"
                               onClick={() => approveApplicationMutation.mutate(app.id)}
