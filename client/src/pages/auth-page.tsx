@@ -13,6 +13,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getStateOptions, getCityOptions, getItAreaOptions } from "@shared/location-data";
+import anetiLogo from "@assets/aneti-comunidade-logo_1754085442952.png";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Nome de usuário é obrigatório"),
@@ -93,8 +94,8 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary mx-auto rounded-lg flex items-center justify-center mb-4">
-              <span className="text-white font-bold text-2xl">A</span>
+            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <img src={anetiLogo} alt="ANETI Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">ANETI</h1>
             <p className="text-gray-600">Associação Nacional dos Especialistas em TI</p>

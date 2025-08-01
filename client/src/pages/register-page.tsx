@@ -1,6 +1,8 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Redirect, useLocation } from "wouter";
+import { Redirect, useLocation, Link } from "wouter";
 import RegistrationSteps from "@/components/RegistrationSteps";
+import { Button } from "@/components/ui/button";
+import anetiLogo from "@assets/aneti-comunidade-logo_1754085442952.png";
 
 export default function RegisterPage() {
   const { user } = useAuth();
@@ -19,8 +21,8 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-start justify-center px-4 py-12">
         <div className="w-full max-w-4xl">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-primary mx-auto rounded-lg flex items-center justify-center mb-4">
-              <span className="text-white font-bold text-2xl">A</span>
+            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+              <img src={anetiLogo} alt="ANETI Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">ANETI</h1>
             <p className="text-gray-600">Associação Nacional dos Especialistas em TI</p>
@@ -30,6 +32,13 @@ export default function RegisterPage() {
             <p className="text-gray-600 text-sm mt-2">
               Complete todas as etapas para enviar sua solicitação de associação
             </p>
+            <div className="mt-4">
+              <Link href="/auth">
+                <Button variant="outline" size="sm">
+                  Já é associado? Fazer login
+                </Button>
+              </Link>
+            </div>
           </div>
 
           <RegistrationSteps onComplete={handleRegistrationComplete} />
