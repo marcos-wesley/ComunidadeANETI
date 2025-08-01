@@ -200,36 +200,47 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <Header />
       
-      <main className="max-w-4xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-6 py-12">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
+            Associe-se à ANETI
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            Junte-se à maior comunidade de especialistas em TI do Brasil
+          </p>
+        </div>
+        
         <RegistrationStepper currentStep={currentStep} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="shadow-aneti">
               <CardHeader>
-                <CardTitle>Cadastro de Membro</CardTitle>
+                <CardTitle className="text-2xl font-semibold text-foreground">Cadastro de Membro</CardTitle>
               </CardHeader>
               <CardContent>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                   {/* Document Upload Section */}
                   <div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border">
                       Documentos de Comprovação
                     </h3>
                     
-                    <div className="space-y-4">
+                    <div className="space-y-6">
                       <div>
-                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Label className="block text-sm font-semibold text-foreground mb-3">
                           Documento de Identidade ou CPF *
                         </Label>
                         
                         {identityDocument ? (
-                          <div className="border-2 border-green-200 bg-green-50 rounded-lg p-6 text-center">
-                            <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                            <p className="text-sm text-green-700">Documento enviado com sucesso!</p>
+                          <div className="border-2 border-secondary bg-secondary/10 rounded-lg p-6 text-center">
+                            <div className="p-3 bg-secondary/20 rounded-full w-fit mx-auto mb-3">
+                              <Check className="h-6 w-6 text-secondary" />
+                            </div>
+                            <p className="text-sm font-medium text-foreground">Documento enviado com sucesso!</p>
                           </div>
                         ) : (
                           <ObjectUploader
@@ -238,24 +249,28 @@ export default function RegisterPage() {
                             onGetUploadParameters={handleGetUploadParameters}
                             onComplete={handleIdentityUploadComplete}
                           >
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors w-full">
-                              <CloudUpload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-600">Clique para fazer upload ou arraste o arquivo aqui</p>
-                              <p className="text-xs text-gray-500 mt-1">PDF, JPG ou PNG - Máximo 5MB</p>
+                            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all w-full">
+                              <div className="p-3 bg-muted rounded-full w-fit mx-auto mb-3">
+                                <CloudUpload className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                              <p className="text-sm font-medium text-foreground">Clique para fazer upload ou arraste o arquivo aqui</p>
+                              <p className="text-xs text-muted-foreground mt-2">PDF, JPG ou PNG - Máximo 5MB</p>
                             </div>
                           </ObjectUploader>
                         )}
                       </div>
                       
                       <div>
-                        <Label className="block text-sm font-medium text-gray-700 mb-2">
+                        <Label className="block text-sm font-semibold text-foreground mb-3">
                           Comprovante de Experiência (Opcional)
                         </Label>
                         
                         {experienceDocument ? (
-                          <div className="border-2 border-green-200 bg-green-50 rounded-lg p-6 text-center">
-                            <Check className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                            <p className="text-sm text-green-700">Documento enviado com sucesso!</p>
+                          <div className="border-2 border-secondary bg-secondary/10 rounded-lg p-6 text-center">
+                            <div className="p-3 bg-secondary/20 rounded-full w-fit mx-auto mb-3">
+                              <Check className="h-6 w-6 text-secondary" />
+                            </div>
+                            <p className="text-sm font-medium text-foreground">Documento enviado com sucesso!</p>
                           </div>
                         ) : (
                           <ObjectUploader
@@ -264,10 +279,12 @@ export default function RegisterPage() {
                             onGetUploadParameters={handleGetUploadParameters}
                             onComplete={handleExperienceUploadComplete}
                           >
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary transition-colors w-full">
-                              <CloudUpload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                              <p className="text-sm text-gray-600">Clique para fazer upload ou arraste o arquivo aqui</p>
-                              <p className="text-xs text-gray-500 mt-1">Currículo, certificados ou diplomas</p>
+                            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all w-full">
+                              <div className="p-3 bg-muted rounded-full w-fit mx-auto mb-3">
+                                <CloudUpload className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                              <p className="text-sm font-medium text-foreground">Clique para fazer upload ou arraste o arquivo aqui</p>
+                              <p className="text-xs text-muted-foreground mt-2">Currículo, certificados ou diplomas - PDF, JPG ou PNG</p>
                             </div>
                           </ObjectUploader>
                         )}
@@ -276,35 +293,38 @@ export default function RegisterPage() {
                   </div>
 
                   {/* Terms and Privacy */}
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id="acceptTerms"
-                      checked={form.watch("acceptTerms")}
-                      onCheckedChange={(checked) => form.setValue("acceptTerms", !!checked)}
-                    />
-                    <Label htmlFor="acceptTerms" className="text-sm text-gray-700">
-                      Aceito os{" "}
-                      <a href="#" className="text-primary hover:text-primary-dark underline">
-                        Termos de Uso
-                      </a>{" "}
-                      e{" "}
-                      <a href="#" className="text-primary hover:text-primary-dark underline">
-                        Política de Privacidade
-                      </a>{" "}
-                      da ANETI *
-                    </Label>
+                  <div className="bg-muted p-6 rounded-lg border border-border">
+                    <div className="flex items-start space-x-3">
+                      <Checkbox
+                        id="acceptTerms"
+                        checked={form.watch("acceptTerms")}
+                        onCheckedChange={(checked) => form.setValue("acceptTerms", !!checked)}
+                        className="mt-1"
+                      />
+                      <Label htmlFor="acceptTerms" className="text-sm text-foreground leading-relaxed">
+                        Aceito os{" "}
+                        <a href="#" className="text-primary hover:text-primary/80 underline font-medium">
+                          Termos de Uso
+                        </a>{" "}
+                        e{" "}
+                        <a href="#" className="text-primary hover:text-primary/80 underline font-medium">
+                          Política de Privacidade
+                        </a>{" "}
+                        da ANETI e autorizo o tratamento dos meus dados pessoais conforme descrito. *
+                      </Label>
+                    </div>
+                    {form.formState.errors.acceptTerms && (
+                      <p className="text-sm text-destructive mt-2 ml-7">
+                        {form.formState.errors.acceptTerms.message}
+                      </p>
+                    )}
                   </div>
-                  {form.formState.errors.acceptTerms && (
-                    <p className="text-sm text-red-600">
-                      {form.formState.errors.acceptTerms.message}
-                    </p>
-                  )}
 
-                  <div className="flex justify-end pt-6">
+                  <div className="flex justify-end pt-8 border-t border-border">
                     <Button
                       type="submit"
                       disabled={createApplicationMutation.isPending || !selectedPlan}
-                      className="px-8 py-3"
+                      className="px-8 py-3 text-lg font-semibold bg-aneti-gradient hover:opacity-90 shadow-aneti"
                     >
                       {createApplicationMutation.isPending ? "Processando..." : "Continuar para Pagamento"}
                     </Button>

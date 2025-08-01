@@ -3,49 +3,59 @@
 @tailwind utilities;
 
 :root {
+  /* ANETI Brand Colors */
   --background: hsl(0, 0%, 100%);
-  --foreground: hsl(20, 14.3%, 4.1%);
-  --muted: hsl(60, 4.8%, 95.9%);
-  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --foreground: hsl(0, 0%, 12%); /* #1f1f1f */
+  --muted: hsl(0, 0%, 96%); /* #f5f5f5 */
+  --muted-foreground: hsl(0, 0%, 45%);
   --popover: hsl(0, 0%, 100%);
-  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --popover-foreground: hsl(0, 0%, 12%);
   --card: hsl(0, 0%, 100%);
-  --card-foreground: hsl(20, 14.3%, 4.1%);
-  --border: hsl(20, 5.9%, 90%);
-  --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(60, 4.8%, 95.9%);
-  --secondary-foreground: hsl(24, 9.8%, 10%);
-  --accent: hsl(60, 4.8%, 95.9%);
-  --accent-foreground: hsl(24, 9.8%, 10%);
-  --destructive: hsl(0, 84.2%, 60.2%);
-  --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
-  --radius: 0.5rem;
+  --card-foreground: hsl(0, 0%, 12%);
+  --border: hsl(0, 0%, 88%); /* #e0e0e0 */
+  --input: hsl(0, 0%, 88%);
+  
+  /* Primary: ANETI Blue #012d6a */
+  --primary: hsl(215, 96%, 21%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  
+  /* Secondary: ANETI Green #25a244 */
+  --secondary: hsl(133, 62%, 39%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  
+  --accent: hsl(0, 0%, 88%);
+  --accent-foreground: hsl(0, 0%, 12%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(215, 96%, 21%); /* ANETI Blue */
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: hsl(240, 10%, 3.9%);
+  --background: hsl(0, 0%, 12%); /* #1f1f1f */
   --foreground: hsl(0, 0%, 98%);
-  --muted: hsl(240, 3.7%, 15.9%);
-  --muted-foreground: hsl(240, 5%, 64.9%);
-  --popover: hsl(240, 10%, 3.9%);
+  --muted: hsl(0, 0%, 20%);
+  --muted-foreground: hsl(0, 0%, 65%);
+  --popover: hsl(0, 0%, 12%);
   --popover-foreground: hsl(0, 0%, 98%);
-  --card: hsl(240, 10%, 3.9%);
+  --card: hsl(0, 0%, 12%);
   --card-foreground: hsl(0, 0%, 98%);
-  --border: hsl(240, 3.7%, 15.9%);
-  --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
-  --secondary: hsl(240, 3.7%, 15.9%);
-  --secondary-foreground: hsl(0, 0%, 98%);
-  --accent: hsl(240, 3.7%, 15.9%);
+  --border: hsl(0, 0%, 25%);
+  --input: hsl(0, 0%, 25%);
+  
+  /* Primary: ANETI Blue (lighter for dark mode) */
+  --primary: hsl(215, 96%, 31%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  
+  /* Secondary: ANETI Green (lighter for dark mode) */
+  --secondary: hsl(133, 62%, 49%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  
+  --accent: hsl(0, 0%, 25%);
   --accent-foreground: hsl(0, 0%, 98%);
-  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive: hsl(0, 63%, 31%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
-  --radius: 0.5rem;
+  --ring: hsl(215, 96%, 31%);
 }
 
 @layer base {
@@ -54,27 +64,22 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply antialiased bg-background text-foreground;
+    font-family: 'Inter', 'Roboto', 'Open Sans', system-ui, sans-serif;
   }
 }
 
-/* Custom styles matching the design reference */
-.font-roboto {
-  font-family: 'Roboto', sans-serif;
+/* ANETI Brand Utilities */
+.shadow-aneti {
+  box-shadow: 0 2px 8px rgba(1, 45, 106, 0.1), 0 4px 16px rgba(1, 45, 106, 0.08);
 }
 
-.shadow-material {
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1), 0 8px 16px rgba(0,0,0,0.1);
+.shadow-aneti-lg {
+  box-shadow: 0 4px 16px rgba(1, 45, 106, 0.12), 0 8px 32px rgba(1, 45, 106, 0.1);
 }
 
-.shadow-material-lg {
-  box-shadow: 0 4px 8px rgba(0,0,0,0.12), 0 16px 32px rgba(0,0,0,0.12);
-}
-
-/* Override primary color to match design */
-:root {
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
+.bg-aneti-gradient {
+  background: linear-gradient(135deg, hsl(215, 96%, 21%) 0%, hsl(133, 62%, 39%) 100%);
 }
 
 /* Ensure proper spacing for form elements */
