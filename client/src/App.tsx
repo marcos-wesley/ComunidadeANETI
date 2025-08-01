@@ -40,9 +40,9 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/forums" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Fóruns - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
-        <ProtectedRoute path="/register" component={RegisterPage} />
 
         <Route path="/auth" component={AuthPage} />
+        <Route path="/register" component={RegisterPage} />
         <Route component={NotFound} />
       </Switch>
     </div>

@@ -366,8 +366,8 @@ export default function RegisterPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {cityOptions.map((city) => (
-                          <SelectItem key={city} value={city}>
-                            {city}
+                          <SelectItem key={city.value} value={city.value}>
+                            {city.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -402,8 +402,8 @@ export default function RegisterPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {getItAreaOptions().map((area) => (
-                          <SelectItem key={area} value={area}>
-                            {area}
+                          <SelectItem key={area.value} value={area.value}>
+                            {area.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
