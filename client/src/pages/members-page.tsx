@@ -444,7 +444,7 @@ export default function MembersPage(): JSX.Element {
                       console.log('Button clicked!', member.id, canConnect);
                       handleConnect(member.id);
                     }}
-                    disabled={false}
+                    disabled={!canConnect || connectMutation.isPending}
                     style={{ pointerEvents: 'auto' }}
                   >
                     <UserPlus className="h-4 w-4 mr-1" />
@@ -461,7 +461,7 @@ export default function MembersPage(): JSX.Element {
                     console.log('Follow button clicked!', member.id, canConnect);
                     handleFollow(member.id, member.isFollowing || false);
                   }}
-                  disabled={false}
+                  disabled={!canConnect || followMutation.isPending || unfollowMutation.isPending}
                   style={{ pointerEvents: 'auto' }}
                 >
                   {member.isFollowing ? (
