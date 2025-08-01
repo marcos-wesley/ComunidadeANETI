@@ -7,6 +7,14 @@ import {
   comments,
   likes,
   connections,
+  experiences,
+  educations,
+  certifications,
+  projects,
+  skills,
+  recommendations,
+  languages,
+  highlights,
   type User, 
   type InsertUser, 
   type MembershipPlan, 
@@ -23,7 +31,23 @@ import {
   type InsertLike,
   type Connection,
   type InsertConnection,
-  type PostWithDetails
+  type PostWithDetails,
+  type Experience,
+  type InsertExperience,
+  type Education,
+  type InsertEducation,
+  type Certification,
+  type InsertCertification,
+  type Project,
+  type InsertProject,
+  type Skill,
+  type InsertSkill,
+  type Recommendation,
+  type InsertRecommendation,
+  type Language,
+  type InsertLanguage,
+  type Highlight,
+  type InsertHighlight
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
@@ -77,6 +101,17 @@ export interface IStorage {
   // Users search
   searchUsers(query: string): Promise<Pick<User, 'id' | 'fullName' | 'username'>[]>;
   getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
+  
+  // Profile methods
+  getUserProfile(userId: string): Promise<any>;
+  getUserExperiences(userId: string): Promise<Experience[]>;
+  getUserEducations(userId: string): Promise<Education[]>;
+  getUserCertifications(userId: string): Promise<Certification[]>;
+  getUserProjects(userId: string): Promise<Project[]>;
+  getUserSkills(userId: string): Promise<Skill[]>;
+  getUserRecommendations(userId: string): Promise<any[]>;
+  getUserLanguages(userId: string): Promise<Language[]>;
+  getUserHighlights(userId: string): Promise<Highlight[]>;
 
   sessionStore: any;
 }
@@ -865,6 +900,113 @@ export class DatabaseStorage implements IStorage {
     // For now, just return success
     // Will implement actual follow system when tables are created
     return { success: true };
+  }
+
+  async getUserProfile(userId: string): Promise<any> {
+    const user = await this.getUser(userId);
+    if (!user) return null;
+
+    const [experiences, educations, certifications, projects, skills, recommendations, languages, highlights] = await Promise.all([
+      this.getUserExperiences(userId),
+      this.getUserEducations(userId),
+      this.getUserCertifications(userId),
+      this.getUserProjects(userId),
+      this.getUserSkills(userId),
+      this.getUserRecommendations(userId),
+      this.getUserLanguages(userId),
+      this.getUserHighlights(userId),
+    ]);
+
+    return {
+      ...user,
+      experiences,
+      educations,
+      certifications,
+      projects,
+      skills,
+      recommendations,
+      languages,
+      highlights,
+    };
+  }
+
+  async getUserExperiences(userId: string): Promise<Experience[]> {
+    return await db
+      .select()
+      .from(experiences)
+      .where(eq(experiences.userId, userId))
+      .orderBy(desc(experiences.startDate));
+  }
+
+  async getUserEducations(userId: string): Promise<Education[]> {
+    return await db
+      .select()
+      .from(educations)
+      .where(eq(educations.userId, userId))
+      .orderBy(desc(educations.startDate));
+  }
+
+  async getUserCertifications(userId: string): Promise<Certification[]> {
+    return await db
+      .select()
+      .from(certifications)
+      .where(eq(certifications.userId, userId))
+      .orderBy(desc(certifications.issueDate));
+  }
+
+  async getUserProjects(userId: string): Promise<Project[]> {
+    return await db
+      .select()
+      .from(projects)
+      .where(eq(projects.userId, userId))
+      .orderBy(desc(projects.createdAt));
+  }
+
+  async getUserSkills(userId: string): Promise<Skill[]> {
+    return await db
+      .select()
+      .from(skills)
+      .where(eq(skills.userId, userId))
+      .orderBy(skills.category, skills.name);
+  }
+
+  async getUserRecommendations(userId: string): Promise<any[]> {
+    const recs = await db
+      .select({
+        id: recommendations.id,
+        profileUserId: recommendations.profileUserId,
+        recommenderUserId: recommendations.recommenderUserId,
+        message: recommendations.message,
+        relationship: recommendations.relationship,
+        status: recommendations.status,
+        createdAt: recommendations.createdAt,
+        recommender: {
+          fullName: users.fullName,
+          position: users.position,
+        },
+      })
+      .from(recommendations)
+      .leftJoin(users, eq(recommendations.recommenderUserId, users.id))
+      .where(eq(recommendations.profileUserId, userId))
+      .orderBy(desc(recommendations.createdAt));
+
+    return recs;
+  }
+
+  async getUserLanguages(userId: string): Promise<Language[]> {
+    return await db
+      .select()
+      .from(languages)
+      .where(eq(languages.userId, userId))
+      .orderBy(languages.language);
+  }
+
+  async getUserHighlights(userId: string): Promise<Highlight[]> {
+    return await db
+      .select()
+      .from(highlights)
+      .where(eq(highlights.userId, userId))
+      .orderBy(desc(highlights.isPinned), desc(highlights.createdAt));
   }
 }
 

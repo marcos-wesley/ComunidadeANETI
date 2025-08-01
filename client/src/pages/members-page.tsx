@@ -29,6 +29,7 @@ import {
   Star
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Link } from "wouter";
 
 type Member = {
   id: string;
@@ -404,7 +405,9 @@ export default function MembersPage(): JSX.Element {
               </Avatar>
               
               <div className="text-center mt-3">
-                <CardTitle className="text-lg font-semibold">{member.fullName}</CardTitle>
+                <Link href={`/profile/${member.id}`}>
+                  <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
+                </Link>
                 <p className="text-sm text-muted-foreground">@{member.username}</p>
                 
                 {member.planName && (
