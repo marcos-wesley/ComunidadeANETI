@@ -1131,16 +1131,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all applications for admin
+  // Get pending applications for admin
   app.get("/api/admin/applications", requireAdminAuth, async (req, res) => {
     try {
-      const applications = await storage.getAllApplications();
+      const applications = await storage.getPendingApplications();
       res.json(applications);
     } catch (error) {
-      console.error("Error fetching applications:", error);
+      console.error("Error fetching pending applications:", error);
       res.status(500).json({ 
         success: false, 
-        message: "Failed to fetch applications" 
+        message: "Failed to fetch pending applications" 
       });
     }
   });
