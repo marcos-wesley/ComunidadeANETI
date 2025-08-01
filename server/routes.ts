@@ -426,10 +426,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/profile/edit", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
+      console.log("=== PROFILE EDIT REQUEST ===");
+      console.log("User from session:", req.user);
       console.log("Fetching profile for edit, userId:", userId);
       
-      // Use the same method as the working profile endpoint
-      const user = await storage.getUserById(userId);
+      // First try the basic user fetch
+      let user = await storage.getUserById(userId);
+      console.log("getUserById result:", user);
+      
+      if (!user) {
+        console.log("getUserById failed, trying basic select...");
+        // Try direct database query as fallback
+        const allUsers = await storage.getAllUsers();
+        console.log("All users in database:", allUsers.map(u => ({ id: u.id, username: u.username })));
+        
+        user = allUsers.find(u => u.id === userId);
+        console.log("Found user in all users:", user);
+      }
       
       if (!user) {
         console.log("User not found for editing:", userId);

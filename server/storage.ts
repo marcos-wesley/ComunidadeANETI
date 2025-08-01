@@ -101,6 +101,7 @@ export interface IStorage {
   // Users search
   searchUsers(query: string): Promise<Pick<User, 'id' | 'fullName' | 'username'>[]>;
   getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
+  getAllUsers(): Promise<User[]>;
   
   // Profile methods
   getUserProfile(userId: string): Promise<any>;
@@ -205,9 +206,23 @@ export class DatabaseStorage implements IStorage {
 
   async getUserById(id: string): Promise<User | undefined> {
     console.log("DatabaseStorage.getUserById called with id:", id);
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    console.log("User found:", user ? user.username : "not found");
-    return user || undefined;
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      console.log("User found:", user ? user.username : "not found");
+      return user || undefined;
+    } catch (error) {
+      console.error("Error in getUserById:", error);
+      return undefined;
+    }
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    try {
+      return await db.select().from(users);
+    } catch (error) {
+      console.error("Error in getAllUsers:", error);
+      return [];
+    }
   }
 
   async updateUserProfile(id: string, profileData: any): Promise<User | undefined> {
