@@ -212,8 +212,19 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   };
 
   // Navigate to next step
-  const nextStep = () => {
+  const nextStep = async () => {
     if (validateStep(currentStep)) {
+      // If moving to final step (step 5) and plan requires payment, create subscription
+      if (currentStep === 4 && selectedPlanData?.requiresPayment && !clientSecret) {
+        try {
+          setIsSubmitting(true);
+          await createSubscription();
+        } catch (error) {
+          return; // Don't proceed if subscription creation fails
+        } finally {
+          setIsSubmitting(false);
+        }
+      }
       setCurrentStep(prev => Math.min(prev + 1, totalSteps));
     } else {
       toast({
@@ -279,36 +290,14 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       let finalCustomerId = customerId;
       let finalSubscriptionId = subscriptionId;
       
-      // If it's a paid plan and we haven't created subscription yet, create it now
-      if (selectedPlanData?.requiresPayment && !subscriptionId) {
-        try {
-          const subscriptionData = await createSubscription();
-          finalCustomerId = subscriptionData.customerId;
-          finalSubscriptionId = subscriptionData.subscriptionId;
-          // Set the client secret to show payment form
-          setClientSecret(subscriptionData.clientSecret);
-          toast({
-            title: "Pagamento Necessário",
-            description: "Complete o pagamento para finalizar sua solicitação.",
-          });
-          return; // Don't submit yet, wait for payment
-        } catch (error) {
-          toast({
-            title: "Erro no Pagamento",
-            description: "Não foi possível processar o pagamento. Tente novamente.",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
       // For paid plans, ensure payment is completed
       if (selectedPlanData?.requiresPayment && !subscriptionId) {
         toast({
-          title: "Pagamento Pendente",
-          description: "Complete o pagamento antes de finalizar.",
+          title: "Complete o Pagamento",
+          description: "Complete o pagamento antes de finalizar sua solicitação.",
           variant: "destructive",
         });
+        setIsSubmitting(false);
         return;
       }
       
