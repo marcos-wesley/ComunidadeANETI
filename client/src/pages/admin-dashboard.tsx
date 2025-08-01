@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, XCircle, Clock, Eye } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Eye, FileText } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -40,6 +41,7 @@ interface ApplicationWithDetails {
 
 export default function AdminDashboard() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const { data: pendingApplications = [], isLoading } = useQuery<ApplicationWithDetails[]>({
     queryKey: ["/api/admin/pending-applications"],
@@ -265,16 +267,10 @@ export default function AdminDashboard() {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              // TODO: Implement view details modal
-                              toast({
-                                title: "Funcionalidade em desenvolvimento",
-                                description: "A visualização detalhada será implementada em breve.",
-                              });
-                            }}
+                            onClick={() => setLocation(`/admin/applications/${application.id}`)}
                           >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Analisar
+                            <FileText className="w-4 h-4 mr-1" />
+                            Ver Detalhes
                           </Button>
                           <Button
                             variant="outline"

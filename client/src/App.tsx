@@ -12,6 +12,7 @@ import AuthPage from "./pages/auth-page";
 import RegisterPage from "./pages/register-page";
 import AdminPage from "./pages/admin-page";
 import AdminLogin from "./pages/admin-login";
+import AdminApplicationDetails from "./pages/admin-application-details";
 import SocialFeedPage from "./pages/social-feed-page";
 import PublishPage from "./pages/publish-page";
 import MembersPage from "./pages/members-page";
@@ -58,6 +59,7 @@ function App() {
           <Switch>
             {/* Admin routes - outside main layout */}
             <Route path="/admin/login" component={AdminLogin} />
+            <Route path="/admin/applications/:id" component={AdminApplicationDetails} />
             <Route path="/admin" component={AdminPage} />
             {/* Main app routes */}
             <Route path="*" component={MainLayout} />

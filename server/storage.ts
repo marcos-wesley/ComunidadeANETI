@@ -98,6 +98,7 @@ export interface IStorage {
 
   // Member Applications
   getMemberApplication(id: string): Promise<MemberApplication | undefined>;
+  getMemberApplicationWithDetails(id: string): Promise<any>;
   getMemberApplicationsByUser(userId: string): Promise<MemberApplication[]>;
   getPendingApplications(): Promise<(MemberApplication & { user: User; plan: MembershipPlan })[]>;
   getApplicationByEmail(email: string): Promise<MemberApplication | undefined>;
@@ -316,6 +317,52 @@ export class DatabaseStorage implements IStorage {
   // Member Applications
   async getMemberApplication(id: string): Promise<MemberApplication | undefined> {
     const [application] = await db.select().from(memberApplications).where(eq(memberApplications.id, id));
+    return application || undefined;
+  }
+
+  async getMemberApplicationWithDetails(id: string): Promise<any> {
+    const [application] = await db
+      .select({
+        id: memberApplications.id,
+        userId: memberApplications.userId,
+        planId: memberApplications.planId,
+        email: memberApplications.email,
+        username: memberApplications.username,
+        password: memberApplications.password,
+        experienceYears: memberApplications.experienceYears,
+        isStudent: memberApplications.isStudent,
+        status: memberApplications.status,
+        paymentStatus: memberApplications.paymentStatus,
+        paymentId: memberApplications.paymentId,
+        stripeSubscriptionId: memberApplications.stripeSubscriptionId,
+        stripePaymentIntentId: memberApplications.stripePaymentIntentId,
+        adminNotes: memberApplications.adminNotes,
+        reviewedBy: memberApplications.reviewedBy,
+        reviewedAt: memberApplications.reviewedAt,
+        createdAt: memberApplications.createdAt,
+        updatedAt: memberApplications.updatedAt,
+        user: {
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          fullName: users.fullName,
+          city: users.city,
+          state: users.state,
+          area: users.area,
+          phone: users.phone,
+        },
+        plan: {
+          id: membershipPlans.id,
+          name: membershipPlans.name,
+          price: membershipPlans.price,
+          description: membershipPlans.description,
+        }
+      })
+      .from(memberApplications)
+      .innerJoin(users, eq(memberApplications.userId, users.id))
+      .innerJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+      .where(eq(memberApplications.id, id));
+    
     return application || undefined;
   }
 

@@ -1414,6 +1414,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific application details (admin only)
+  app.get("/api/admin/applications/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const applicationId = req.params.id;
+      const application = await storage.getMemberApplicationWithDetails(applicationId);
+      
+      if (!application) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Application not found" 
+        });
+      }
+
+      res.json(application);
+    } catch (error) {
+      console.error("Error fetching application details:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch application details" 
+      });
+    }
+  });
+
   // Get all members for admin
   app.get("/api/admin/members", requireAdminAuth, async (req, res) => {
     try {
