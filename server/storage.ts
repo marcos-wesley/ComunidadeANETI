@@ -104,6 +104,8 @@ export interface IStorage {
   
   // Profile methods
   getUserProfile(userId: string): Promise<any>;
+  getUserById(userId: string): Promise<User | undefined>;
+  updateUserProfile(userId: string, profileData: any): Promise<User | undefined>;
   getUserExperiences(userId: string): Promise<Experience[]>;
   getUserEducations(userId: string): Promise<Education[]>;
   getUserCertifications(userId: string): Promise<Certification[]>;
@@ -199,6 +201,46 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return user || undefined;
+  }
+
+  async getUserById(id: string): Promise<User | undefined> {
+    console.log("DatabaseStorage.getUserById called with id:", id);
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    console.log("User found:", user ? user.username : "not found");
+    return user || undefined;
+  }
+
+  async updateUserProfile(id: string, profileData: any): Promise<User | undefined> {
+    console.log("DatabaseStorage.updateUserProfile called with id:", id);
+    console.log("Profile data:", profileData);
+    
+    const updateFields: any = {};
+    
+    // Map form fields to database fields
+    if (profileData.fullName !== undefined) updateFields.fullName = profileData.fullName;
+    if (profileData.bio !== undefined) updateFields.bio = profileData.bio;
+    if (profileData.position !== undefined) updateFields.position = profileData.position;
+    if (profileData.company !== undefined) updateFields.company = profileData.company;
+    if (profileData.area !== undefined) updateFields.area = profileData.area;
+    if (profileData.city !== undefined) updateFields.city = profileData.city;
+    if (profileData.state !== undefined) updateFields.state = profileData.state;
+    if (profileData.phone !== undefined) updateFields.phone = profileData.phone;
+    if (profileData.linkedin !== undefined) updateFields.linkedin = profileData.linkedin;
+    if (profileData.github !== undefined) updateFields.github = profileData.github;
+    if (profileData.website !== undefined) updateFields.website = profileData.website;
+    
+    updateFields.updatedAt = new Date().toISOString();
+    
+    console.log("Update fields:", updateFields);
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set(updateFields)
+      .where(eq(users.id, id))
+      .returning();
+    
+    console.log("Updated user result:", updatedUser);
+    return updatedUser || undefined;
   }
 
   // Membership Plans

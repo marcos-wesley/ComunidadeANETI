@@ -426,15 +426,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/profile/edit", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user!.id;
-      const user = await storage.getUser(userId);
+      console.log("Fetching profile for edit, userId:", userId);
+      
+      // Use the same method as the working profile endpoint
+      const user = await storage.getUserById(userId);
       
       if (!user) {
+        console.log("User not found for editing:", userId);
         return res.status(404).json({ error: "Profile not found" });
       }
       
+      console.log("Profile found for edit:", user.username);
       res.json(user);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error fetching profile for edit:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -445,12 +450,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user!.id;
       const updateData = req.body;
       
-      const updatedUser = await storage.updateUser(userId, updateData);
+      console.log("Updating profile for userId:", userId);
+      console.log("Update data:", updateData);
+      
+      const updatedUser = await storage.updateUserProfile(userId, updateData);
       
       if (!updatedUser) {
+        console.log("Profile not found for update:", userId);
         return res.status(404).json({ error: "Profile not found" });
       }
       
+      console.log("Profile updated successfully:", updatedUser.username);
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating profile:", error);
