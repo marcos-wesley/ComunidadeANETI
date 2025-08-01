@@ -422,6 +422,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get current user's profile for editing
+  app.get("/api/profile/edit", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const profile = await storage.getUserProfile(userId);
+      
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
       const { 
