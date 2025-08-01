@@ -132,18 +132,30 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   };
 
   const getInitials = (name: string) => {
-    return name?.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
+    if (!name) return "?";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "?";
   };
 
   const getConversationName = (conversation: any) => {
+    if (!conversation) return "Conversa";
+    
     if (conversation.type === "group") {
       return conversation.name || "Grupo";
     }
     
-    const otherParticipant = conversation.participants?.find(
-      (p: any) => p.user.id !== user?.id
+    if (!conversation.participants || !Array.isArray(conversation.participants)) {
+      return "Conversa";
+    }
+    
+    const otherParticipant = conversation.participants.find(
+      (p: any) => p?.user?.id !== user?.id
     );
-    return otherParticipant?.user.fullName || "Conversa";
+    
+    if (!otherParticipant || !otherParticipant.user) {
+      return "Conversa";
+    }
+    
+    return otherParticipant.user.fullName || otherParticipant.user.username || "Conversa";
   };
 
   if (!isOpen) return null;
