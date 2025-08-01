@@ -1,0 +1,67 @@
+Quero que você atue como desenvolvedor fullstack especialista em criação de comunidades online.
+
+Vamos desenvolver uma plataforma completa de membros para a ANETI – Associação Nacional dos Especialistas em TI.
+
+A plataforma será web e posteriormente terá versão app, com as seguintes funcionalidades principais:
+
+1. **Cadastro e associação com aprovação manual**
+   - Formulário com campos: nome completo, cidade, estado, área de atuação, nome de usuário, senha
+   - Upload de documentos (PDF, JPG, etc.)
+   - Seleção de plano: Público, Pleno, Sênior, Honra, Diretivo
+   - Integração com Mercado Pago para pagamento da anuidade
+   - Fluxo: cadastro → pagamento → aprovação admin → acesso liberado
+
+2. **Sistema de perfis de usuário**
+   - Perfil público tipo LinkedIn, com experiências, certificações, redes sociais e currículo
+   - Configurações de privacidade e edição de perfil
+
+3. **Feed de publicações**
+   - Publicações de texto, imagem e vídeo
+   - Curtidas, comentários, menções
+   - Perfis diretivos postam para todos; demais membros apenas para amigos
+
+4. **Diretório de membros**
+   - Lista com busca/filtros por nome, estado, área
+   - Ações: seguir / conectar
+
+5. **Grupos e fóruns**
+   - Apenas membros com anuidade ativa acessam
+   - Moderação somente por perfis Sênior, Honra ou Diretivo
+
+6. **Mensagens internas**
+   - Caixa de mensagens privada entre membros conectados
+
+7. **Seção de treinamentos**
+   - Estrutura estilo Tutor LMS: cursos com vídeo-aulas, materiais, avaliações, certificados
+
+8. **Vagas de emprego**
+   - Empresas parceiras cadastram vagas
+   - Membros se candidatam com um clique
+
+9. **Carteirinha digital**
+   - Gerada automaticamente com foto, plano e validade
+   - Compartilhável em redes sociais
+
+10. **Publicação de artigos**
+   - Editor de artigos com imagens e vídeos
+   - Visível para todos os membros
+
+---
+
+🔧 Tecnologias sugeridas:
+- **Front-end:** React.js (Next.js opcional)
+- **Back-end:** Node.js com Express.js
+- **Banco de dados:** PostgreSQL ou MySQL
+- **Auth:** JWT + RBAC
+- **Upload e storage:** Firebase ou Amazon S3
+- **Pagamento:** API Mercado Pago
+- **Deploy:** Replit (desenvolvimento) + Vercel/Render (produção)
+
+Crie uma estrutura inicial do projeto web com as pastas organizadas para:
+- Frontend (src, components, pages, services)
+- Backend (routes, controllers, models, middlewares)
+- Conexão com banco de dados
+- Setup básico de autenticação e sessão
+- Preparação para upload de arquivos
+
+Organize o projeto para que possamos iniciar pelo primeiro módulo: **Cadastro de membros com integração de pagamento e aprovação do admin.**
