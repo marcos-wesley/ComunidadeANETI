@@ -355,6 +355,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fetch link metadata for previews
+  app.post("/api/link-metadata", isAuthenticated, async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ error: "URL is required" });
+      }
+
+      // Import the fetchLinkMetadata function
+      const { fetchLinkMetadata } = await import('./link-metadata');
+      const metadata = await fetchLinkMetadata(url);
+      
+      res.json(metadata);
+    } catch (error) {
+      console.error("Error fetching link metadata:", error);
+      res.status(500).json({ error: "Failed to fetch link metadata" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
