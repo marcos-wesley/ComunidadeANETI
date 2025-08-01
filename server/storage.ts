@@ -229,35 +229,33 @@ export class DatabaseStorage implements IStorage {
     console.log("DatabaseStorage.updateUserProfile called with id:", id);
     console.log("Profile data:", profileData);
     
-    const updateFields: any = { updatedAt: new Date() };
-    
-    // Only add fields that are being updated
-    if (profileData.profilePicture !== undefined) updateFields.profilePicture = profileData.profilePicture;
-    if (profileData.coverPhoto !== undefined) updateFields.coverPhoto = profileData.coverPhoto;
-    if (profileData.fullName !== undefined) updateFields.fullName = profileData.fullName;
-    if (profileData.bio !== undefined) updateFields.bio = profileData.bio;
-    if (profileData.aboutMe !== undefined) updateFields.aboutMe = profileData.aboutMe;
-    if (profileData.position !== undefined) updateFields.position = profileData.position;
-    if (profileData.company !== undefined) updateFields.company = profileData.company;
-    if (profileData.area !== undefined) updateFields.area = profileData.area;
-    if (profileData.city !== undefined) updateFields.city = profileData.city;
-    if (profileData.state !== undefined) updateFields.state = profileData.state;
-    if (profileData.phone !== undefined) updateFields.phone = profileData.phone;
-    if (profileData.linkedin !== undefined) updateFields.linkedin = profileData.linkedin;
-    if (profileData.github !== undefined) updateFields.github = profileData.github;
-    if (profileData.website !== undefined) updateFields.website = profileData.website;
-    if (profileData.professionalTitle !== undefined) updateFields.professionalTitle = profileData.professionalTitle;
-    
-    console.log("Update fields:", updateFields);
-    
-    const [updatedUser] = await db
-      .update(users)
-      .set(updateFields)
-      .where(eq(users.id, id))
-      .returning();
-    
-    console.log("Updated user result:", updatedUser);
-    return updatedUser || undefined;
+    try {
+      // For image updates, use direct SQL to avoid Drizzle typing issues
+      if (profileData.profilePicture !== undefined) {
+        await db.execute(sql`
+          UPDATE users 
+          SET profile_picture = ${profileData.profilePicture}, updated_at = NOW() 
+          WHERE id = ${id}
+        `);
+      }
+      
+      if (profileData.coverPhoto !== undefined) {
+        await db.execute(sql`
+          UPDATE users 
+          SET cover_photo = ${profileData.coverPhoto}, updated_at = NOW() 
+          WHERE id = ${id}
+        `);
+      }
+      
+      // Get the updated user
+      const [updatedUser] = await db.select().from(users).where(eq(users.id, id));
+      console.log("Updated user result:", updatedUser);
+      return updatedUser || undefined;
+      
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      throw error;
+    }
   }
 
   // Membership Plans
