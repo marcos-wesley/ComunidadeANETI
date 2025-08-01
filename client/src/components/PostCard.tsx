@@ -2,11 +2,19 @@ import { useState } from "react";
 import { FormattedContent } from "./FormattedContent";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { CommentSection } from "./CommentSection";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { 
   Heart, 
   MessageCircle, 
@@ -14,7 +22,10 @@ import {
   MoreHorizontal, 
   Globe, 
   Users,
-  Clock
+  Clock,
+  Trash2,
+  Flag,
+  Copy
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -49,6 +60,7 @@ interface PostCardProps {
 }
 
 export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
+  const { user } = useAuth();
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
   const [isLiked, setIsLiked] = useState(post.isLiked);
@@ -57,34 +69,116 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
   // Like/Unlike mutation
   const likeMutation = useMutation({
     mutationFn: async () => {
-      const action = isLiked ? "unlike" : "like";
-      const res = await apiRequest("POST", `/api/posts/${post.id}/${action}`);
-      return res.json();
+      const response = await apiRequest("POST", `/api/posts/${post.id}/like`);
+      return response.json();
     },
-    onSuccess: () => {
-      setIsLiked(!isLiked);
-      setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
+    onSuccess: (data) => {
+      setIsLiked(data.liked);
+      setLikesCount(data.likes);
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Erro",
-        description: error.message,
+        description: "Não foi possível curtir o post.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete post mutation
+  const deletePostMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Post excluído",
+        description: "O post foi excluído com sucesso.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
+      onUpdate();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o post.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Report post mutation
+  const reportPostMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/posts/${post.id}/report`, {
+        reason: "Conteúdo inadequado"
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Post denunciado",
+        description: "O post foi denunciado e será analisado pelos administradores.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível denunciar o post.",
         variant: "destructive",
       });
     },
   });
 
   const handleLike = () => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para curtir posts.",
+        variant: "destructive",
+      });
+      return;
+    }
     likeMutation.mutate();
   };
 
-  const handleShare = () => {
-    // Implement share functionality
-    toast({
-      title: "Funcionalidade em desenvolvimento",
-      description: "A opção de compartilhar estará disponível em breve.",
-    });
+  const handleShare = async () => {
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Post de ${post.author.fullName}`,
+          text: post.content,
+          url: window.location.href,
+        });
+      } else {
+        // Fallback: copy to clipboard
+        await navigator.clipboard.writeText(`${post.content}\n\n- ${post.author.fullName}`);
+        toast({
+          title: "Link copiado",
+          description: "O conteúdo do post foi copiado para a área de transferência.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Erro ao compartilhar",
+        description: "Não foi possível compartilhar o post.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDelete = () => {
+    if (window.confirm("Tem certeza que deseja excluir este post?")) {
+      deletePostMutation.mutate();
+    }
+  };
+
+  const handleReport = () => {
+    if (window.confirm("Deseja denunciar este post por conteúdo inadequado?")) {
+      reportPostMutation.mutate();
+    }
   };
 
   const getInitials = (name: string) => {
@@ -150,9 +244,42 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
               </div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={handleShare} className="gap-2">
+                <Copy className="h-4 w-4" />
+                Copiar conteúdo
+              </DropdownMenuItem>
+              {user?.id === post.authorId ? (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleDelete}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir post
+                  </DropdownMenuItem>
+                </>
+              ) : (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={handleReport}
+                    className="gap-2 text-destructive focus:text-destructive"
+                  >
+                    <Flag className="h-4 w-4" />
+                    Denunciar post
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
 

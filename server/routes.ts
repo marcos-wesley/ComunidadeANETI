@@ -242,10 +242,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { postId } = req.params;
 
       const result = await storage.toggleLike(userId!, postId);
-      res.json({ liked: result.liked, likesCount: result.likesCount });
+      res.json({ liked: result.liked, likes: result.likesCount });
     } catch (error) {
       console.error("Error toggling like:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Delete post
+  app.delete("/api/posts/:postId", isAuthenticated, async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const userId = req.user!.id;
+
+      // Check if user owns the post or is admin
+      const post = await storage.getPostById(postId);
+      if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+      }
+
+      if (post.authorId !== userId && req.user!.planName !== "Diretivo") {
+        return res.status(403).json({ message: "Not authorized to delete this post" });
+      }
+
+      await storage.deletePost(postId);
+      res.json({ message: "Post deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting post:", error);
+      res.status(500).json({ message: "Failed to delete post" });
+    }
+  });
+
+  // Report post
+  app.post("/api/posts/:postId/report", isAuthenticated, async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const { reason } = req.body;
+      const userId = req.user!.id;
+
+      await storage.reportPost(postId, userId, reason);
+      res.json({ message: "Post reported successfully" });
+    } catch (error) {
+      console.error("Error reporting post:", error);
+      res.status(500).json({ message: "Failed to report post" });
     }
   });
 

@@ -62,6 +62,9 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   getPostWithDetails(postId: string): Promise<PostWithDetails | undefined>;
   toggleLike(userId: string, postId: string): Promise<{ liked: boolean; likesCount: number }>;
+  getPostById(postId: string): Promise<Post | undefined>;
+  deletePost(postId: string): Promise<void>;
+  reportPost(postId: string, userId: string, reason: string): Promise<void>;
   createComment(comment: InsertComment): Promise<Comment>;
   getCommentWithAuthor(commentId: string): Promise<Comment & { author: Pick<User, 'id' | 'fullName' | 'username'> } | undefined>;
   
@@ -474,6 +477,31 @@ export class DatabaseStorage implements IStorage {
       liked: !existingLike,
       likesCount: likesCount[0]?.count || 0,
     };
+  }
+
+  async getPostById(postId: string): Promise<Post | undefined> {
+    const [post] = await db
+      .select()
+      .from(posts)
+      .where(eq(posts.id, postId));
+    return post;
+  }
+
+  async deletePost(postId: string): Promise<void> {
+    // Delete related likes first
+    await db.delete(likes).where(eq(likes.postId, postId));
+    
+    // Delete related comments
+    await db.delete(comments).where(eq(comments.postId, postId));
+    
+    // Delete the post
+    await db.delete(posts).where(eq(posts.id, postId));
+  }
+
+  async reportPost(postId: string, userId: string, reason: string): Promise<void> {
+    // In a real app, you'd store reports in a database table
+    // For now, just log it
+    console.log(`Post ${postId} reported by user ${userId} for reason: ${reason}`);
   }
 
   async createComment(insertComment: InsertComment): Promise<Comment> {
