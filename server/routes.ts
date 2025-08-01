@@ -987,99 +987,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin routes (require admin role)
-  const requireAdmin = (req: any, res: any, next: any) => {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ error: 'Acesso negado. Apenas administradores podem acessar esta funcionalidade.' });
-    }
-    next();
-  };
 
-  // Get all applications for admin review
-  app.get("/api/admin/applications", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const applications = await storage.getAllApplications();
-      res.json(applications);
-    } catch (error) {
-      console.error("Error getting applications:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Approve application
-  app.post("/api/admin/applications/:id/approve", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.approveApplication(id, req.user!.id);
-      res.json({ success: true, message: "Inscrição aprovada com sucesso" });
-    } catch (error) {
-      console.error("Error approving application:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Reject application
-  app.post("/api/admin/applications/:id/reject", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { reason } = req.body;
-      await storage.rejectApplication(id, req.user!.id, reason || "Motivo não especificado");
-      res.json({ success: true, message: "Inscrição rejeitada com sucesso" });
-    } catch (error) {
-      console.error("Error rejecting application:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Get all members for admin
-  app.get("/api/admin/members", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const members = await storage.getAllUsers();
-      res.json(members);
-    } catch (error) {
-      console.error("Error getting members:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Ban user
-  app.post("/api/admin/users/:id/ban", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.banUser(id, req.user!.id);
-      res.json({ success: true, message: "Usuário banido com sucesso" });
-    } catch (error) {
-      console.error("Error banning user:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Unban user
-  app.post("/api/admin/users/:id/unban", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.unbanUser(id, req.user!.id);
-      res.json({ success: true, message: "Usuário desbanido com sucesso" });
-    } catch (error) {
-      console.error("Error unbanning user:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Delete user
-  app.delete("/api/admin/users/:id", isAuthenticated, requireAdmin, async (req, res) => {
-    try {
-      const { id } = req.params;
-      await storage.deleteUser(id);
-      res.json({ success: true, message: "Usuário deletado com sucesso" });
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      res.status(500).json({ error: "Erro interno do servidor" });
-    }
-  });
-
-  // Serve images from local storage (temporary solution)
-  app.use('/images', express.static(path.join(process.cwd(), 'public/uploads')));
 
   // Admin User Authentication Routes (separate from member auth)
   
@@ -1190,13 +1098,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Admin middleware
   const requireAdminAuth = (req: any, res: any, next: any) => {
-    console.log("Admin auth middleware check:", {
-      hasSession: !!req.session,
-      hasAdminUser: !!req.session?.adminUser,
-      isAuthenticated: req.session?.adminUser?.isAuthenticated,
-      sessionId: req.sessionID
-    });
-    
     if (!req.session?.adminUser?.isAuthenticated) {
       return res.status(401).json({ 
         success: false, 
