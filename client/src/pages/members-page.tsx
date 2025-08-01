@@ -103,9 +103,9 @@ export default function MembersPage(): JSX.Element {
     },
   });
 
-  const states = [...new Set(allMembersForFilters.map(m => m.state))].sort();
-  const plans = [...new Set(allMembersForFilters.map(m => m.planName).filter(Boolean))].sort();
-  const areas = [...new Set(allMembersForFilters.map(m => m.area))].sort();
+  const states = Array.from(new Set(allMembersForFilters.map(m => m.state))).sort();
+  const plans = Array.from(new Set(allMembersForFilters.map(m => m.planName).filter(Boolean))).sort();
+  const areas = Array.from(new Set(allMembersForFilters.map(m => m.area))).sort();
 
   // Reset to first page when filters change
   const handleFilterChange = () => {
@@ -115,17 +115,21 @@ export default function MembersPage(): JSX.Element {
   // Connection mutations
   const connectMutation = useMutation({
     mutationFn: async (memberId: string) => {
+      console.log('connectMutation called with:', memberId);
       const res = await apiRequest("POST", "/api/connections", { receiverId: memberId });
+      console.log('connectMutation response:', res.status);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('connectMutation success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
         title: "Solicitação enviada",
         description: "Sua solicitação de conexão foi enviada!",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('connectMutation error:', error);
       toast({
         title: "Erro",
         description: "Não foi possível enviar a solicitação de conexão.",
@@ -170,6 +174,7 @@ export default function MembersPage(): JSX.Element {
   });
 
   const handleConnect = (memberId: string) => {
+    console.log('handleConnect called with:', { memberId, canConnect, userPlan: user?.planName });
     if (!canConnect) {
       toast({
         title: "Acesso restrito",
@@ -178,6 +183,7 @@ export default function MembersPage(): JSX.Element {
       });
       return;
     }
+    console.log('Calling connectMutation.mutate with:', memberId);
     connectMutation.mutate(memberId);
   };
 
