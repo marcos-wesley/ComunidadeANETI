@@ -211,6 +211,45 @@ export const highlights = pgTable("highlights", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Chat system tables
+export const conversations = pgTable("conversations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull().default("direct"), // direct, group
+  name: text("name"), // only for group conversations
+  description: text("description"), // only for group conversations
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const conversationParticipants = pgTable("conversation_participants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").references(() => conversations.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  role: text("role").default("member"), // member, admin
+  joinedAt: timestamp("joined_at").defaultNow(),
+  lastReadAt: timestamp("last_read_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+});
+
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  conversationId: varchar("conversation_id").references(() => conversations.id).notNull(),
+  senderId: varchar("sender_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  messageType: text("message_type").default("text"), // text, image, file, system
+  attachmentUrl: text("attachment_url"),
+  replyToId: varchar("reply_to_id").references(() => messages.id),
+  isEdited: boolean("is_edited").default(false),
+  editedAt: timestamp("edited_at"),
+  isDeleted: boolean("is_deleted").default(false),
+  deletedAt: timestamp("deleted_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   applications: many(memberApplications),
@@ -220,6 +259,9 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   sentConnectionRequests: many(connections, { relationName: "requester" }),
   receivedConnectionRequests: many(connections, { relationName: "receiver" }),
+  conversationParticipants: many(conversationParticipants),
+  sentMessages: many(messages),
+  createdConversations: many(conversations),
 }));
 
 export const memberApplicationsRelations = relations(memberApplications, ({ one, many }) => ({
@@ -290,6 +332,42 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   author: one(users, {
     fields: [comments.authorId],
     references: [users.id],
+  }),
+}));
+
+// Chat relations
+export const conversationsRelations = relations(conversations, ({ one, many }) => ({
+  creator: one(users, {
+    fields: [conversations.createdBy],
+    references: [users.id],
+  }),
+  participants: many(conversationParticipants),
+  messages: many(messages),
+}));
+
+export const conversationParticipantsRelations = relations(conversationParticipants, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [conversationParticipants.conversationId],
+    references: [conversations.id],
+  }),
+  user: one(users, {
+    fields: [conversationParticipants.userId],
+    references: [users.id],
+  }),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  conversation: one(conversations, {
+    fields: [messages.conversationId],
+    references: [conversations.id],
+  }),
+  sender: one(users, {
+    fields: [messages.senderId],
+    references: [users.id],
+  }),
+  replyTo: one(messages, {
+    fields: [messages.replyToId],
+    references: [messages.id],
   }),
 }));
 
@@ -422,6 +500,34 @@ export const insertHighlightSchema = createInsertSchema(highlights).omit({
   createdAt: true,
 });
 
+// Chat insert schemas
+export const insertConversationSchema = createInsertSchema(conversations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  lastMessageAt: true,
+  isActive: true,
+});
+
+export const insertConversationParticipantSchema = createInsertSchema(conversationParticipants).omit({
+  id: true,
+  joinedAt: true,
+  lastReadAt: true,
+  isActive: true,
+  role: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isEdited: true,
+  editedAt: true,
+  isDeleted: true,
+  deletedAt: true,
+  messageType: true,
+});
+
 // Types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -449,3 +555,23 @@ export type Language = typeof languages.$inferSelect;
 export type InsertLanguage = z.infer<typeof insertLanguageSchema>;
 export type Highlight = typeof highlights.$inferSelect;
 export type InsertHighlight = z.infer<typeof insertHighlightSchema>;
+
+// Chat types
+export type Conversation = typeof conversations.$inferSelect;
+export type InsertConversation = z.infer<typeof insertConversationSchema>;
+export type ConversationParticipant = typeof conversationParticipants.$inferSelect;
+export type InsertConversationParticipant = z.infer<typeof insertConversationParticipantSchema>;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+// Extended chat types
+export type ConversationWithDetails = Conversation & {
+  participants: (ConversationParticipant & { user: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'> })[];
+  lastMessage?: Message & { sender: Pick<User, 'id' | 'fullName' | 'username'> };
+  unreadCount?: number;
+};
+
+export type MessageWithDetails = Message & {
+  sender: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'>;
+  replyTo?: Message & { sender: Pick<User, 'id' | 'fullName' | 'username'> };
+};

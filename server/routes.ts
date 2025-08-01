@@ -4,7 +4,13 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
-import { insertMemberApplicationSchema, insertDocumentSchema, insertMembershipPlanSchema } from "@shared/schema";
+import { 
+  insertMemberApplicationSchema, 
+  insertDocumentSchema, 
+  insertMembershipPlanSchema, 
+  insertConversationSchema,
+  insertMessageSchema 
+} from "@shared/schema";
 import express from "express";
 import path from "path";
 import fs from "fs/promises";
@@ -712,6 +718,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching link metadata:", error);
       res.status(500).json({ error: "Failed to fetch link metadata" });
+    }
+  });
+
+  // Chat API routes
+  
+  // Get user conversations
+  app.get("/api/conversations", isAuthenticated, async (req, res) => {
+    try {
+      const conversations = await storage.getConversations(req.user!.id);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ error: "Failed to fetch conversations" });
+    }
+  });
+
+  // Get specific conversation
+  app.get("/api/conversations/:id", isAuthenticated, async (req, res) => {
+    try {
+      const conversation = await storage.getConversation(req.params.id, req.user!.id);
+      if (!conversation) {
+        return res.status(404).json({ error: "Conversation not found" });
+      }
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error fetching conversation:", error);
+      res.status(500).json({ error: "Failed to fetch conversation" });
+    }
+  });
+
+  // Create direct conversation with another user
+  app.post("/api/conversations/direct", isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      const conversation = await storage.createDirectConversation(req.user!.id, userId);
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating direct conversation:", error);
+      res.status(500).json({ error: "Failed to create conversation" });
+    }
+  });
+
+  // Create group conversation
+  app.post("/api/conversations/group", isAuthenticated, async (req, res) => {
+    try {
+      const { name, description } = req.body;
+      if (!name) {
+        return res.status(400).json({ error: "Group name is required" });
+      }
+
+      const conversation = await storage.createGroupConversation(req.user!.id, name, description);
+      res.json(conversation);
+    } catch (error) {
+      console.error("Error creating group conversation:", error);
+      res.status(500).json({ error: "Failed to create group conversation" });
+    }
+  });
+
+  // Add participant to group conversation
+  app.post("/api/conversations/:id/participants", isAuthenticated, async (req, res) => {
+    try {
+      const { userId, role } = req.body;
+      if (!userId) {
+        return res.status(400).json({ error: "User ID is required" });
+      }
+
+      const participant = await storage.addParticipantToConversation(req.params.id, userId, role);
+      res.json(participant);
+    } catch (error) {
+      console.error("Error adding participant:", error);
+      res.status(500).json({ error: "Failed to add participant" });
+    }
+  });
+
+  // Get messages from conversation
+  app.get("/api/conversations/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const { limit, offset } = req.query;
+      const messages = await storage.getConversationMessages(
+        req.params.id,
+        req.user!.id,
+        limit ? parseInt(limit as string) : undefined,
+        offset ? parseInt(offset as string) : undefined
+      );
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  // Send message
+  app.post("/api/conversations/:id/messages", isAuthenticated, async (req, res) => {
+    try {
+      const { content, replyToId } = req.body;
+      if (!content || content.trim() === '') {
+        return res.status(400).json({ error: "Message content is required" });
+      }
+
+      const message = await storage.sendMessage(req.params.id, req.user!.id, content.trim(), replyToId);
+      res.json(message);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ error: "Failed to send message" });
+    }
+  });
+
+  // Mark messages as read
+  app.post("/api/conversations/:id/read", isAuthenticated, async (req, res) => {
+    try {
+      await storage.markMessagesAsRead(req.params.id, req.user!.id);
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ error: "Failed to mark messages as read" });
+    }
+  });
+
+  // Search conversations
+  app.get("/api/conversations/search", isAuthenticated, async (req, res) => {
+    try {
+      const { q } = req.query;
+      if (!q || typeof q !== 'string') {
+        return res.status(400).json({ error: "Search query is required" });
+      }
+
+      const conversations = await storage.searchConversations(req.user!.id, q);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error searching conversations:", error);
+      res.status(500).json({ error: "Failed to search conversations" });
     }
   });
 

@@ -43,6 +43,7 @@ const navItems = [
   { path: "/feed", icon: Home, label: "Feed", key: "feed" },
   { path: "/publish", icon: PenTool, label: "Publicar", key: "publish" },
   { path: "/members", icon: Users, label: "Membros", key: "members" },
+  { path: "/chat", icon: Mail, label: "Mensagens", key: "chat" },
   { path: "/groups", icon: MessageSquare, label: "Grupos", key: "groups" },
   { path: "/forums", icon: BookOpen, label: "Fóruns", key: "forums" },
   { path: "/training", icon: GraduationCap, label: "Treinamentos", key: "training" },
