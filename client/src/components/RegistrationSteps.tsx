@@ -290,8 +290,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       let finalCustomerId = customerId;
       let finalSubscriptionId = subscriptionId;
       
-      // For paid plans, ensure payment is completed
-      if (selectedPlanData?.requiresPayment && !subscriptionId) {
+      // For paid plans, ensure payment is completed before proceeding
+      if (selectedPlanData?.requiresPayment) {
         // If no client secret yet, create subscription
         if (!clientSecret) {
           try {
@@ -316,8 +316,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
             setIsSubmitting(false);
             return;
           }
-        } else {
-          // Payment form is ready but payment not completed
+        }
+        
+        // Payment form is ready but payment not completed
+        if (!subscriptionId) {
           toast({
             title: "Complete o Pagamento",
             description: "Complete o pagamento acima antes de finalizar.",
@@ -326,6 +328,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           setIsSubmitting(false);
           return;
         }
+        
+        // Payment completed, use the subscription data
+        finalCustomerId = customerId;
+        finalSubscriptionId = subscriptionId;
       }
       
       // Create the application with user data and payment info if applicable
@@ -895,13 +901,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                       setSubscriptionId(subscriptionId);
                       toast({
                         title: "Pagamento Confirmado!",
-                        description: "Finalizando sua solicitação...",
+                        description: "Clique em 'Finalizar Solicitação' para enviar.",
                       });
-                      // Auto-submit the form after payment
-                      setTimeout(() => {
-                        const formData = form.getValues();
-                        onSubmit(formData);
-                      }, 1000);
                     }}
                     planName={selectedPlanData.name}
                     planPrice={selectedPlanData.price}
@@ -998,7 +999,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                 <>
                   {selectedPlanData?.requiresPayment && !clientSecret ? "Preparar Pagamento" :
                    selectedPlanData?.requiresPayment && clientSecret && !subscriptionId ? "Complete o Pagamento Acima" :
-                   selectedPlanData?.requiresPayment ? "Finalizar Solicitação" : "Enviar Solicitação"}
+                   selectedPlanData?.requiresPayment && subscriptionId ? "Finalizar Solicitação" : 
+                   selectedPlanData?.requiresPayment ? "Aguardando Pagamento" : "Enviar Solicitação"}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </>
               )}
