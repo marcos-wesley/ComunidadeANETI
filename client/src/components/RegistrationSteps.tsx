@@ -119,48 +119,57 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     return true;
   };
 
-  // Handle upload parameters
+  // Handle upload parameters for registration
   const handleGetUploadParameters = async () => {
-    const res = await apiRequest("POST", "/api/documents/upload");
-    const data = await res.json();
-    return {
-      method: "PUT" as const,
-      url: data.uploadURL,
-    };
+    try {
+      const res = await fetch("/api/documents/upload-registration", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      
+      if (!res.ok) {
+        throw new Error(`Upload error: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      return {
+        method: "PUT" as const,
+        url: data.uploadURL,
+      };
+    } catch (error) {
+      console.error("Error getting upload parameters:", error);
+      throw error;
+    }
   };
 
   // Handle identity document upload
   const handleIdentityUploadComplete = (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      setIdentityDocument(result.successful[0].uploadURL);
-      toast({
-        title: "Documento enviado!",
-        description: "Documento de identidade carregado com sucesso.",
-      });
-    }
+    setIdentityDocument(result.fileId || result.fileName || "uploaded");
+    toast({
+      title: "Documento enviado!",
+      description: "Documento de identidade carregado com sucesso.",
+    });
   };
 
   // Handle experience document upload
   const handleExperienceUploadComplete = (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      const newUrls = result.successful.map((file: any) => file.uploadURL);
-      setExperienceDocuments(prev => [...prev, ...newUrls]);
-      toast({
-        title: "Documentos enviados!",
-        description: `${result.successful.length} documento(s) de experiência carregado(s).`,
-      });
-    }
+    const newDoc = result.fileId || result.fileName || "uploaded";
+    setExperienceDocuments(prev => [...prev, newDoc]);
+    toast({
+      title: "Documento enviado!",
+      description: "Comprovante de experiência carregado com sucesso.",
+    });
   };
 
   // Handle student document upload
   const handleStudentUploadComplete = (result: any) => {
-    if (result.successful && result.successful.length > 0) {
-      setStudentDocument(result.successful[0].uploadURL);
-      toast({
-        title: "Documento enviado!",
-        description: "Comprovante de matrícula carregado com sucesso.",
-      });
-    }
+    setStudentDocument(result.fileId || result.fileName || "uploaded");
+    toast({
+      title: "Documento enviado!",
+      description: "Comprovante de matrícula carregado com sucesso.",
+    });
   };
 
   // Remove experience document
