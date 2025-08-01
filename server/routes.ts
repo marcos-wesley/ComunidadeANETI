@@ -25,6 +25,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Serve uploaded images statically
   app.use('/images', express.static(path.join(process.cwd(), 'public/uploads')));
+  
+  // Serve temp uploaded files during registration
+  app.use('/uploads', express.static(path.join(process.cwd(), 'public/uploads')));
 
   // Object storage for document serving
   app.get("/objects/:objectPath(*)", isAuthenticated, async (req, res) => {
@@ -57,15 +60,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ uploadURL });
   });
 
-  // Get upload URL for documents during registration (public endpoint)
-  app.post("/api/documents/upload-registration", async (req, res) => {
+  // Temporary file upload during registration using multer
+  const registrationUpload = multer({ 
+    dest: 'public/uploads/temp/',
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      // Accept images and PDFs
+      if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+        cb(null, true);
+      } else {
+        cb(new Error('Apenas imagens e PDFs são permitidos'));
+      }
+    }
+  });
+
+  // Upload endpoint for registration documents
+  app.post("/api/documents/upload-registration", registrationUpload.single('file'), async (req, res) => {
     try {
-      const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      res.json({ uploadURL });
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhum arquivo enviado" });
+      }
+
+      const fileUrl = `/uploads/temp/${req.file.filename}`;
+      
+      res.json({ 
+        success: true,
+        fileId: req.file.filename,
+        fileName: req.file.originalname,
+        fileUrl: fileUrl,
+        size: req.file.size,
+        type: req.file.mimetype
+      });
     } catch (error) {
-      console.error("Error generating upload URL:", error);
-      res.status(500).json({ error: "Failed to generate upload URL" });
+      console.error("Error uploading file:", error);
+      res.status(500).json({ error: "Falha no upload do arquivo" });
     }
   });
 

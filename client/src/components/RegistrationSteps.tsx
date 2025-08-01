@@ -119,29 +119,12 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     return true;
   };
 
-  // Handle upload parameters for registration
+  // Dummy function for upload parameters (not needed with direct upload)
   const handleGetUploadParameters = async () => {
-    try {
-      const res = await fetch("/api/documents/upload-registration", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Upload error: ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      return {
-        method: "PUT" as const,
-        url: data.uploadURL,
-      };
-    } catch (error) {
-      console.error("Error getting upload parameters:", error);
-      throw error;
-    }
+    return {
+      method: "POST" as const,
+      url: "/api/documents/upload-registration",
+    };
   };
 
   // Handle identity document upload

@@ -62,33 +62,28 @@ export function ObjectUploader({
           continue;
         }
 
-        // Get upload parameters
-        const uploadParams = await getUploadParameters();
+        // Create form data for file upload
+        const formData = new FormData();
+        formData.append('file', file);
         
-        // Upload file
-        const response = await fetch(uploadParams.url, {
-          method: uploadParams.method,
-          body: file,
-          headers: {
-            'Content-Type': file.type,
-          },
+        // Upload file to registration endpoint
+        const response = await fetch('/api/documents/upload-registration', {
+          method: 'POST',
+          body: formData,
         });
 
         if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
+          const errorData = await response.json();
+          throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
         }
 
+        const result = await response.json();
+        
         // Add to uploaded files list
-        const newFile = `${file.name}_${Date.now()}`;
-        setUploadedFiles(prev => [...prev, newFile]);
+        setUploadedFiles(prev => [...prev, result.fileName]);
         
         // Call completion callback
-        onUploadComplete({
-          fileName: file.name,
-          fileId: newFile,
-          size: file.size,
-          type: file.type
-        });
+        onUploadComplete(result);
       }
     } catch (error) {
       console.error('Upload error:', error);
