@@ -178,15 +178,29 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           return value && String(value).trim() !== '';
         });
       
-      case 2: // Documents
-        if (!identityDocument) return false;
-        const selectedPlan = membershipPlans.find(p => p.id === form.getValues('planId'));
-        if (selectedPlan?.requiresPayment && experienceDocuments.length === 0) return false;
-        if (form.getValues('isStudent') && !studentDocument) return false;
-        return true;
-      
-      case 3: // Plan selection
+      case 2: // Plan selection
         return !!form.getValues('planId');
+      
+      case 3: // Documents
+        // Identity document is always required
+        if (!identityDocument) return false;
+        
+        const selectedPlan = membershipPlans.find(p => p.id === form.getValues('planId'));
+        const planName = selectedPlan?.name;
+        
+        // Check plan-specific requirements
+        if (planName === 'Público') {
+          // For Público: need to prove studying IT or working in IT
+          return experienceDocuments.length > 0;
+        } else if (planName === 'Júnior' || planName === 'Pleno' || planName === 'Sênior') {
+          // For paid plans: need experience documents
+          return experienceDocuments.length > 0;
+        }
+        
+        // If student, need student document
+        if (form.getValues('isStudent') && !studentDocument) return false;
+        
+        return true;
       
       case 4: // Terms
         return form.getValues('acceptTerms');
@@ -490,105 +504,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           </Card>
         )}
 
-        {/* Step 2: Documents */}
+        {/* Step 2: Plan Selection */}
         {currentStep === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5" />
-                Documentos de Comprovação
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Identity Document - Required */}
-              <div>
-                <Label className="block text-sm font-semibold mb-3">
-                  Documento de Identidade *
-                </Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  RG, CNH ou outro documento oficial com foto
-                </p>
-                <ObjectUploader
-                  getUploadParameters={handleGetUploadParameters}
-                  onUploadComplete={handleIdentityUploadComplete}
-                  allowedFileTypes={['image/*', '.pdf']}
-                  maxFiles={1}
-                  restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
-                />
-                {identityDocument && (
-                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                    ✓ Documento de identidade carregado
-                  </div>
-                )}
-              </div>
-
-              {/* Experience Documents - Required for paid plans */}
-              <div>
-                <Label className="block text-sm font-semibold mb-3">
-                  Comprovantes de Experiência {selectedPlanData?.requiresPayment ? '*' : '(Opcional)'}
-                </Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Carteira de trabalho, contratos, declarações ou certificados que comprovem sua experiência profissional
-                </p>
-                <ObjectUploader
-                  getUploadParameters={handleGetUploadParameters}
-                  onUploadComplete={handleExperienceUploadComplete}
-                  allowedFileTypes={['image/*', '.pdf']}
-                  maxFiles={5}
-                  restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
-                />
-                {experienceDocuments.length > 0 && (
-                  <div className="mt-3 space-y-2">
-                    <p className="text-sm font-medium">Documentos carregados:</p>
-                    {experienceDocuments.map((doc, index) => (
-                      <div key={index} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
-                        <span className="text-sm text-green-700">
-                          ✓ Comprovante {index + 1}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeExperienceDocument(index)}
-                          className="text-red-600 hover:text-red-700"
-                        >
-                          Remover
-                        </Button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Student Document - Required if student */}
-              {form.watch("isStudent") && (
-                <div>
-                  <Label className="block text-sm font-semibold mb-3">
-                    Comprovante de Matrícula *
-                  </Label>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Documento que comprove que você está matriculado em uma instituição de ensino
-                  </p>
-                  <ObjectUploader
-                    getUploadParameters={handleGetUploadParameters}
-                    onUploadComplete={handleStudentUploadComplete}
-                    allowedFileTypes={['image/*', '.pdf']}
-                    maxFiles={1}
-                    restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
-                  />
-                  {studentDocument && (
-                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
-                      ✓ Comprovante de matrícula carregado
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 3: Plan Selection */}
-        {currentStep === 3 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -699,13 +616,123 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           </Card>
         )}
 
-        {/* Step 4: Payment & Terms */}
+        {/* Step 3: Documents */}
+        {currentStep === 3 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Documentos de Comprovação
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Identity Document - Required */}
+              <div>
+                <Label className="block text-sm font-semibold mb-3">
+                  Documento de Identidade *
+                </Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  RG, CNH ou outro documento oficial com foto. Essencial para validação da conta e verificação.
+                </p>
+                <ObjectUploader
+                  getUploadParameters={handleGetUploadParameters}
+                  onUploadComplete={handleIdentityUploadComplete}
+                  allowedFileTypes={['image/*', 'application/pdf']}
+                  maxFiles={1}
+                  restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
+                />
+                {identityDocument && (
+                  <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                    ✓ Documento de identidade carregado
+                  </div>
+                )}
+              </div>
+
+              {/* Experience Documents - Plan specific requirements */}
+              <div>
+                <Label className="block text-sm font-semibold mb-3">
+                  Comprovantes de Experiência *
+                </Label>
+                <div className="text-xs text-muted-foreground mb-3">
+                  {selectedPlanData?.name === 'Público' && (
+                    <p>Para o plano Público: comprove que está estudando TI ou trabalhando com TI (diploma, certificado de curso, carteira de trabalho, etc.)</p>
+                  )}
+                  {selectedPlanData?.name === 'Júnior' && (
+                    <p>Para o plano Júnior: comprove de 1 a 5 anos de experiência em TI (carteira de trabalho, contratos, declarações, etc.)</p>
+                  )}
+                  {selectedPlanData?.name === 'Pleno' && (
+                    <p>Para o plano Pleno: comprove de 6 a 9 anos de experiência em TI (carteira de trabalho, contratos, declarações, etc.)</p>
+                  )}
+                  {selectedPlanData?.name === 'Sênior' && (
+                    <p>Para o plano Sênior: comprove acima de 10 anos de experiência em TI (carteira de trabalho, contratos, declarações, etc.)</p>
+                  )}
+                </div>
+                <ObjectUploader
+                  getUploadParameters={handleGetUploadParameters}
+                  onUploadComplete={handleExperienceUploadComplete}
+                  allowedFileTypes={['image/*', 'application/pdf']}
+                  maxFiles={5}
+                  restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
+                />
+                {experienceDocuments.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium">Documentos carregados:</p>
+                    {experienceDocuments.map((doc, index) => (
+                      <div key={index} className="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                        <span className="text-sm text-green-700">
+                          ✓ Comprovante {index + 1}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeExperienceDocument(index)}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          Remover
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Student Document - Required if student */}
+              {form.watch("isStudent") && (
+                <div>
+                  <Label className="block text-sm font-semibold mb-3">
+                    Comprovante de Matrícula *
+                  </Label>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Documento que comprove que você está matriculado em uma instituição de ensino
+                  </p>
+                  <ObjectUploader
+                    getUploadParameters={handleGetUploadParameters}
+                    onUploadComplete={handleStudentUploadComplete}
+                    allowedFileTypes={['image/*', 'application/pdf']}
+                    maxFiles={1}
+                    restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
+                  />
+                  {studentDocument && (
+                    <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
+                      ✓ Comprovante de matrícula carregado
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+
+
+        {/* Step 4: Terms & Submission */}
         {currentStep === 4 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CreditCard className="h-5 w-5" />
-                Pagamento e Termos
+Termos e Envio
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">

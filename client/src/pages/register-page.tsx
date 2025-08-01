@@ -6,10 +6,8 @@ export default function RegisterPage() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  // If user is already logged in and has an active membership, redirect to home
-  if (user && user.membershipStatus === 'active') {
-    return <Redirect to="/" />;
-  }
+  // If user is already logged in, they can still complete membership application
+  // No redirect needed - let them proceed with registration
 
   const handleRegistrationComplete = () => {
     setLocation("/");
