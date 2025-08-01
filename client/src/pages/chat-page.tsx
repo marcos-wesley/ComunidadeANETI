@@ -141,6 +141,9 @@ export default function ChatPage() {
   const [newGroupName, setNewGroupName] = useState("");
   const [newGroupDescription, setNewGroupDescription] = useState("");
   const [selectedUserId, setSelectedUserId] = useState("");
+  const [userSearchQuery, setUserSearchQuery] = useState("");
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
@@ -161,6 +164,24 @@ export default function ChatPage() {
     queryKey: ["/api/members"],
     select: (data: any[]) => data.filter(u => u.id !== user?.id), // Exclude current user
   });
+
+  // Filter users based on search query
+  useEffect(() => {
+    if (!userSearchQuery.trim()) {
+      setFilteredUsers([]);
+      setShowUserDropdown(false);
+      return;
+    }
+
+    const filtered = users.filter((u: any) => 
+      u.fullName?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      u.username?.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+      u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())
+    );
+    
+    setFilteredUsers(filtered);
+    setShowUserDropdown(filtered.length > 0);
+  }, [userSearchQuery, users]);
 
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -203,6 +224,8 @@ export default function ChatPage() {
       setNewGroupName("");
       setNewGroupDescription("");
       setSelectedUserId("");
+      setUserSearchQuery("");
+      setShowUserDropdown(false);
       setSelectedConversation(newConversation.id);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       toast({
@@ -274,6 +297,12 @@ export default function ChatPage() {
     });
   };
 
+  const handleSelectUser = (userId: string, userName: string) => {
+    setSelectedUserId(userId);
+    setUserSearchQuery(userName);
+    setShowUserDropdown(false);
+  };
+
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
 
   const filteredConversations = conversations.filter(conversation => {
@@ -318,18 +347,33 @@ export default function ChatPage() {
                   </Select>
 
                   {newChatType === "direct" && (
-                    <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um usuário" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {users.map((user: any) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.fullName} (@{user.username})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="relative">
+                      <Input
+                        placeholder="Buscar usuário pelo nome, username ou email..."
+                        value={userSearchQuery}
+                        onChange={(e) => setUserSearchQuery(e.target.value)}
+                        onFocus={() => userSearchQuery && setShowUserDropdown(filteredUsers.length > 0)}
+                      />
+                      {showUserDropdown && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-auto">
+                          {filteredUsers.map((u: any) => (
+                            <div
+                              key={u.id}
+                              onClick={() => handleSelectUser(u.id, u.fullName)}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            >
+                              <div className="font-medium text-gray-900">{u.fullName}</div>
+                              <div className="text-sm text-gray-500">@{u.username} • {u.email}</div>
+                            </div>
+                          ))}
+                          {filteredUsers.length === 0 && userSearchQuery && (
+                            <div className="px-3 py-2 text-gray-500 text-sm">
+                              Nenhum usuário encontrado
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   )}
 
                   {newChatType === "group" && (
