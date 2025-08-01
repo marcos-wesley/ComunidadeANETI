@@ -25,8 +25,13 @@ export const membershipPlans = pgTable("membership_plans", {
   name: text("name").notNull(),
   description: text("description"),
   price: integer("price").notNull(), // price in cents
+  minExperienceYears: integer("min_experience_years").default(0),
+  maxExperienceYears: integer("max_experience_years"),
+  requiresPayment: boolean("requires_payment").default(false),
   features: json("features").$type<string[]>(),
+  rules: text("rules"), // validation rules description
   isActive: boolean("is_active").default(true),
+  isAvailableForRegistration: boolean("is_available_for_registration").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -35,8 +40,12 @@ export const memberApplications = pgTable("member_applications", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   planId: varchar("plan_id").references(() => membershipPlans.id).notNull(),
   status: text("status").default("pending"), // pending, approved, rejected
-  paymentStatus: text("payment_status").default("pending"), // pending, paid, failed
+  paymentStatus: text("payment_status").default("pending"), // pending, paid, failed, gratuito
   paymentId: text("payment_id"),
+  mercadoPagoPreferenceId: text("mercado_pago_preference_id"),
+  experienceYears: integer("experience_years"),
+  isStudent: boolean("is_student").default(false),
+  studentProof: text("student_proof"), // path to student documentation
   adminNotes: text("admin_notes"),
   reviewedBy: varchar("reviewed_by").references(() => users.id),
   reviewedAt: timestamp("reviewed_at"),
@@ -48,7 +57,7 @@ export const documents = pgTable("documents", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   applicationId: varchar("application_id").references(() => memberApplications.id).notNull(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // identity, experience
+  type: text("type").notNull(), // identity, experience, student
   filePath: text("file_path").notNull(),
   fileSize: integer("file_size"),
   mimeType: text("mime_type"),

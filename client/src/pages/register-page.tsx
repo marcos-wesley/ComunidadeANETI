@@ -16,7 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { CloudUpload, Check, Clock, User, MapPin, Briefcase } from "lucide-react";
+import { CloudUpload, Check, Clock, User, MapPin, Briefcase, Star } from "lucide-react";
 import type { MembershipPlan } from "@shared/schema";
 import { getStateOptions, getCityOptions, getItAreaOptions } from "@shared/location-data";
 import { useAuth } from "@/hooks/use-auth";
@@ -29,6 +29,8 @@ const registrationSchema = z.object({
   state: z.string().min(1, "Estado é obrigatório"),
   city: z.string().min(1, "Cidade é obrigatória"),
   area: z.string().min(1, "Área de atuação é obrigatória"),
+  experienceYears: z.number().min(0, "Anos de experiência deve ser maior ou igual a 0"),
+  isStudent: z.boolean().default(false),
 });
 
 type RegistrationForm = z.infer<typeof registrationSchema>;
@@ -40,7 +42,8 @@ export default function RegisterPage() {
   const [selectedPlan, setSelectedPlan] = useState<string>("");
   const [selectedState, setSelectedState] = useState<string>(user?.state || "");
   const [identityDocument, setIdentityDocument] = useState<string>("");
-  const [experienceDocument, setExperienceDocument] = useState<string>("");
+  const [experienceDocuments, setExperienceDocuments] = useState<string[]>([]);
+  const [studentDocument, setStudentDocument] = useState<string>("");
 
   const form = useForm<RegistrationForm>({
     resolver: zodResolver(registrationSchema),
@@ -52,6 +55,8 @@ export default function RegisterPage() {
       state: user?.state || "",
       city: user?.city || "",
       area: user?.area || "",
+      experienceYears: 0,
+      isStudent: false,
     },
   });
 
@@ -59,6 +64,31 @@ export default function RegisterPage() {
   const { data: membershipPlans = [], isLoading: plansLoading } = useQuery<MembershipPlan[]>({
     queryKey: ["/api/membership-plans"],
   });
+
+  // Get selected plan details
+  const selectedPlanData = membershipPlans.find(plan => plan.id === selectedPlan);
+
+  // Validate plan eligibility based on experience
+  const validatePlanEligibility = (planId: string, experienceYears: number, isStudent: boolean) => {
+    const plan = membershipPlans.find(p => p.id === planId);
+    if (!plan || !plan.isAvailableForRegistration) return false;
+    
+    // Special case for "Público" plan - available for students or anyone
+    if (plan.name === "Público") {
+      return true;
+    }
+    
+    // Check experience requirements
+    if (plan.minExperienceYears && experienceYears < plan.minExperienceYears) {
+      return false;
+    }
+    
+    if (plan.maxExperienceYears && experienceYears > plan.maxExperienceYears) {
+      return false;
+    }
+    
+    return true;
+  };
 
   // Create application mutation
   const createApplicationMutation = useMutation({
@@ -114,7 +144,7 @@ export default function RegisterPage() {
 
   const handleExperienceUploadComplete = (result: any) => {
     if (result.successful && result.successful[0]) {
-      setExperienceDocument(result.successful[0].uploadURL);
+      setExperienceDocuments(prev => [...prev, result.successful[0].uploadURL]);
       toast({
         title: "Documento enviado!",
         description: "Comprovante de experiência carregado com sucesso.",
@@ -122,7 +152,28 @@ export default function RegisterPage() {
     }
   };
 
+  const handleStudentUploadComplete = (result: any) => {
+    if (result.successful && result.successful[0]) {
+      setStudentDocument(result.successful[0].uploadURL);
+      toast({
+        title: "Documento enviado!",
+        description: "Comprovante de estudante carregado com sucesso.",
+      });
+    }
+  };
+
   const onSubmit = async (data: RegistrationForm) => {
+    // Validate plan eligibility
+    if (!validatePlanEligibility(data.planId, data.experienceYears, data.isStudent)) {
+      toast({
+        title: "Plano não elegível",
+        description: "Você não atende aos requisitos de experiência para este plano.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate required documents
     if (!identityDocument) {
       toast({
         title: "Documento obrigatório",
@@ -132,14 +183,45 @@ export default function RegisterPage() {
       return;
     }
 
+    const plan = membershipPlans.find(p => p.id === data.planId);
+    
+    // For paid plans, require experience documents
+    if (plan?.requiresPayment && experienceDocuments.length === 0) {
+      toast({
+        title: "Comprovante obrigatório",
+        description: "Para planos pagos, é necessário enviar comprovantes de experiência.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For students selecting Público plan, require student document
+    if (data.isStudent && plan?.name === "Público" && !studentDocument) {
+      toast({
+        title: "Comprovante de estudante obrigatório",
+        description: "Por favor, envie um comprovante de matrícula.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
-      await createApplicationMutation.mutateAsync({ planId: data.planId });
+      const applicationData = {
+        planId: data.planId,
+        experienceYears: data.experienceYears,
+        isStudent: data.isStudent,
+        fullName: data.fullName,
+        phone: data.phone,
+        state: data.state,
+        city: data.city,
+        area: data.area,
+      };
+
+      await createApplicationMutation.mutateAsync(applicationData);
     } catch (error) {
       console.error("Error creating application:", error);
     }
   };
-
-  const selectedPlanData = membershipPlans.find(plan => plan.id === selectedPlan);
 
   if (currentStep === 2) {
     return (
@@ -355,29 +437,170 @@ export default function RegisterPage() {
                       Área Profissional
                     </h3>
                     
-                    <div>
-                      <Label htmlFor="area" className="text-sm font-semibold text-foreground mb-2 block">
-                        Área de Atuação *
-                      </Label>
-                      <Select
-                        value={form.watch("area")}
-                        onValueChange={(value) => form.setValue("area", value)}
-                      >
-                        <SelectTrigger className="bg-background">
-                          <SelectValue placeholder="Selecione sua área de atuação" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {getItAreaOptions().map((area) => (
-                            <SelectItem key={area.value} value={area.value}>
-                              {area.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {form.formState.errors.area && (
-                        <p className="text-sm text-destructive mt-1">
-                          {form.formState.errors.area.message}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Label htmlFor="area" className="text-sm font-semibold text-foreground mb-2 block">
+                          Área de Atuação *
+                        </Label>
+                        <Select
+                          value={form.watch("area")}
+                          onValueChange={(value) => form.setValue("area", value)}
+                        >
+                          <SelectTrigger className="bg-background">
+                            <SelectValue placeholder="Selecione sua área de atuação" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getItAreaOptions().map((area) => (
+                              <SelectItem key={area.value} value={area.value}>
+                                {area.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {form.formState.errors.area && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.area.message}
+                          </p>
+                        )}
+                      </div>
+
+                      <div>
+                        <Label htmlFor="experienceYears" className="text-sm font-semibold text-foreground mb-2 block">
+                          Anos de Experiência *
+                        </Label>
+                        <Input
+                          id="experienceYears"
+                          type="number"
+                          min="0"
+                          max="50"
+                          {...form.register("experienceYears", { valueAsNumber: true })}
+                          placeholder="Ex: 5"
+                          className="bg-background"
+                        />
+                        {form.formState.errors.experienceYears && (
+                          <p className="text-sm text-destructive mt-1">
+                            {form.formState.errors.experienceYears.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Student Status */}
+                    <div className="mt-6">
+                      <div className="flex items-start space-x-3">
+                        <Checkbox
+                          id="isStudent"
+                          checked={form.watch("isStudent")}
+                          onCheckedChange={(checked) => form.setValue("isStudent", checked === true)}
+                        />
+                        <div className="grid gap-1.5 leading-none">
+                          <Label
+                            htmlFor="isStudent"
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            Sou estudante de TI
+                          </Label>
+                          <p className="text-xs text-muted-foreground">
+                            Marque esta opção se você está cursando faculdade ou curso técnico em TI
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Membership Plan Section */}
+                  <div>
+                    <h3 className="text-xl font-semibold text-foreground mb-6 pb-3 border-b border-border flex items-center gap-2">
+                      <Star className="h-5 w-5 text-primary" />
+                      Plano de Associação
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {plansLoading ? (
+                          <div className="col-span-full text-center py-8">
+                            <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+                            <p className="text-muted-foreground mt-2">Carregando planos...</p>
+                          </div>
+                        ) : (
+                          membershipPlans
+                            .filter(plan => plan.isAvailableForRegistration)
+                            .map((plan) => {
+                              const isEligible = validatePlanEligibility(plan.id, form.watch("experienceYears"), form.watch("isStudent"));
+                              const isSelected = form.watch("planId") === plan.id;
+                              
+                              return (
+                                <div
+                                  key={plan.id}
+                                  className={`relative border-2 rounded-lg p-6 cursor-pointer transition-all ${
+                                    isSelected
+                                      ? "border-primary bg-primary/5"
+                                      : isEligible
+                                      ? "border-border hover:border-primary/50"
+                                      : "border-muted bg-muted/30 cursor-not-allowed opacity-60"
+                                  }`}
+                                  onClick={() => {
+                                    if (isEligible) {
+                                      form.setValue("planId", plan.id);
+                                      setSelectedPlan(plan.id);
+                                    }
+                                  }}
+                                >
+                                  {isSelected && (
+                                    <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center">
+                                      <Check className="h-4 w-4 text-primary-foreground" />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="text-center">
+                                    <h4 className="text-lg font-semibold text-foreground mb-2">{plan.name}</h4>
+                                    <div className="text-2xl font-bold text-primary mb-3">
+                                      {plan.price === 0 ? "Gratuito" : `R$ ${(plan.price / 100).toFixed(2)}`}
+                                    </div>
+                                    <p className="text-sm text-muted-foreground mb-4">{plan.description}</p>
+                                    
+                                    {!isEligible && (
+                                      <div className="text-xs text-destructive bg-destructive/10 px-2 py-1 rounded">
+                                        {plan.minExperienceYears && form.watch("experienceYears") < plan.minExperienceYears
+                                          ? `Requer mín. ${plan.minExperienceYears} anos de exp.`
+                                          : plan.maxExperienceYears && form.watch("experienceYears") > plan.maxExperienceYears
+                                          ? `Requer máx. ${plan.maxExperienceYears} anos de exp.`
+                                          : "Não elegível"
+                                        }
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })
+                        )}
+                      </div>
+                      
+                      {form.formState.errors.planId && (
+                        <p className="text-sm text-destructive">
+                          {form.formState.errors.planId.message}
                         </p>
+                      )}
+                      
+                      {selectedPlanData && (
+                        <div className="bg-muted/50 border border-border rounded-lg p-4">
+                          <h5 className="font-semibold text-foreground mb-2">Detalhes do Plano Selecionado</h5>
+                          <p className="text-sm text-muted-foreground mb-3">{selectedPlanData.rules}</p>
+                          
+                          {selectedPlanData.features && (
+                            <div>
+                              <p className="text-sm font-medium text-foreground mb-2">Benefícios inclusos:</p>
+                              <ul className="text-sm text-muted-foreground space-y-1">
+                                {selectedPlanData.features.map((feature, index) => (
+                                  <li key={index} className="flex items-start gap-2">
+                                    <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                                    {feature}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -420,12 +643,99 @@ export default function RegisterPage() {
                         )}
                       </div>
                       
+                      {/* Experience Documents - Multiple Files */}
+                      <div>
+                        <Label className="block text-sm font-semibold text-foreground mb-3">
+                          Comprovantes de Experiência 
+                          {selectedPlanData?.requiresPayment && <span className="text-destructive">*</span>}
+                        </Label>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Podem ser: certificados, diplomas, contratos de trabalho, declarações de empresa, portfólio, etc.
+                        </p>
+                        
+                        {experienceDocuments.length > 0 ? (
+                          <div className="space-y-2">
+                            {experienceDocuments.map((doc, index) => (
+                              <div key={index} className="border border-secondary bg-secondary/10 rounded-lg p-3 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <Check className="h-4 w-4 text-secondary" />
+                                  <p className="text-sm font-medium text-foreground">Documento {index + 1} enviado</p>
+                                </div>
+                              </div>
+                            ))}
+                            
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              maxFileSize={5242880} // 5MB
+                              onGetUploadParameters={handleGetUploadParameters}
+                              onComplete={handleExperienceUploadComplete}
+                            >
+                              <Button variant="outline" className="w-full">
+                                <CloudUpload className="h-4 w-4 mr-2" />
+                                Adicionar Mais Documentos
+                              </Button>
+                            </ObjectUploader>
+                          </div>
+                        ) : (
+                          <ObjectUploader
+                            maxNumberOfFiles={1}
+                            maxFileSize={5242880} // 5MB
+                            onGetUploadParameters={handleGetUploadParameters}
+                            onComplete={handleExperienceUploadComplete}
+                          >
+                            <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all w-full">
+                              <div className="p-3 bg-muted rounded-full w-fit mx-auto mb-3">
+                                <CloudUpload className="h-6 w-6 text-muted-foreground" />
+                              </div>
+                              <p className="text-sm font-medium text-foreground">Clique para fazer upload ou arraste o arquivo aqui</p>
+                              <p className="text-xs text-muted-foreground mt-2">PDF, JPG ou PNG - Máximo 5MB</p>
+                            </div>
+                          </ObjectUploader>
+                        )}
+                      </div>
+
+                      {/* Student Document - Conditional */}
+                      {form.watch("isStudent") && (
+                        <div>
+                          <Label className="block text-sm font-semibold text-foreground mb-3">
+                            Comprovante de Matrícula *
+                          </Label>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Declaração de matrícula ou carteirinha de estudante válida
+                          </p>
+                          
+                          {studentDocument ? (
+                            <div className="border-2 border-secondary bg-secondary/10 rounded-lg p-6 text-center">
+                              <div className="p-3 bg-secondary/20 rounded-full w-fit mx-auto mb-3">
+                                <Check className="h-6 w-6 text-secondary" />
+                              </div>
+                              <p className="text-sm font-medium text-foreground">Comprovante enviado com sucesso!</p>
+                            </div>
+                          ) : (
+                            <ObjectUploader
+                              maxNumberOfFiles={1}
+                              maxFileSize={5242880} // 5MB
+                              onGetUploadParameters={handleGetUploadParameters}
+                              onComplete={handleStudentUploadComplete}
+                            >
+                              <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary hover:bg-primary/5 transition-all w-full">
+                                <div className="p-3 bg-muted rounded-full w-fit mx-auto mb-3">
+                                  <CloudUpload className="h-6 w-6 text-muted-foreground" />
+                                </div>
+                                <p className="text-sm font-medium text-foreground">Clique para fazer upload ou arraste o arquivo aqui</p>
+                                <p className="text-xs text-muted-foreground mt-2">PDF, JPG ou PNG - Máximo 5MB</p>
+                              </div>
+                            </ObjectUploader>
+                          )}
+                        </div>
+                      )}
+                      
                       <div>
                         <Label className="block text-sm font-semibold text-foreground mb-3">
                           Comprovante de Experiência (Opcional)
                         </Label>
                         
-                        {experienceDocument ? (
+                        {experienceDocuments.length > 0 ? (
                           <div className="border-2 border-secondary bg-secondary/10 rounded-lg p-6 text-center">
                             <div className="p-3 bg-secondary/20 rounded-full w-fit mx-auto mb-3">
                               <Check className="h-6 w-6 text-secondary" />
