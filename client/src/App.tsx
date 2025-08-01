@@ -3,25 +3,39 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AuthProvider } from "@/hooks/use-auth";
+import { AuthProvider, useAuth } from "@/hooks/use-auth";
+import { Navbar } from "@/components/Navbar";
 import HomePage from "./pages/home-page";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
 import RegisterPage from "./pages/register-page";
 import AdminDashboard from "./pages/admin-dashboard";
 import SocialFeedPage from "./pages/social-feed-page";
+import PublishPage from "./pages/publish-page";
+import MembersPage from "./pages/members-page";
 import { ProtectedRoute } from "./lib/protected-route";
 
-function Router(): JSX.Element {
+function MainLayout(): JSX.Element {
+  const { user } = useAuth();
+  
   return (
-    <Switch>
-      <ProtectedRoute path="/" component={HomePage} />
-      <ProtectedRoute path="/register" component={RegisterPage} />
-      <ProtectedRoute path="/feed" component={SocialFeedPage} />
-      <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly />
-      <Route path="/auth" component={AuthPage} />
-      <Route component={NotFound} />
-    </Switch>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {user && <Navbar />}
+      <Switch>
+        <ProtectedRoute path="/" component={SocialFeedPage} />
+        <ProtectedRoute path="/feed" component={SocialFeedPage} />
+        <ProtectedRoute path="/publish" component={PublishPage} />
+        <ProtectedRoute path="/members" component={MembersPage} />
+        <ProtectedRoute path="/groups" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Grupos - Em desenvolvimento</h1></div>} />
+        <ProtectedRoute path="/forums" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Fóruns - Em desenvolvimento</h1></div>} />
+        <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
+        <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
+        <ProtectedRoute path="/register" component={RegisterPage} />
+        <ProtectedRoute path="/admin" component={AdminDashboard} adminOnly />
+        <Route path="/auth" component={AuthPage} />
+        <Route component={NotFound} />
+      </Switch>
+    </div>
   );
 }
 
@@ -31,7 +45,7 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <Toaster />
-          <Router />
+          <MainLayout />
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>
