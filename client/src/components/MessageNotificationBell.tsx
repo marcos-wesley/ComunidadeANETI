@@ -20,7 +20,11 @@ interface Notification {
   };
 }
 
-export function MessageNotificationBell() {
+interface MessageNotificationBellProps {
+  onToggleChat?: () => void;
+}
+
+export function MessageNotificationBell({ onToggleChat }: MessageNotificationBellProps) {
   const [showTooltip, setShowTooltip] = useState(false);
   const prevMessageNotificationsRef = useRef<Notification[]>([]);
 
@@ -58,8 +62,12 @@ export function MessageNotificationBell() {
   }, [messageNotifications]);
 
   const handleClick = () => {
-    // Navigate to chat page
-    window.location.href = "/chat";
+    // Toggle floating chat if function provided, otherwise navigate to chat page
+    if (onToggleChat) {
+      onToggleChat();
+    } else {
+      window.location.href = "/chat";
+    }
   };
 
   return (

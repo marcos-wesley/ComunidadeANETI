@@ -168,7 +168,7 @@ export function Navbar(): JSX.Element {
             </Dialog>
 
             {/* Messages */}
-            <MessageNotificationBell />
+            <MessageNotificationBell onToggleChat={() => setShowFloatingChat(!showFloatingChat)} />
 
             {/* Notifications */}
             <NotificationBell />
