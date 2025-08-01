@@ -290,25 +290,35 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       let finalCustomerId = customerId;
       let finalSubscriptionId = subscriptionId;
       
-      // For paid plans, ensure payment is completed
+      // For paid plans, create subscription and process payment first
       if (selectedPlanData?.requiresPayment && !subscriptionId) {
-        toast({
-          title: "Complete o Pagamento",
-          description: "Complete o pagamento antes de finalizar sua solicitação.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Set subscription info for paid plans
-      if (selectedPlanData?.requiresPayment) {
-        finalCustomerId = customerId;
-        finalSubscriptionId = subscriptionId;
+        try {
+          const subscriptionData = await createSubscription();
+          finalCustomerId = subscriptionData.customerId;
+          finalSubscriptionId = subscriptionData.subscriptionId;
+          setCustomerId(finalCustomerId);
+          setSubscriptionId(finalSubscriptionId);
+          setClientSecret(subscriptionData.clientSecret);
+        } catch (error) {
+          toast({
+            title: "Erro no Pagamento",
+            description: "Não foi possível processar o pagamento. Tente novamente.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
       
-      // Create the application with payment info if applicable
+      // Create the application with user data and payment info if applicable
       const applicationData: any = {
+        fullName: data.fullName,
+        email: data.email,
+        username: data.username,
+        city: data.city,
+        state: data.state,
+        area: data.area,
+        phone: data.phone,
         planId: data.planId,
         experienceYears: data.experienceYears,
         isStudent: data.isStudent,
@@ -849,27 +859,15 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                 </div>
               )}
 
-              {/* Payment section for paid plans */}
-              {selectedPlanData?.requiresPayment && clientSecret && (
+              {/* Payment info for paid plans */}
+              {selectedPlanData?.requiresPayment && (
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Complete o Pagamento</h3>
-                  <StripePayment
-                    clientSecret={clientSecret}
-                    onPaymentComplete={async (subscriptionId) => {
-                      setSubscriptionId(subscriptionId);
-                      toast({
-                        title: "Pagamento Confirmado!",
-                        description: "Finalizando sua solicitação...",
-                      });
-                      // Auto-submit the form after payment
-                      setTimeout(() => {
-                        const formData = form.getValues();
-                        onSubmit(formData);
-                      }, 1000);
-                    }}
-                    planName={selectedPlanData.name}
-                    planPrice={selectedPlanData.price}
-                  />
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h3 className="text-lg font-semibold text-blue-900 mb-2">Pagamento</h3>
+                    <p className="text-blue-800">
+                      O pagamento de <strong>R$ {selectedPlanData.price.toFixed(2)}/ano</strong> será processado ao finalizar a solicitação.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -937,18 +935,16 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
           ) : (
             <Button 
               type="submit" 
-              disabled={isSubmitting || !form.watch("acceptTerms") || (selectedPlanData?.requiresPayment && !subscriptionId)}
+              disabled={isSubmitting || !form.watch("acceptTerms")}
             >
               {isSubmitting ? (
                 <>
                   <CreditCard className="mr-2 h-4 w-4 animate-spin" />
-                  {selectedPlanData?.requiresPayment && !subscriptionId ? "Preparando Pagamento..." : 
-                   selectedPlanData?.requiresPayment ? "Finalizando..." : "Enviando..."}
+                  {selectedPlanData?.requiresPayment ? "Processando Pagamento..." : "Enviando..."}
                 </>
               ) : (
                 <>
-                  {selectedPlanData?.requiresPayment && !subscriptionId ? "Preparar Pagamento" :
-                   selectedPlanData?.requiresPayment ? "Finalizar Solicitação" : "Enviar Solicitação"}
+                  {selectedPlanData?.requiresPayment ? "Confirmar Pagamento e Finalizar" : "Enviar Solicitação"}
                   <ChevronRight className="ml-2 h-4 w-4" />
                 </>
               )}

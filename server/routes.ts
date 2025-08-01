@@ -335,7 +335,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration application (public endpoint)
   app.post("/api/register-application", async (req, res) => {
     try {
-      const validatedData = insertMemberApplicationSchema.parse(req.body);
+      // Create a temporary user first for the registration
+      const tempUser = await storage.createUser({
+        fullName: req.body.fullName || "Usuário Temporário",
+        email: req.body.email || `temp-${Date.now()}@aneti.org`,
+        username: req.body.username || `temp-user-${Date.now()}`,
+        city: req.body.city || "",
+        state: req.body.state || "",
+        area: req.body.area || "",
+        phone: req.body.phone || "",
+        hashedPassword: "temp-password", // This will be set later
+        isApproved: false,
+      });
+
+      const validatedData = insertMemberApplicationSchema.parse({
+        ...req.body,
+        userId: tempUser.id,
+      });
       
       const application = await storage.createMemberApplication(validatedData);
       res.status(201).json(application);
