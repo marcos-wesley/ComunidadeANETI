@@ -16,7 +16,11 @@ import {
   Send, 
   Users, 
   Search,
-  Plus
+  Plus,
+  Edit,
+  Trash2,
+  Check,
+  CheckCheck
 } from "lucide-react";
 
 interface FloatingChatProps {
@@ -33,6 +37,8 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   const [showNewChat, setShowNewChat] = useState(false);
   const [userSearchQuery, setUserSearchQuery] = useState("");
   const [filteredUsers, setFilteredUsers] = useState<any[]>([]);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch conversations
@@ -117,6 +123,68 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
     },
   });
 
+  // Edit message mutation
+  const editMessageMutation = useMutation({
+    mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
+      const response = await apiRequest("PUT", `/api/messages/${messageId}`, {
+        content,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      setEditingMessageId(null);
+      setEditingText("");
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation, "messages"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível editar a mensagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete message mutation
+  const deleteMessageMutation = useMutation({
+    mutationFn: async (messageId: string) => {
+      await apiRequest("DELETE", `/api/messages/${messageId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", selectedConversation, "messages"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível deletar a mensagem",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete conversation mutation
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (conversationId: string) => {
+      await apiRequest("DELETE", `/api/conversations/${conversationId}`);
+    },
+    onSuccess: () => {
+      setSelectedConversation(null);
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({
+        title: "Sucesso",
+        description: "Conversa deletada com sucesso",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível deletar a conversa",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!messageText.trim() || !selectedConversation) return;
@@ -129,6 +197,39 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
 
   const handleStartChat = (userId: string) => {
     createConversationMutation.mutate(userId);
+  };
+
+  const handleEditMessage = (messageId: string, currentContent: string) => {
+    setEditingMessageId(messageId);
+    setEditingText(currentContent);
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingMessageId || !editingText.trim()) return;
+    
+    editMessageMutation.mutate({
+      messageId: editingMessageId,
+      content: editingText.trim(),
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessageId(null);
+    setEditingText("");
+  };
+
+  const handleDeleteMessage = (messageId: string) => {
+    if (confirm("Tem certeza que deseja deletar esta mensagem?")) {
+      deleteMessageMutation.mutate(messageId);
+    }
+  };
+
+  const handleDeleteConversation = () => {
+    if (!selectedConversation) return;
+    
+    if (confirm("Tem certeza que deseja deletar esta conversa inteira?")) {
+      deleteConversationMutation.mutate(selectedConversation);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -265,11 +366,18 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
                               {conversation.lastMessage?.content || "Iniciar conversa"}
                             </div>
                           </div>
-                          {conversation.unreadCount > 0 && (
-                            <Badge variant="destructive" className="h-5 w-5 p-0 text-xs flex items-center justify-center">
-                              {conversation.unreadCount}
-                            </Badge>
-                          )}
+                          
+                          {/* Unread message indicator */}
+                          {(() => {
+                            const currentParticipant = conversation.participants.find((p: any) => p.userId === user?.id);
+                            const hasUnreadMessages = conversation.lastMessage && 
+                              currentParticipant &&
+                              new Date(conversation.lastMessage.createdAt) > new Date(currentParticipant.lastReadAt);
+                            
+                            return hasUnreadMessages ? (
+                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                            ) : null;
+                          })()}
                         </div>
                       ))
                     )}
@@ -279,32 +387,46 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
             ) : (
               // Messages view
               <div className="flex flex-col h-full">
-                <div className="p-3 border-b flex items-center gap-2">
+                <div className="p-3 border-b flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => setSelectedConversation(null)}
+                    >
+                      ←
+                    </Button>
+                    <Avatar className="h-6 w-6">
+                      <AvatarFallback className="bg-blue-600 text-white text-xs">
+                        {getInitials(getConversationName(
+                          conversations.find((c: any) => c.id === selectedConversation)
+                        ))}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-medium">
+                      {getConversationName(
+                        conversations.find((c: any) => c.id === selectedConversation)
+                      )}
+                    </span>
+                  </div>
+                  
+                  {/* Delete conversation button */}
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-6 w-6 p-0"
-                    onClick={() => setSelectedConversation(null)}
+                    className="h-6 w-6 p-0 text-red-600 hover:bg-red-50"
+                    onClick={handleDeleteConversation}
+                    title="Deletar conversa"
                   >
-                    ←
+                    <Trash2 className="h-3 w-3" />
                   </Button>
-                  <Avatar className="h-6 w-6">
-                    <AvatarFallback className="bg-blue-600 text-white text-xs">
-                      {getInitials(getConversationName(
-                        conversations.find((c: any) => c.id === selectedConversation)
-                      ))}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-sm font-medium">
-                    {getConversationName(
-                      conversations.find((c: any) => c.id === selectedConversation)
-                    )}
-                  </span>
                 </div>
 
                 <ScrollArea className="flex-1 p-2">
                   <div className="space-y-2">
-                    {messages.map((message: any) => (
+                    {/* Sort messages chronologically (oldest first) */}
+                    {messages.sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()).map((message: any, index: number) => (
                       <div
                         key={message.id}
                         className={`flex ${
@@ -312,24 +434,100 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
                         }`}
                       >
                         <div
-                          className={`max-w-[70%] rounded-lg px-3 py-2 text-sm ${
+                          className={`max-w-[70%] rounded-lg px-3 py-2 text-sm relative group ${
                             message.sender.id === user?.id
                               ? "bg-blue-600 text-white"
                               : "bg-gray-100 text-gray-900"
                           }`}
                         >
-                          <div>{message.content}</div>
-                          <div
-                            className={`text-xs mt-1 ${
-                              message.sender.id === user?.id
-                                ? "text-blue-200"
-                                : "text-gray-500"
-                            }`}
-                          >
-                            {new Date(message.createdAt).toLocaleTimeString("pt-BR", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
+                          {/* Edit/Delete buttons for own messages */}
+                          {message.sender.id === user?.id && (
+                            <div className="absolute -top-8 right-0 bg-white shadow-lg rounded-md border opacity-0 group-hover:opacity-100 transition-opacity flex">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-gray-100"
+                                onClick={() => handleEditMessage(message.id, message.content)}
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0 hover:bg-red-100 text-red-600"
+                                onClick={() => handleDeleteMessage(message.id)}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Message content - editable if in edit mode */}
+                          {editingMessageId === message.id ? (
+                            <div className="space-y-2">
+                              <Input
+                                value={editingText}
+                                onChange={(e) => setEditingText(e.target.value)}
+                                className="bg-white text-black text-sm h-8"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSaveEdit();
+                                  } else if (e.key === "Escape") {
+                                    handleCancelEdit();
+                                  }
+                                }}
+                                autoFocus
+                              />
+                              <div className="flex gap-1">
+                                <Button size="sm" className="h-6 text-xs" onClick={handleSaveEdit}>
+                                  Salvar
+                                </Button>
+                                <Button size="sm" variant="outline" className="h-6 text-xs" onClick={handleCancelEdit}>
+                                  Cancelar
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div>{message.content}</div>
+                              {message.editedAt && (
+                                <span className="text-xs opacity-70 italic">(editado)</span>
+                              )}
+                            </>
+                          )}
+
+                          {/* Message timestamp and read receipts */}
+                          <div className={`flex items-center gap-1 mt-1 text-xs ${
+                            message.sender.id === user?.id ? "text-blue-200" : "text-gray-500"
+                          }`}>
+                            <span>
+                              {new Date(message.createdAt).toLocaleTimeString("pt-BR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                            
+                            {/* Read receipts for sent messages */}
+                            {message.sender.id === user?.id && (
+                              <div className="ml-1">
+                                {(() => {
+                                  const conversation = conversations.find((c: any) => c.id === selectedConversation);
+                                  if (!conversation) return <Check className="h-3 w-3" />;
+                                  
+                                  const otherParticipants = conversation.participants.filter((p: any) => p.userId !== user?.id);
+                                  const allRead = otherParticipants.every((p: any) => 
+                                    new Date(p.lastReadAt) >= new Date(message.createdAt)
+                                  );
+                                  
+                                  return allRead ? (
+                                    <CheckCheck className="h-3 w-3 text-blue-300" />
+                                  ) : (
+                                    <Check className="h-3 w-3" />
+                                  );
+                                })()}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
