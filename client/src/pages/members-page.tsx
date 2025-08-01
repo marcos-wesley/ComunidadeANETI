@@ -147,17 +147,21 @@ export default function MembersPage(): JSX.Element {
 
   const followMutation = useMutation({
     mutationFn: async (memberId: string) => {
+      console.log('followMutation called with:', memberId);
       const res = await apiRequest("POST", "/api/follows", { followingId: memberId });
+      console.log('followMutation response:', res.status);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('followMutation success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
         title: "Seguindo",
         description: "Você agora está seguindo este membro!",
       });
     },
-    onError: () => {
+    onError: (error) => {
+      console.error('followMutation error:', error);
       toast({
         title: "Erro",
         description: "Não foi possível seguir este membro.",
@@ -168,14 +172,25 @@ export default function MembersPage(): JSX.Element {
 
   const unfollowMutation = useMutation({
     mutationFn: async (memberId: string) => {
+      console.log('unfollowMutation called with:', memberId);
       const res = await apiRequest("DELETE", `/api/follows/${memberId}`);
+      console.log('unfollowMutation response:', res.status);
       return res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('unfollowMutation success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
         title: "Deixou de seguir",
         description: "Você não está mais seguindo este membro.",
+      });
+    },
+    onError: (error) => {
+      console.error('unfollowMutation error:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível deixar de seguir este membro.",
+        variant: "destructive",
       });
     },
   });
@@ -195,6 +210,8 @@ export default function MembersPage(): JSX.Element {
   };
 
   const handleFollow = (memberId: string, isCurrentlyFollowing: boolean) => {
+    console.log('handleFollow called with:', { memberId, isCurrentlyFollowing, canConnect });
+    
     if (!canConnect) {
       toast({
         title: "Acesso restrito",
@@ -205,8 +222,10 @@ export default function MembersPage(): JSX.Element {
     }
     
     if (isCurrentlyFollowing) {
+      console.log('Calling unfollowMutation.mutate');
       unfollowMutation.mutate(memberId);
     } else {
+      console.log('Calling followMutation.mutate');
       followMutation.mutate(memberId);
     }
   };
@@ -458,19 +477,24 @@ export default function MembersPage(): JSX.Element {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log('Follow button clicked!', member.id, canConnect);
+                    console.log('Follow button clicked!', member.id, canConnect, member.isFollowing);
                     handleFollow(member.id, member.isFollowing || false);
                   }}
                   disabled={!canConnect || followMutation.isPending || unfollowMutation.isPending}
                   style={{ pointerEvents: 'auto' }}
+                  className={member.isFollowing ? "bg-blue-600 text-white hover:bg-blue-700" : ""}
                 >
-                  {member.isFollowing ? (
+                  {followMutation.isPending || unfollowMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : member.isFollowing ? (
                     <>
-                      <UserCheck className="h-4 w-4" />
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Seguindo
                     </>
                   ) : (
                     <>
-                      <UserPlus className="h-4 w-4" />
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Seguir
                     </>
                   )}
                 </Button>

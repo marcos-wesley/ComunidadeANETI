@@ -353,9 +353,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const connection = await storage.createConnectionRequest(userId!, receiverId);
-      res.status(201).json(connection);
+      res.status(201).json({ success: true, connection });
     } catch (error) {
       console.error("Error creating connection request:", error);
+      if (error instanceof Error && error.message === "Connection already exists") {
+        return res.status(400).json({ error: "Connection already exists" });
+      }
       res.status(500).json({ error: "Internal server error" });
     }
   });
@@ -372,6 +375,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const connection = await storage.updateConnectionStatus(connectionId, status, userId!);
+      
+      if (!connection) {
+        return res.status(404).json({ error: "Connection not found or unauthorized" });
+      }
+
       res.json(connection);
     } catch (error) {
       console.error("Error updating connection:", error);
