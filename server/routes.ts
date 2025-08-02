@@ -1488,7 +1488,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/admin/applications/:id/reject", requireAdminAuth, async (req, res) => {
     try {
       const applicationId = req.params.id;
-      const { reason } = req.body;
+      const { reason, requestDocuments } = req.body;
       
       const application = await storage.getApplication(applicationId);
       
@@ -1499,17 +1499,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Update application status to rejected
-      await storage.updateApplication(applicationId, { 
-        status: "rejected",
-        rejectionReason: reason,
-        reviewedAt: new Date(),
-        reviewedBy: req.adminUser.adminUserId,
-      });
+      // Reject application with message or request documents
+      const updatedApplication = await storage.rejectApplication(
+        applicationId, 
+        reason, 
+        req.adminUser.adminUserId,
+        requestDocuments
+      );
 
+      if (!updatedApplication) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Failed to update application" 
+        });
+      }
+
+      const action = requestDocuments ? 'Additional documents requested' : 'Application rejected';
       res.json({ 
         success: true, 
-        message: "Application rejected successfully" 
+        message: `${action} successfully`,
+        status: updatedApplication.status
       });
     } catch (error) {
       console.error("Error rejecting application:", error);

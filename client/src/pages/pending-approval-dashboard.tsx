@@ -72,14 +72,20 @@ export default function PendingApprovalDashboard() {
           <Clock className="w-3 h-3 mr-1" />
           Aguardando Aprovação
         </Badge>;
+      case 'documents_requested':
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+          <FileText className="w-3 h-3 mr-1" />
+          Documentos Solicitados
+        </Badge>;
+      case 'rejected':
+        return <Badge variant="destructive" className="bg-red-50 text-red-700 border-red-300">
+          <Clock className="w-3 h-3 mr-1" />
+          Rejeitado
+        </Badge>;
       case 'approved':
         return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
           <CheckCircle className="w-3 h-3 mr-1" />
           Aprovado
-        </Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-300">
-          Rejeitado
         </Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
@@ -189,6 +195,63 @@ export default function PendingApprovalDashboard() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Admin Messages/Notes */}
+        {application.adminNotes && (
+          <Card className={`${
+            application.status === 'rejected' ? 'border-red-200 bg-red-50' :
+            application.status === 'documents_requested' ? 'border-blue-200 bg-blue-50' :
+            'border-gray-200'
+          }`}>
+            <CardHeader>
+              <CardTitle className={`flex items-center space-x-2 ${
+                application.status === 'rejected' ? 'text-red-700' :
+                application.status === 'documents_requested' ? 'text-blue-700' :
+                'text-gray-700'
+              }`}>
+                <FileText className="w-5 h-5" />
+                <span>
+                  {application.status === 'rejected' ? 'Motivo da Rejeição' :
+                   application.status === 'documents_requested' ? 'Documentos Solicitados' :
+                   'Observações do Administrador'}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className={`p-4 rounded-lg ${
+                application.status === 'rejected' ? 'bg-red-100 border border-red-200' :
+                application.status === 'documents_requested' ? 'bg-blue-100 border border-blue-200' :
+                'bg-gray-100 border border-gray-200'
+              }`}>
+                <p className={`text-sm ${
+                  application.status === 'rejected' ? 'text-red-800' :
+                  application.status === 'documents_requested' ? 'text-blue-800' :
+                  'text-gray-800'
+                }`}>
+                  {application.adminNotes}
+                </p>
+              </div>
+              
+              {application.status === 'documents_requested' && (
+                <div className="mt-4">
+                  <Button 
+                    onClick={() => setLocation('/documents/upload')}
+                    className="w-full"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Enviar Documentos Adicionais
+                  </Button>
+                </div>
+              )}
+              
+              {application.reviewedAt && (
+                <div className="mt-3 text-xs text-gray-500">
+                  Revisado em: {format(new Date(application.reviewedAt), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Application Details */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">

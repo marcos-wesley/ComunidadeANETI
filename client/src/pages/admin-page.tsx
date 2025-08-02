@@ -27,6 +27,7 @@ import {
   Edit
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
+import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 
 interface AdminUser {
   id: string;
@@ -175,36 +176,7 @@ export default function AdminPage() {
     },
   });
 
-  // Reject application
-  const rejectApplicationMutation = useMutation({
-    mutationFn: async ({ applicationId, reason }: { applicationId: string; reason: string }) => {
-      const response = await fetch(`/api/admin/applications/${applicationId}/reject`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({ reason }),
-      });
-      return await response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
-      toast({
-        title: "Sucesso",
-        description: "Inscrição rejeitada com sucesso!",
-      });
-    },
-    onError: (error) => {
-      console.error("Error rejecting application:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao rejeitar inscrição. Tente novamente.",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Loading state
   if (isLoading) {
@@ -385,13 +357,32 @@ export default function AdminPage() {
                               R$ {app.plan?.price?.toFixed(2) || '0.00'}
                             </p>
                             <div className="flex items-center space-x-4 mt-2">
-                              <Badge variant={app.status === 'pending' ? 'secondary' : 'default'}>
-                                {app.status}
+                              <Badge 
+                                variant={
+                                  app.status === 'pending' ? 'secondary' : 
+                                  app.status === 'approved' ? 'default' : 
+                                  app.status === 'rejected' ? 'destructive' :
+                                  app.status === 'documents_requested' ? 'outline' :
+                                  'secondary'
+                                }
+                              >
+                                {app.status === 'pending' ? 'Pendente' :
+                                 app.status === 'approved' ? 'Aprovado' :
+                                 app.status === 'rejected' ? 'Rejeitado' :
+                                 app.status === 'documents_requested' ? 'Documentos Solicitados' :
+                                 app.status}
                               </Badge>
                               <Badge variant={app.paymentStatus === 'paid' ? 'default' : 'secondary'}>
-                                {app.paymentStatus}
+                                {app.paymentStatus === 'paid' ? 'Pago' : 
+                                 app.paymentStatus === 'pending' ? 'Pendente' :
+                                 app.paymentStatus}
                               </Badge>
                             </div>
+                            {app.adminNotes && (
+                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                <strong>Observações:</strong> {app.adminNotes}
+                              </div>
+                            )}
                           </div>
                           <div className="flex space-x-2">
                             <Button
@@ -412,19 +403,19 @@ export default function AdminPage() {
                               <CheckCircle className="h-4 w-4" />
                               <span>Aprovar</span>
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => rejectApplicationMutation.mutate({ 
-                                applicationId: app.id, 
-                                reason: 'Rejeitado pelo administrador' 
-                              })}
-                              disabled={rejectApplicationMutation.isPending}
-                              className="flex items-center space-x-1"
-                            >
-                              <XCircle className="h-4 w-4" />
-                              <span>Rejeitar</span>
-                            </Button>
+                            <RejectApplicationModal
+                              applicationId={app.id}
+                              trigger={
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="flex items-center space-x-1"
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                  <span>Rejeitar</span>
+                                </Button>
+                              }
+                            />
                           </div>
                         </div>
                       </div>

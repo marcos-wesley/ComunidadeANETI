@@ -333,6 +333,32 @@ export class DatabaseStorage implements IStorage {
     return application || undefined;
   }
 
+  async getApplication(id: string): Promise<MemberApplication | undefined> {
+    const [application] = await db.select().from(memberApplications).where(eq(memberApplications.id, id));
+    return application || undefined;
+  }
+
+  async rejectApplication(id: string, adminNotes: string, reviewedBy: string, requestDocuments?: boolean): Promise<MemberApplication | undefined> {
+    try {
+      const [updatedApplication] = await db
+        .update(memberApplications)
+        .set({
+          status: requestDocuments ? 'documents_requested' : 'rejected',
+          adminNotes,
+          reviewedBy,
+          reviewedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(memberApplications.id, id))
+        .returning();
+      
+      return updatedApplication || undefined;
+    } catch (error) {
+      console.error("Error rejecting application:", error);
+      throw error;
+    }
+  }
+
   async getMemberApplicationWithDetails(id: string): Promise<any> {
     const [application] = await db
       .select({
