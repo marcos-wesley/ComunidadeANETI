@@ -39,25 +39,20 @@ interface GroupMembership {
   userId: string;
   role: string;
   isActive: boolean;
+  status: string;
   joinedAt: string;
 }
 
-export default function Groups() {
+function GroupCard({ group }: { group: Group }) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
-  // Fetch all groups
-  const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
-    queryKey: ["/api/groups"],
-    enabled: !!user,
-  });
-
-  // Fetch user's memberships with status
-  const { data: memberships = [] } = useQuery<any[]>({
-    queryKey: ["/api/groups/my-memberships"],
+  // Fetch membership status for this specific group
+  const { data: membership } = useQuery<GroupMembership | null>({
+    queryKey: ["/api/groups", group.id, "membership"],
     enabled: !!user,
   });
 
@@ -73,8 +68,7 @@ export default function Groups() {
           title: "Sucesso",
           description: data.message,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/groups/my-memberships"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", group.id, "membership"] });
       } else {
         toast({
           title: "Erro",
@@ -106,8 +100,7 @@ export default function Groups() {
           title: "Sucesso",
           description: data.message,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/groups/my-memberships"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", group.id, "membership"] });
       } else {
         toast({
           title: "Erro",
@@ -135,8 +128,7 @@ export default function Groups() {
   };
 
   // Get membership status for a group
-  const getMembershipStatus = (groupId: string) => {
-    const membership = memberships.find(m => m.groupId === groupId);
+  const getMembershipStatus = (membership: GroupMembership | null) => {
     if (!membership) return 'not-member';
     if (membership.status === 'pending') return 'pending';
     if (membership.status === 'approved' && membership.isActive) return 'member';
@@ -148,6 +140,172 @@ export default function Groups() {
     const eligiblePlans = ['Junior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'];
     return eligiblePlans.includes(user?.planName || '');
   };
+
+  const membershipStatus = getMembershipStatus(membership);
+  const canJoin = group.isPublic || canJoinPrivateGroups();
+  const isJoining = joiningGroupId === group.id;
+
+  return (
+    <Card 
+      key={group.id} 
+      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50"
+      onClick={() => setLocation(`/groups/${group.id}`)}
+    >
+      {/* Cover Photo */}
+      <div 
+        className="relative h-24 bg-gradient-to-r from-blue-500 to-purple-600"
+        style={{
+          backgroundImage: group.coverPhoto ? `url(${group.coverPhoto})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute top-2 left-2">
+          <Badge variant={group.isPublic ? "default" : "secondary"} className="text-xs">
+            {group.isPublic ? (
+              <>
+                <Globe className="w-3 h-3 mr-1" />
+                Público
+              </>
+            ) : (
+              <>
+                <Lock className="w-3 h-3 mr-1" />
+                Privado
+              </>
+            )}
+          </Badge>
+        </div>
+      </div>
+
+      <CardHeader className="pb-2">
+        <div className="flex items-start gap-3">
+          {/* Profile Picture */}
+          <Avatar className="w-12 h-12 border-2 border-white -mt-6 relative z-10">
+            <AvatarImage 
+              src={group.profilePicture || undefined} 
+              alt={group.title}
+            />
+            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
+              {group.title.split(' ').map(word => word[0]).join('').substring(0, 2)}
+            </AvatarFallback>
+          </Avatar>
+
+          <div className="flex-1 min-w-0">
+            <h3 className="font-semibold text-sm leading-tight line-clamp-2">
+              {group.title}
+            </h3>
+            <div className="flex flex-wrap gap-1 mt-1">
+              <Badge variant="outline" className="text-xs">
+                {group.isPublic ? "Público" : "Privado"}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                <Users className="w-3 h-3 mr-1" />
+                Grupo
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {group._count.members} membro{group._count.members !== 1 ? 's' : ''}
+              </Badge>
+            </div>
+          </div>
+        </div>
+      </CardHeader>
+
+      <CardContent className="pt-0">
+        <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
+          {group.description}
+        </p>
+
+        {/* Member avatars preview */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex -space-x-2">
+            {[...Array(Math.min(3, group._count.members))].map((_, i) => (
+              <Avatar key={i} className="w-6 h-6 border border-background">
+                <AvatarFallback className="text-xs">
+                  <User className="w-3 h-3" />
+                </AvatarFallback>
+              </Avatar>
+            ))}
+            {group._count.members > 3 && (
+              <div className="w-6 h-6 rounded-full bg-muted border border-background flex items-center justify-center">
+                <span className="text-xs font-medium">+{group._count.members - 3}</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Button */}
+        {membershipStatus === 'member' ? (
+          <Button 
+            size="sm" 
+            variant="outline"
+            className="w-full border-red-300 text-red-700 hover:bg-red-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleLeaveGroup(group.id);
+            }}
+            disabled={leaveGroupMutation.isPending}
+          >
+            <Users className="w-4 h-4 mr-2" />
+            Sair do Grupo
+          </Button>
+        ) : membershipStatus === 'pending' ? (
+          <Button 
+            size="sm" 
+            className="w-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200" 
+            disabled
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Clock className="w-4 h-4 mr-2" />
+            Aguardando Aprovação
+          </Button>
+        ) : (
+          <Button
+            size="sm"
+            variant={canJoin ? "default" : "secondary"}
+            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleJoinGroup(group.id);
+            }}
+            disabled={!canJoin || isJoining}
+          >
+            {isJoining ? (
+              <>
+                <Clock className="w-4 h-4 mr-2 animate-spin" />
+                Solicitando...
+              </>
+            ) : canJoin ? (
+              <>
+                <Users className="w-4 h-4 mr-2" />
+                Solicitar Acesso
+              </>
+            ) : (
+              <>
+                <Lock className="w-4 h-4 mr-2" />
+                Acesso Restrito
+              </>
+            )}
+          </Button>
+        )}
+
+        {!canJoin && !group.isPublic && (
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            Apenas membros Junior+ podem solicitar acesso
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export default function Groups() {
+  const { user } = useAuth();
+
+  // Fetch all groups
+  const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
+    queryKey: ["/api/groups"],
+    enabled: !!user,
+  });
 
   if (groupsLoading) {
     return (
@@ -192,163 +350,9 @@ export default function Groups() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {groups.map((group) => {
-          const membershipStatus = getMembershipStatus(group.id);
-          const canJoin = group.isPublic || canJoinPrivateGroups();
-          const isJoining = joiningGroupId === group.id;
-
-          return (
-            <Card 
-              key={group.id} 
-              className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50"
-              onClick={() => setLocation(`/groups/${group.id}`)}
-            >
-              {/* Cover Photo */}
-              <div 
-                className="relative h-24 bg-gradient-to-r from-blue-500 to-purple-600"
-                style={{
-                  backgroundImage: group.coverPhoto ? `url(${group.coverPhoto})` : undefined,
-                  backgroundSize: 'cover',
-                  backgroundPosition: 'center',
-                }}
-              >
-                <div className="absolute top-2 left-2">
-                  <Badge variant={group.isPublic ? "default" : "secondary"} className="text-xs">
-                    {group.isPublic ? (
-                      <>
-                        <Globe className="w-3 h-3 mr-1" />
-                        Público
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-3 h-3 mr-1" />
-                        Privado
-                      </>
-                    )}
-                  </Badge>
-                </div>
-              </div>
-
-              <CardHeader className="pb-2">
-                <div className="flex items-start gap-3">
-                  {/* Profile Picture */}
-                  <Avatar className="w-12 h-12 border-2 border-white -mt-6 relative z-10">
-                    <AvatarImage 
-                      src={group.profilePicture || undefined} 
-                      alt={group.title}
-                    />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm font-semibold">
-                      {group.title.split(' ').map(word => word[0]).join('').substring(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-sm leading-tight line-clamp-2">
-                      {group.title}
-                    </h3>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <Badge variant="outline" className="text-xs">
-                        {group.isPublic ? "Público" : "Privado"}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        <Users className="w-3 h-3 mr-1" />
-                        Grupo
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {group._count.members} membro{group._count.members !== 1 ? 's' : ''}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className="pt-0">
-                <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
-                  {group.description}
-                </p>
-
-                {/* Member avatars preview */}
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex -space-x-2">
-                    {[...Array(Math.min(3, group._count.members))].map((_, i) => (
-                      <Avatar key={i} className="w-6 h-6 border border-background">
-                        <AvatarFallback className="text-xs">
-                          <User className="w-3 h-3" />
-                        </AvatarFallback>
-                      </Avatar>
-                    ))}
-                    {group._count.members > 3 && (
-                      <div className="w-6 h-6 rounded-full bg-muted border border-background flex items-center justify-center">
-                        <span className="text-xs font-medium">+{group._count.members - 3}</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                {membershipStatus === 'member' ? (
-                  <Button 
-                    size="sm" 
-                    variant="outline"
-                    className="w-full border-red-300 text-red-700 hover:bg-red-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLeaveGroup(group.id);
-                    }}
-                    disabled={leaveGroupMutation.isPending}
-                  >
-                    <Users className="w-4 h-4 mr-2" />
-                    Sair do Grupo
-                  </Button>
-                ) : membershipStatus === 'pending' ? (
-                  <Button 
-                    size="sm" 
-                    className="w-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200" 
-                    disabled
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <Clock className="w-4 h-4 mr-2" />
-                    Aguardando Aprovação
-                  </Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    variant={canJoin ? "default" : "secondary"}
-                    className="w-full"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleJoinGroup(group.id);
-                    }}
-                    disabled={!canJoin || isJoining}
-                  >
-                    {isJoining ? (
-                      <>
-                        <Clock className="w-4 h-4 mr-2 animate-spin" />
-                        Solicitando...
-                      </>
-                    ) : canJoin ? (
-                      <>
-                        <Users className="w-4 h-4 mr-2" />
-                        Solicitar Acesso
-                      </>
-                    ) : (
-                      <>
-                        <Lock className="w-4 h-4 mr-2" />
-                        Acesso Restrito
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                {!canJoin && !group.isPublic && (
-                  <p className="text-xs text-muted-foreground mt-2 text-center">
-                    Apenas membros Junior+ podem solicitar acesso
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
+        {groups.map((group) => (
+          <GroupCard key={group.id} group={group} />
+        ))}
       </div>
 
       {groups.length === 0 && (
