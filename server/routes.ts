@@ -3013,7 +3013,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For each forum, get additional data
       const forumsWithData = await Promise.all(forums.map(async (forum) => {
         const [group, topics, members] = await Promise.all([
-          storage.getGroup(forum.groupId),
+          storage.getGroupById(forum.groupId),
           storage.getForumTopics(forum.id),
           storage.getGroupMembers(forum.groupId)
         ]);

@@ -58,7 +58,7 @@ export default function ForumsListPage() {
       forum.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (forum.group?.title || "").toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesGroup = !selectedGroup || forum.groupId === selectedGroup;
+    const matchesGroup = !selectedGroup || selectedGroup === "all" || forum.groupId === selectedGroup;
     
     return matchesSearch && matchesGroup;
   });
@@ -130,7 +130,7 @@ export default function ForumsListPage() {
                   <SelectValue placeholder="Filtrar por grupo" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos os grupos</SelectItem>
+                  <SelectItem value="all">Todos os grupos</SelectItem>
                   {groups.map((group: any) => (
                     <SelectItem key={group.id} value={group.id}>
                       {group.title}

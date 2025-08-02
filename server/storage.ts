@@ -238,6 +238,7 @@ export interface IStorage {
   getGroupPosts(groupId: string): Promise<(GroupPost & { author: { id: string; fullName: string; username: string; profilePicture?: string } })[]>;
   deleteGroupPost(postId: string, authorId: string): Promise<boolean>;
   leaveGroup(groupId: string, userId: string): Promise<boolean>;
+  getGroupMembers(groupId: string): Promise<any[]>;
 
   // Forums methods
   createForum(forumData: InsertForum): Promise<SelectForum>;
@@ -246,6 +247,7 @@ export interface IStorage {
   getForum(forumId: string): Promise<SelectForum | undefined>;
   updateForum(forumId: string, updates: Partial<SelectForum>): Promise<SelectForum | undefined>;
   deleteForum(forumId: string): Promise<boolean>;
+  getForumTopics(forumId: string): Promise<any[]>;
 
   // Forum replies likes methods
   getForumReply(replyId: string): Promise<SelectForumReply | undefined>;
