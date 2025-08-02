@@ -37,6 +37,7 @@ interface User {
   isActive: boolean;
   isApproved: boolean;
   role?: string;
+  planName?: string;
 }
 
 interface EditMemberModalProps {
@@ -61,6 +62,7 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
     gender: member.gender || "",
     phone: member.phone || "",
     role: member.role || "member",
+    planName: member.planName || "",
     isActive: member.isActive,
     isApproved: member.isApproved,
   });
@@ -318,20 +320,41 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
 
               <Separator />
 
-              <div className="space-y-2">
-                <Label htmlFor="role">Função</Label>
-                <Select
-                  value={memberData.role}
-                  onValueChange={(value) => setMemberData(prev => ({ ...prev, role: value }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a função" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="member">Membro</SelectItem>
-                    <SelectItem value="admin">Administrador</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="role">Função</Label>
+                  <Select
+                    value={memberData.role}
+                    onValueChange={(value) => setMemberData(prev => ({ ...prev, role: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione a função" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="member">Membro</SelectItem>
+                      <SelectItem value="admin">Administrador</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="planName">Nível de Membro</Label>
+                  <Select
+                    value={memberData.planName}
+                    onValueChange={(value) => setMemberData(prev => ({ ...prev, planName: value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o nível" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Júnior">Júnior</SelectItem>
+                      <SelectItem value="Pleno">Pleno</SelectItem>
+                      <SelectItem value="Sênior">Sênior</SelectItem>
+                      <SelectItem value="Honra">Honra</SelectItem>
+                      <SelectItem value="Diretivo">Diretivo</SelectItem>
+                      <SelectItem value="Estudante">Estudante</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               <div className="flex items-center space-x-4">

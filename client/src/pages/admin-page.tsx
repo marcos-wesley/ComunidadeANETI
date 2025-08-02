@@ -177,6 +177,76 @@ export default function AdminPage() {
     },
   });
 
+  // Toggle member status (activate/deactivate)
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ memberId, isActive }: { memberId: string; isActive: boolean }) => {
+      const response = await fetch(`/api/admin/members/${memberId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isActive }),
+      });
+      if (!response.ok) throw new Error("Failed to update member status");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Sucesso",
+        description: "Status do membro atualizado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error("Error updating member status:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status do membro.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete member
+  const deleteMemberMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      const response = await fetch(`/api/admin/members/${memberId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!response.ok) throw new Error("Failed to delete member");
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      toast({
+        title: "Sucesso",
+        description: "Membro excluído com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error("Error deleting member:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao excluir membro.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const toggleMemberStatus = (memberId: string, isActive: boolean) => {
+    if (window.confirm(`Tem certeza que deseja ${isActive ? 'reativar' : 'desativar'} este membro?`)) {
+      toggleStatusMutation.mutate({ memberId, isActive });
+    }
+  };
+
+  const deleteMember = (memberId: string) => {
+    if (window.confirm('Tem certeza que deseja excluir este membro? Esta ação não pode ser desfeita.')) {
+      deleteMemberMutation.mutate(memberId);
+    }
+  };
+
 
 
   // Loading state
@@ -452,31 +522,35 @@ export default function AdminPage() {
                       <div key={member.id} className="border rounded-lg p-4">
                         <div className="flex justify-between items-start">
                           <div className="flex-1">
-                            <h3 className="font-semibold">{member.fullName}</h3>
+                            <div className="flex items-center space-x-3 mb-2">
+                              <h3 className="font-semibold text-lg">{member.fullName}</h3>
+                              {member.planName && (
+                                <Badge variant="default" className="bg-blue-100 text-blue-800">
+                                  {member.planName}
+                                </Badge>
+                              )}
+                            </div>
                             <p className="text-sm text-gray-600">{member.email}</p>
                             <p className="text-sm text-gray-500">@{member.username}</p>
-                            <div className="flex items-center space-x-4 mt-2">
+                            <p className="text-sm text-gray-600">{member.area} • {member.city}/{member.state}</p>
+                            <div className="flex items-center space-x-4 mt-3">
                               <Badge variant={member.isApproved ? 'default' : 'secondary'}>
                                 {member.isApproved ? 'Aprovado' : 'Pendente'}
                               </Badge>
                               <Badge variant={member.isActive ? 'default' : 'destructive'}>
                                 {member.isActive ? 'Ativo' : 'Inativo'}
                               </Badge>
-                              {member.role && (
-                                <Badge variant="outline">{member.role}</Badge>
+                              <Badge variant="outline" className="capitalize">
+                                {member.role === 'admin' ? 'Administrador' : 'Membro'}
+                              </Badge>
+                              {member.subscriptionStatus && (
+                                <Badge variant={member.subscriptionStatus === 'active' ? 'default' : 'outline'}>
+                                  {member.subscriptionStatus === 'active' ? 'Assinatura Ativa' : 'Assinatura Inativa'}
+                                </Badge>
                               )}
                             </div>
                           </div>
                           <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setLocation(`/profile/${member.id}`)}
-                              className="flex items-center space-x-1"
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span>Ver Detalhes</span>
-                            </Button>
                             <EditMemberModal
                               member={member}
                               trigger={
@@ -486,7 +560,7 @@ export default function AdminPage() {
                                   className="flex items-center space-x-1"
                                 >
                                   <Edit className="h-4 w-4" />
-                                  <span>Editar</span>
+                                  <span>Gerenciar</span>
                                 </Button>
                               }
                             />
@@ -494,6 +568,8 @@ export default function AdminPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                onClick={() => toggleMemberStatus(member.id, true)}
+                                disabled={toggleStatusMutation.isPending}
                                 className="flex items-center space-x-1"
                               >
                                 <UserCheck className="h-4 w-4" />
@@ -503,12 +579,24 @@ export default function AdminPage() {
                               <Button
                                 size="sm"
                                 variant="destructive"
+                                onClick={() => toggleMemberStatus(member.id, false)}
+                                disabled={toggleStatusMutation.isPending}
                                 className="flex items-center space-x-1"
                               >
                                 <UserX className="h-4 w-4" />
                                 <span>Desativar</span>
                               </Button>
                             )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => deleteMember(member.id)}
+                              disabled={deleteMemberMutation.isPending}
+                              className="flex items-center space-x-1 text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              <span>Excluir</span>
+                            </Button>
                           </div>
                         </div>
                       </div>

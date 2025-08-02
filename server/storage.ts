@@ -192,7 +192,7 @@ export interface IStorage {
   rejectApplication(applicationId: string, adminId: string, reason: string): Promise<void>;
   banUser(userId: string, adminId: string): Promise<void>;
   unbanUser(userId: string, adminId: string): Promise<void>;
-  deleteUser(userId: string): Promise<void>;
+  deleteUser(userId: string): Promise<boolean>;
 
   // Groups methods
   getAllGroups(): Promise<GroupWithDetails[]>;
@@ -1932,25 +1932,31 @@ export class DatabaseStorage implements IStorage {
       .where(eq(users.id, userId));
   }
 
-  async deleteUser(userId: string): Promise<void> {
-    // Delete user's related data first due to foreign key constraints
-    await db.delete(memberApplications).where(eq(memberApplications.userId, userId));
-    await db.delete(posts).where(eq(posts.authorId, userId));
-    await db.delete(likes).where(eq(likes.userId, userId));
-    await db.delete(comments).where(eq(comments.authorId, userId));
-    await db.delete(connections).where(or(eq(connections.requesterId, userId), eq(connections.receiverId, userId)));
-    await db.delete(experiences).where(eq(experiences.userId, userId));
-    await db.delete(educations).where(eq(educations.userId, userId));
-    await db.delete(certifications).where(eq(certifications.userId, userId));
-    await db.delete(projects).where(eq(projects.userId, userId));
-    await db.delete(skills).where(eq(skills.userId, userId));
-    await db.delete(recommendations).where(eq(recommendations.userId, userId));
-    await db.delete(languages).where(eq(languages.userId, userId));
-    await db.delete(highlights).where(eq(highlights.userId, userId));
-    await db.delete(notifications).where(or(eq(notifications.recipientId, userId), eq(notifications.actorId, userId)));
-    
-    // Finally delete the user
-    await db.delete(users).where(eq(users.id, userId));
+  async deleteUser(userId: string): Promise<boolean> {
+    try {
+      // Delete user's related data first due to foreign key constraints
+      await db.delete(memberApplications).where(eq(memberApplications.userId, userId));
+      await db.delete(posts).where(eq(posts.authorId, userId));
+      await db.delete(likes).where(eq(likes.userId, userId));
+      await db.delete(comments).where(eq(comments.authorId, userId));
+      await db.delete(connections).where(or(eq(connections.requesterId, userId), eq(connections.receiverId, userId)));
+      await db.delete(experiences).where(eq(experiences.userId, userId));
+      await db.delete(educations).where(eq(educations.userId, userId));
+      await db.delete(certifications).where(eq(certifications.userId, userId));
+      await db.delete(projects).where(eq(projects.userId, userId));
+      await db.delete(skills).where(eq(skills.userId, userId));
+      await db.delete(recommendations).where(eq(recommendations.userId, userId));
+      await db.delete(languages).where(eq(languages.userId, userId));
+      await db.delete(highlights).where(eq(highlights.userId, userId));
+      await db.delete(notifications).where(or(eq(notifications.recipientId, userId), eq(notifications.actorId, userId)));
+      
+      // Finally delete the user
+      const result = await db.delete(users).where(eq(users.id, userId));
+      return true;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
   }
 
   // Admin User methods

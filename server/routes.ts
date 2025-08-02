@@ -1760,6 +1760,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete member (admin only)
+  app.delete("/api/admin/members/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      
+      // Check if user exists first
+      const existingUser = await storage.getUserById(userId);
+      if (!existingUser) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Member not found" 
+        });
+      }
+
+      // Don't allow deleting admin users
+      if (existingUser.role === 'admin') {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Cannot delete admin users" 
+        });
+      }
+
+      const deleted = await storage.deleteUser(userId);
+      
+      if (!deleted) {
+        return res.status(500).json({ 
+          success: false, 
+          message: "Failed to delete member" 
+        });
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Member deleted successfully"
+      });
+    } catch (error) {
+      console.error("Error deleting member:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete member" 
+      });
+    }
+  });
+
   // Groups management routes (Admin only)
   
   // Get all groups
