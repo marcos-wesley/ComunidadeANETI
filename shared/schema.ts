@@ -388,6 +388,7 @@ export const notifications = pgTable("notifications", {
   title: text("title").notNull(),
   message: text("message").notNull(),
   actionUrl: text("action_url"), // URL to navigate when notification is clicked
+  openInNewTab: boolean("open_in_new_tab").default(false), // whether to open the action URL in a new tab
   relatedEntityId: varchar("related_entity_id"), // ID of the related post, comment, user, etc.
   relatedEntityType: text("related_entity_type"), // post, comment, user, application, etc.
   actorId: varchar("actor_id").references(() => users.id), // who performed the action that triggered the notification

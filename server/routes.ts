@@ -1421,6 +1421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title,
         message,
         actionUrl,
+        openInNewTab,
         type,
         targetType,
         groupId,
@@ -1494,6 +1495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: title,
             message: message,
             actionUrl: actionUrl || null,
+            openInNewTab: openInNewTab || false,
             actorId: null, // System generated notifications don't need an actor
             relatedEntityType: "bulk_notification",
             metadata: {

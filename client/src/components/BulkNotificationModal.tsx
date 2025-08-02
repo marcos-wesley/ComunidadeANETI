@@ -37,6 +37,7 @@ const bulkNotificationSchema = z.object({
   title: z.string().min(1, "Título é obrigatório").max(100, "Título deve ter no máximo 100 caracteres"),
   message: z.string().min(1, "Mensagem é obrigatória").max(1000, "Mensagem deve ter no máximo 1000 caracteres"),
   actionUrl: z.string().url("URL deve ser válida").optional().or(z.literal("")),
+  openInNewTab: z.boolean().default(false),
   type: z.enum(["announcement", "update", "alert", "reminder", "admin"]),
   targetType: z.enum(["all_members", "group_members", "approved_members", "by_plan"]),
   groupId: z.string().optional(),
@@ -61,6 +62,7 @@ export function BulkNotificationModal({ trigger }: BulkNotificationModalProps) {
       title: "",
       message: "",
       actionUrl: "",
+      openInNewTab: false,
       type: "announcement",
       targetType: "all_members",
       groupId: "",
@@ -355,6 +357,32 @@ export function BulkNotificationModal({ trigger }: BulkNotificationModalProps) {
                   </FormItem>
                 )}
               />
+
+              {/* Opção para abrir link em nova guia */}
+              {form.watch("actionUrl") && (
+                <FormField
+                  control={form.control}
+                  name="openInNewTab"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Abrir link em nova guia
+                        </FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Marque para abrir o link em uma nova aba do navegador
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              )}
             </div>
 
             <div className="flex justify-end space-x-4 pt-4">

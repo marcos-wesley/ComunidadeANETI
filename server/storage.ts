@@ -2044,6 +2044,7 @@ export class DatabaseStorage implements IStorage {
         title: notifications.title,
         message: notifications.message,
         actionUrl: notifications.actionUrl,
+        openInNewTab: notifications.openInNewTab,
         relatedEntityId: notifications.relatedEntityId,
         relatedEntityType: notifications.relatedEntityType,
         actorId: notifications.actorId,
