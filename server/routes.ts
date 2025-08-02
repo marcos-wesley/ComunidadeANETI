@@ -1954,16 +1954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Only Junior, Pleno, Sênior, Honra, and Diretivo can join private groups
-      const eligiblePlans = ['Junior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'];
-      if (!eligiblePlans.includes(user.planName || '')) {
-        return res.status(403).json({
-          success: false,
-          message: "Apenas membros Junior, Pleno, Sênior, Honra e Diretivo podem solicitar acesso aos grupos"
-        });
-      }
-
-      // Check if group exists
+      // Check if group exists first
       const group = await storage.getGroupById(groupId);
       if (!group) {
         return res.status(404).json({
@@ -1971,6 +1962,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Grupo não encontrado"
         });
       }
+
+      // For private groups, only Junior, Pleno, Sênior, Honra, and Diretivo can join
+      if (!group.isPublic) {
+        const eligiblePlans = ['Junior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'];
+        if (!eligiblePlans.includes(user.planName || '')) {
+          return res.status(403).json({
+            success: false,
+            message: "Apenas membros Junior, Pleno, Sênior, Honra e Diretivo podem solicitar acesso a grupos privados"
+          });
+        }
+      }
+      // Public groups are accessible to all users
 
       // Check if user is already a member
       const existingMembership = await storage.getGroupMembership(groupId, userId);
