@@ -339,14 +339,17 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
                 <div className="space-y-2">
                   <Label htmlFor="planName">Nível de Membro</Label>
                   <Select
-                    value={memberData.planName}
-                    onValueChange={(value) => setMemberData(prev => ({ ...prev, planName: value }))}
+                    value={memberData.planName || "sem-nivel"}
+                    onValueChange={(value) => setMemberData(prev => ({ 
+                      ...prev, 
+                      planName: value === "sem-nivel" ? null : value 
+                    }))}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o nível" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Sem Nível</SelectItem>
+                      <SelectItem value="sem-nivel">Sem Nível</SelectItem>
                       <SelectItem value="Estudante">Estudante</SelectItem>
                       <SelectItem value="Júnior">Júnior</SelectItem>
                       <SelectItem value="Pleno">Pleno</SelectItem>
