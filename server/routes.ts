@@ -3471,6 +3471,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin Membership Plans Management Routes
+  app.get("/api/admin/membership-plans", isAdminAuthenticated, async (req, res) => {
+    try {
+      const plans = await storage.getAllMembershipPlansWithCount();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching membership plans:", error);
+      res.status(500).json({ message: "Failed to fetch membership plans" });
+    }
+  });
+
+  app.post("/api/admin/membership-plans", isAdminAuthenticated, async (req, res) => {
+    try {
+      const planData = req.body;
+      
+      // Validate required fields
+      if (!planData.name || typeof planData.price !== 'number') {
+        return res.status(400).json({ error: "Name and price are required" });
+      }
+
+      const newPlan = await storage.createMembershipPlan({
+        ...planData,
+        id: undefined, // Let database generate ID
+      });
+
+      res.status(201).json(newPlan);
+    } catch (error) {
+      console.error("Error creating membership plan:", error);
+      res.status(500).json({ message: "Failed to create membership plan" });
+    }
+  });
+
+  app.put("/api/admin/membership-plans/:id", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+
+      const updatedPlan = await storage.updateMembershipPlan(id, updateData);
+      
+      if (!updatedPlan) {
+        return res.status(404).json({ error: "Membership plan not found" });
+      }
+
+      res.json(updatedPlan);
+    } catch (error) {
+      console.error("Error updating membership plan:", error);
+      res.status(500).json({ message: "Failed to update membership plan" });
+    }
+  });
+
+  app.delete("/api/admin/membership-plans/:id", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // Check if plan has active members
+      const plan = await storage.getMembershipPlanWithCount(id);
+      if (plan && plan.currentMembers > 0) {
+        return res.status(400).json({ 
+          error: `Cannot delete plan with ${plan.currentMembers} active members. Please migrate members to another plan first.` 
+        });
+      }
+
+      const deleted = await storage.deleteMembershipPlan(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Membership plan not found" });
+      }
+
+      res.json({ message: "Membership plan deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting membership plan:", error);
+      res.status(500).json({ message: "Failed to delete membership plan" });
+    }
+  });
+
+  app.patch("/api/admin/membership-plans/:id/toggle-status", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { isActive } = req.body;
+
+      if (typeof isActive !== 'boolean') {
+        return res.status(400).json({ error: "isActive must be a boolean" });
+      }
+
+      const updatedPlan = await storage.toggleMembershipPlanStatus(id, isActive);
+      
+      if (!updatedPlan) {
+        return res.status(404).json({ error: "Membership plan not found" });
+      }
+
+      res.json(updatedPlan);
+    } catch (error) {
+      console.error("Error toggling membership plan status:", error);
+      res.status(500).json({ message: "Failed to toggle membership plan status" });
+    }
+  });
+
+  app.get("/api/admin/membership-plans/:id", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const plan = await storage.getMembershipPlanWithCount(id);
+      
+      if (!plan) {
+        return res.status(404).json({ error: "Membership plan not found" });
+      }
+
+      res.json(plan);
+    } catch (error) {
+      console.error("Error fetching membership plan:", error);
+      res.status(500).json({ message: "Failed to fetch membership plan" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

@@ -126,6 +126,11 @@ export interface IStorage {
   getMembershipPlans(): Promise<MembershipPlan[]>;
   getMembershipPlan(id: string): Promise<MembershipPlan | undefined>;
   createMembershipPlan(plan: InsertMembershipPlan): Promise<MembershipPlan>;
+  updateMembershipPlan(planId: string, planData: Partial<InsertMembershipPlan>): Promise<MembershipPlan | null>;
+  deleteMembershipPlan(planId: string): Promise<boolean>;
+  toggleMembershipPlanStatus(planId: string, isActive: boolean): Promise<MembershipPlan | null>;
+  getAllMembershipPlansWithCount(): Promise<any[]>;
+  getMembershipPlanWithCount(planId: string): Promise<any | null>;
 
   // Member Applications
   getMemberApplication(id: string): Promise<MemberApplication | undefined>;
@@ -503,9 +508,91 @@ export class DatabaseStorage implements IStorage {
   async createMembershipPlan(insertPlan: InsertMembershipPlan): Promise<MembershipPlan> {
     const [plan] = await db
       .insert(membershipPlans)
-      .values(insertPlan)
+      .values({
+        ...insertPlan,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
       .returning();
     return plan;
+  }
+
+  async updateMembershipPlan(planId: string, planData: Partial<InsertMembershipPlan>): Promise<MembershipPlan | null> {
+    const [plan] = await db.update(membershipPlans)
+      .set({
+        ...planData,
+        updatedAt: new Date(),
+      })
+      .where(eq(membershipPlans.id, planId))
+      .returning();
+    return plan || null;
+  }
+
+  async deleteMembershipPlan(planId: string): Promise<boolean> {
+    const result = await db.delete(membershipPlans).where(eq(membershipPlans.id, planId));
+    return result.rowCount > 0;
+  }
+
+  async toggleMembershipPlanStatus(planId: string, isActive: boolean): Promise<MembershipPlan | null> {
+    const [plan] = await db.update(membershipPlans)
+      .set({ 
+        isActive,
+        updatedAt: new Date(),
+      })
+      .where(eq(membershipPlans.id, planId))
+      .returning();
+    return plan || null;
+  }
+
+  async getAllMembershipPlansWithCount(): Promise<any[]> {
+    // Get all plans with member count
+    const plans = await db.select().from(membershipPlans);
+    
+    // Add current member count for each plan
+    const plansWithCount = await Promise.all(
+      plans.map(async (plan) => {
+        const memberCount = await db.select({ count: sql<number>`count(*)` })
+          .from(users)
+          .where(
+            and(
+              eq(users.currentPlanId, plan.id),
+              eq(users.isApproved, true),
+              eq(users.isActive, true)
+            )
+          );
+        
+        return {
+          ...plan,
+          currentMembers: memberCount[0]?.count || 0,
+        };
+      })
+    );
+    
+    return plansWithCount;
+  }
+
+  async getMembershipPlanWithCount(planId: string): Promise<any | null> {
+    const [plan] = await db.select().from(membershipPlans)
+      .where(eq(membershipPlans.id, planId))
+      .limit(1);
+    
+    if (!plan) return null;
+    
+    // Add current member count
+    const memberCount = await db.select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(
+        and(
+          eq(users.currentPlanId, planId),
+          eq(users.isApproved, true),
+          eq(users.isActive, true)
+        )
+      );
+    
+    return {
+      ...plan,
+      currentMembers: memberCount[0]?.count || 0,
+    };
   }
 
   // Member Applications

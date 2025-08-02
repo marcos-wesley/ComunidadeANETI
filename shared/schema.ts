@@ -46,13 +46,22 @@ export const membershipPlans = pgTable("membership_plans", {
   minExperienceYears: integer("min_experience_years").default(0),
   maxExperienceYears: integer("max_experience_years"),
   requiresPayment: boolean("requires_payment").default(false),
-  features: json("features").$type<string[]>(),
+  isRecurring: boolean("is_recurring").default(false),
+  billingPeriod: text("billing_period").default("monthly"), // monthly, yearly, one_time
+  features: json("features").$type<string[]>().default([]),
+  requirements: json("requirements").$type<string[]>().default([]),
+  benefits: json("benefits").$type<string[]>().default([]),
+  badgeImageUrl: text("badge_image_url"),
+  badgeColor: text("badge_color").default("#3B82F6"),
   rules: text("rules"), // validation rules description
   isActive: boolean("is_active").default(true),
   isAvailableForRegistration: boolean("is_available_for_registration").default(true),
+  priority: integer("priority").default(5), // 1-10 for ordering
+  maxMembers: integer("max_members"), // null = unlimited
   stripePriceId: varchar("stripe_price_id"), // Stripe price ID for subscriptions
   stripeProductId: varchar("stripe_product_id"), // Stripe product ID
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const memberApplications = pgTable("member_applications", {

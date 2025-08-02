@@ -29,6 +29,7 @@ import {
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
+import AdminMembershipPlans from "./admin-membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,7 +57,7 @@ interface AdminStats {
 export default function AdminPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members' | 'groups'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members' | 'groups' | 'membership-plans'>('overview');
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -331,7 +332,7 @@ export default function AdminPage() {
           </div>
         </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -347,6 +348,10 @@ export default function AdminPage() {
             <TabsTrigger value="groups" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Grupos</span>
+            </TabsTrigger>
+            <TabsTrigger value="membership-plans" className="flex items-center space-x-2">
+              <DollarSign className="h-4 w-4" />
+              <span>Planos</span>
             </TabsTrigger>
           </TabsList>
 
@@ -942,6 +947,10 @@ export default function AdminPage() {
 
           <TabsContent value="groups" className="mt-6">
             <GroupsManagement />
+          </TabsContent>
+
+          <TabsContent value="membership-plans" className="mt-6">
+            <AdminMembershipPlans />
           </TabsContent>
         </Tabs>
       </div>
