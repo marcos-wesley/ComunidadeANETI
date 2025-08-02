@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { GroupPostCard } from "@/components/GroupPostCard";
 import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield, Settings, Send, MessageSquare } from "lucide-react";
 
 interface Group {
@@ -455,7 +456,7 @@ export default function GroupDetail() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Send className="h-5 w-5" />
-                  Posts do Moderador
+                  Feed do Grupo
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -466,52 +467,20 @@ export default function GroupDetail() {
                       Nenhum post ainda
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400">
-                      O moderador ainda não publicou nada neste grupo.
+                      Ainda não há publicações neste grupo.
                     </p>
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {groupPosts.filter(post => post.authorId === group?.moderatorId).map((post: any) => (
-                      <div key={post.id} className="border rounded-lg p-4">
-                        <div className="flex items-start gap-3">
-                          <Avatar className="h-10 w-10">
-                            <AvatarImage src={post.author.profilePicture} alt={post.author.fullName} />
-                            <AvatarFallback>{post.author.fullName[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <h4 className="font-semibold text-gray-900 dark:text-white">
-                                {post.author.fullName}
-                              </h4>
-                              <span className="text-sm text-gray-500">
-                                @{post.author.username}
-                              </span>
-                              <Badge variant="secondary" className="text-xs">
-                                Moderador
-                              </Badge>
-                            </div>
-                            <div className="text-gray-700 dark:text-gray-300 mb-2">
-                              {post.content}
-                            </div>
-                            {post.mediaUrl && (
-                              <img 
-                                src={post.mediaUrl} 
-                                alt="Post media" 
-                                className="max-w-full h-auto rounded-lg mt-2"
-                              />
-                            )}
-                            <div className="text-xs text-gray-500 mt-2">
-                              {new Date(post.createdAt).toLocaleDateString('pt-BR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                              })}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                    {groupPosts.map((post: any) => (
+                      <GroupPostCard 
+                        key={post.id} 
+                        post={post} 
+                        groupId={groupId!}
+                        onUpdate={() => {
+                          queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
+                        }}
+                      />
                     ))}
                   </div>
                 )}
