@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield } from "lucide-react";
+import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield, Settings } from "lucide-react";
 
 interface Group {
   id: string;
@@ -244,8 +244,8 @@ export default function GroupDetail() {
                 </p>
               </div>
 
-              {/* Action Button */}
-              <div className="flex-shrink-0">
+              {/* Action Buttons */}
+              <div className="flex-shrink-0 flex gap-3">
                 {isMember ? (
                   <Button size="lg" disabled className="bg-gray-100 text-gray-600">
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -274,6 +274,19 @@ export default function GroupDetail() {
                         Acesso Restrito
                       </>
                     )}
+                  </Button>
+                )}
+                
+                {/* Moderation Button - Only for moderators */}
+                {user?.id === group.moderatorId && (
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onClick={() => setLocation(`/groups/${group.id}/moderation`)}
+                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    Moderação
                   </Button>
                 )}
               </div>

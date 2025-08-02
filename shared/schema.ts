@@ -285,8 +285,22 @@ export const groupMembers = pgTable("group_members", {
   groupId: varchar("group_id").references(() => groups.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   role: text("role").default("member"), // member, moderator, admin
+  status: text("status").default("pending"), // pending, approved, rejected
   joinedAt: timestamp("joined_at").defaultNow(),
   isActive: boolean("is_active").default(true),
+});
+
+// Group posts - only moderators can post
+export const groupPosts = pgTable("group_posts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  groupId: varchar("group_id").references(() => groups.id).notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  mediaType: text("media_type"), // text, image, video
+  mediaUrl: text("media_url"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Notifications system
@@ -500,6 +514,17 @@ export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
   }),
 }));
 
+export const groupPostsRelations = relations(groupPosts, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupPosts.groupId],
+    references: [groups.id],
+  }),
+  author: one(users, {
+    fields: [groupPosts.authorId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -580,6 +605,8 @@ export type Group = typeof groups.$inferSelect;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;
 export type GroupMember = typeof groupMembers.$inferSelect;
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
+export type GroupPost = typeof groupPosts.$inferSelect;
+export type InsertGroupPost = z.infer<typeof insertGroupPostSchema>;
 
 export type GroupWithDetails = Group & {
   moderator: Pick<User, 'id' | 'fullName' | 'username' | 'planName'>;
@@ -648,6 +675,12 @@ export const insertGroupSchema = createInsertSchema(groups).omit({
 export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
   id: true,
   joinedAt: true,
+});
+
+export const insertGroupPostSchema = createInsertSchema(groupPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
   isActive: true,
 });
 

@@ -2121,6 +2121,208 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Group moderation routes (for moderators)
+  
+  // Get pending group requests (moderator only)
+  app.get("/api/groups/:groupId/pending-requests", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem ver solicitações pendentes"
+        });
+      }
+      
+      const pendingRequests = await storage.getPendingGroupRequests(groupId);
+      res.json(pendingRequests);
+    } catch (error) {
+      console.error("Error fetching pending requests:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch pending requests" 
+      });
+    }
+  });
+
+  // Approve group membership request (moderator only)
+  app.post("/api/groups/:groupId/approve-request/:requestId", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, requestId } = req.params;
+      const userId = req.user.id;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem aprovar solicitações"
+        });
+      }
+      
+      const approved = await storage.approveGroupRequest(requestId);
+      if (!approved) {
+        return res.status(404).json({
+          success: false,
+          message: "Solicitação não encontrada"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Solicitação aprovada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error approving request:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to approve request" 
+      });
+    }
+  });
+
+  // Reject group membership request (moderator only)
+  app.post("/api/groups/:groupId/reject-request/:requestId", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, requestId } = req.params;
+      const userId = req.user.id;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem rejeitar solicitações"
+        });
+      }
+      
+      const rejected = await storage.rejectGroupRequest(requestId);
+      if (!rejected) {
+        return res.status(404).json({
+          success: false,
+          message: "Solicitação não encontrada"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Solicitação rejeitada"
+      });
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to reject request" 
+      });
+    }
+  });
+
+  // Group posts routes
+  
+  // Get group posts (members can view, only moderators can post)
+  app.get("/api/groups/:groupId/posts", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      
+      // Check if user is member of this group
+      const membership = await storage.getGroupMembership(groupId, userId);
+      if (!membership || !membership.isActive || membership.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro aprovado para ver as publicações"
+        });
+      }
+      
+      const posts = await storage.getGroupPosts(groupId);
+      res.json(posts);
+    } catch (error) {
+      console.error("Error fetching group posts:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch posts" 
+      });
+    }
+  });
+
+  // Create group post (moderator only)
+  app.post("/api/groups/:groupId/posts", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      const { content, mediaType, mediaUrl } = req.body;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem publicar no feed do grupo"
+        });
+      }
+      
+      const post = await storage.createGroupPost({
+        groupId,
+        authorId: userId,
+        content,
+        mediaType: mediaType || 'text',
+        mediaUrl
+      });
+      
+      res.json({
+        success: true,
+        message: "Publicação criada com sucesso",
+        post
+      });
+    } catch (error) {
+      console.error("Error creating group post:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create post" 
+      });
+    }
+  });
+
+  // Delete group post (moderator only)
+  app.delete("/api/groups/:groupId/posts/:postId", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, postId } = req.params;
+      const userId = req.user.id;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem excluir publicações"
+        });
+      }
+      
+      const deleted = await storage.deleteGroupPost(postId, userId);
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Publicação não encontrada"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Publicação excluída com sucesso"
+      });
+    } catch (error) {
+      console.error("Error deleting group post:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete post" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

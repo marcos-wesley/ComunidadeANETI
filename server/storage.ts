@@ -21,6 +21,7 @@ import {
   notifications,
   groups,
   groupMembers,
+  groupPosts,
   type User, 
   type InsertUser, 
   type MembershipPlan, 
@@ -75,6 +76,8 @@ import {
   type InsertGroup,
   type GroupMember,
   type InsertGroupMember,
+  type GroupPost,
+  type InsertGroupPost,
   type GroupWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
@@ -201,6 +204,21 @@ export interface IStorage {
   updateGroup(id: string, updates: Partial<Group>): Promise<Group | undefined>;
   deleteGroup(id: string): Promise<void>;
   getUsersForGroupModeration(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
+  getAllActiveGroups(): Promise<GroupWithDetails[]>;
+  joinGroup(groupId: string, userId: string): Promise<GroupMember>;
+  getGroupMembership(groupId: string, userId: string): Promise<GroupMember | undefined>;
+  getUserGroupMemberships(userId: string): Promise<GroupMember[]>;
+  
+  // Group moderation methods
+  getPendingGroupRequests(groupId: string): Promise<GroupMember[]>;
+  approveGroupRequest(requestId: string): Promise<GroupMember | undefined>;
+  rejectGroupRequest(requestId: string): Promise<GroupMember | undefined>;
+  isGroupModerator(groupId: string, userId: string): Promise<boolean>;
+  
+  // Group posts methods
+  createGroupPost(postData: InsertGroupPost): Promise<GroupPost>;
+  getGroupPosts(groupId: string): Promise<(GroupPost & { author: { id: string; fullName: string; username: string; profilePicture?: string } })[]>;
+  deleteGroupPost(postId: string, authorId: string): Promise<boolean>;
 
   sessionStore: any;
 }
@@ -2304,7 +2322,8 @@ export class DatabaseStorage implements IStorage {
         groupId,
         userId,
         role: 'member',
-        isActive: true,
+        status: 'pending',
+        isActive: false,
         joinedAt: new Date()
       })
       .returning();
@@ -2330,9 +2349,127 @@ export class DatabaseStorage implements IStorage {
       .from(groupMembers)
       .where(and(
         eq(groupMembers.userId, userId),
-        eq(groupMembers.isActive, true)
+        eq(groupMembers.isActive, true),
+        eq(groupMembers.status, 'approved')
       ))
       .orderBy(desc(groupMembers.joinedAt));
+  }
+
+  // Group moderation methods
+  async getPendingGroupRequests(groupId: string): Promise<GroupMember[]> {
+    return await db
+      .select({
+        id: groupMembers.id,
+        groupId: groupMembers.groupId,
+        userId: groupMembers.userId,
+        role: groupMembers.role,
+        status: groupMembers.status,
+        joinedAt: groupMembers.joinedAt,
+        isActive: groupMembers.isActive,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          email: users.email,
+          planName: users.planName,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(groupMembers)
+      .leftJoin(users, eq(groupMembers.userId, users.id))
+      .where(and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.status, 'pending')
+      ))
+      .orderBy(desc(groupMembers.joinedAt));
+  }
+
+  async approveGroupRequest(requestId: string): Promise<GroupMember | undefined> {
+    const [updated] = await db
+      .update(groupMembers)
+      .set({ 
+        status: 'approved',
+        isActive: true,
+        joinedAt: new Date()
+      })
+      .where(eq(groupMembers.id, requestId))
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  async rejectGroupRequest(requestId: string): Promise<GroupMember | undefined> {
+    const [updated] = await db
+      .update(groupMembers)
+      .set({ 
+        status: 'rejected',
+        isActive: false
+      })
+      .where(eq(groupMembers.id, requestId))
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  // Group posts methods
+  async createGroupPost(postData: InsertGroupPost): Promise<GroupPost> {
+    const [post] = await db
+      .insert(groupPosts)
+      .values(postData)
+      .returning();
+    
+    return post;
+  }
+
+  async getGroupPosts(groupId: string): Promise<(GroupPost & { author: { id: string; fullName: string; username: string; profilePicture?: string } })[]> {
+    return await db
+      .select({
+        id: groupPosts.id,
+        groupId: groupPosts.groupId,
+        authorId: groupPosts.authorId,
+        content: groupPosts.content,
+        mediaType: groupPosts.mediaType,
+        mediaUrl: groupPosts.mediaUrl,
+        isActive: groupPosts.isActive,
+        createdAt: groupPosts.createdAt,
+        updatedAt: groupPosts.updatedAt,
+        author: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(groupPosts)
+      .leftJoin(users, eq(groupPosts.authorId, users.id))
+      .where(and(
+        eq(groupPosts.groupId, groupId),
+        eq(groupPosts.isActive, true)
+      ))
+      .orderBy(desc(groupPosts.createdAt));
+  }
+
+  async deleteGroupPost(postId: string, authorId: string): Promise<boolean> {
+    const [updated] = await db
+      .update(groupPosts)
+      .set({ isActive: false })
+      .where(and(
+        eq(groupPosts.id, postId),
+        eq(groupPosts.authorId, authorId)
+      ))
+      .returning();
+    
+    return !!updated;
+  }
+
+  // Check if user is moderator of a group
+  async isGroupModerator(groupId: string, userId: string): Promise<boolean> {
+    const [group] = await db
+      .select({ moderatorId: groups.moderatorId })
+      .from(groups)
+      .where(eq(groups.id, groupId));
+    
+    return group?.moderatorId === userId;
   }
 
   async getFilteredApplications(filters: {
