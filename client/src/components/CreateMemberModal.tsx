@@ -422,7 +422,7 @@ export function CreateMemberModal({ trigger }: CreateMemberModalProps) {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Sem plano</SelectItem>
+                        <SelectItem value="none">Sem plano</SelectItem>
                         {plans && Array.isArray(plans) ? plans.map((plan: any) => (
                           <SelectItem key={plan.id} value={plan.id}>
                             {plan.name} - R$ {(plan.price / 100).toFixed(2)}

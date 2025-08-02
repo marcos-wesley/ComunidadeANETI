@@ -2165,10 +2165,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { hashPassword } = await import("./auth");
       const hashedPassword = await hashPassword(password);
 
-      // Get plan info if planId is provided
+      // Get plan info if planId is provided and not "none"
       let planName = null;
-      if (planId) {
-        const plan = await storage.getMembershipPlan(planId);
+      const finalPlanId = planId === "none" ? null : planId;
+      if (finalPlanId) {
+        const plan = await storage.getMembershipPlan(finalPlanId);
         if (plan) {
           planName = plan.name;
         }
@@ -2194,7 +2195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isApproved: true, // Admin-created members are auto-approved
         isActive: true,
         role: role,
-        currentPlanId: planId || null,
+        currentPlanId: finalPlanId || null,
         planName: planName
       });
 
