@@ -1797,7 +1797,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Import hash function from auth
-      const { hashPassword } = await import('./auth-admin');
+      const { hashPassword } = await import('./auth');
       const hashedPassword = await hashPassword(newPassword);
       
       const updatedUser = await storage.updateUserPassword(userId, hashedPassword);
