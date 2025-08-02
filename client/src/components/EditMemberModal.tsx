@@ -346,12 +346,13 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
                       <SelectValue placeholder="Selecione o nível" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="">Sem Nível</SelectItem>
+                      <SelectItem value="Estudante">Estudante</SelectItem>
                       <SelectItem value="Júnior">Júnior</SelectItem>
                       <SelectItem value="Pleno">Pleno</SelectItem>
                       <SelectItem value="Sênior">Sênior</SelectItem>
                       <SelectItem value="Honra">Honra</SelectItem>
                       <SelectItem value="Diretivo">Diretivo</SelectItem>
-                      <SelectItem value="Estudante">Estudante</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

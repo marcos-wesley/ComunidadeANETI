@@ -524,11 +524,9 @@ export default function AdminPage() {
                           <div className="flex-1">
                             <div className="flex items-center space-x-3 mb-2">
                               <h3 className="font-semibold text-lg">{member.fullName}</h3>
-                              {member.planName && (
-                                <Badge variant="default" className="bg-blue-100 text-blue-800">
-                                  {member.planName}
-                                </Badge>
-                              )}
+                              <Badge variant="default" className="bg-blue-100 text-blue-800">
+                                {member.planName || 'Sem Nível'}
+                              </Badge>
                             </div>
                             <p className="text-sm text-gray-600">{member.email}</p>
                             <p className="text-sm text-gray-500">@{member.username}</p>
