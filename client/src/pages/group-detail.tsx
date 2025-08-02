@@ -414,44 +414,47 @@ export default function GroupDetail() {
           </Card>
         )}
 
-        {/* Group Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-8">
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'posts' ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setActiveSection('posts')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">{groupPosts.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'members' ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setActiveSection('members')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">{group._count.members}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Membro{group._count.members !== 1 ? 's' : ''}
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card 
-            className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'forums' ? 'ring-2 ring-primary' : ''}`}
-            onClick={() => setActiveSection('forums')}
-          >
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">{groupForums.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Fóruns</div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Group Stats - Only show if user is approved member */}
+        {membership?.status === 'approved' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-8">
+            <Card 
+              className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'posts' ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setActiveSection('posts')}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{groupPosts.length}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'members' ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setActiveSection('members')}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{group._count.members}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Membro{group._count.members !== 1 ? 's' : ''}
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card 
+              className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'forums' ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => setActiveSection('forums')}
+            >
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-primary">{groupForums.length}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">Fóruns</div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
-        {/* Dynamic Content Section */}
-        <div className="mt-8">
-          {activeSection === 'posts' && (
+        {/* Dynamic Content Section - Only show if user is approved member */}
+        {membership?.status === 'approved' && (
+          <div className="mt-8">
+            {activeSection === 'posts' && (
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -597,7 +600,8 @@ export default function GroupDetail() {
               </CardContent>
             </Card>
           )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
