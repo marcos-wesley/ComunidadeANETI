@@ -1585,12 +1585,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin dashboard stats
   app.get("/api/admin/stats", requireAdminAuth, async (req, res) => {
     try {
-      const totalMembers = await storage.getAllUsers();
+      const allUsers = await storage.getAllUsers();
       const pendingApplications = await storage.getPendingApplications();
       
+      // Filtrar membros ativos e aprovados
+      const activeMembers = allUsers.filter(user => user.isApproved && user.isActive);
+      
+      // Calcular novos membros no mês atual
+      const currentDate = new Date();
+      const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+      const newMembersThisMonth = activeMembers.filter(user => 
+        user.createdAt && new Date(user.createdAt) >= startOfMonth
+      );
+      
+      // Calcular valor arrecadado no ano (estimativa baseada nos planos ativos)
+      const startOfYear = new Date(currentDate.getFullYear(), 0, 1);
+      const paidMembers = activeMembers.filter(user => 
+        user.currentPlanId && user.subscriptionStatus === 'active'
+      );
+      
+      // Buscar os planos para calcular a receita
+      const allPlans = await storage.getMembershipPlans();
+      let yearlyRevenue = 0;
+      
+      for (const member of paidMembers) {
+        const plan = allPlans.find(p => p.id === member.currentPlanId);
+        if (plan && plan.price > 0) {
+          // Converter de centavos para reais e calcular baseado no período
+          const planPrice = plan.price / 100;
+          if (plan.billingPeriod === 'yearly') {
+            yearlyRevenue += planPrice;
+          } else if (plan.billingPeriod === 'monthly') {
+            // Para mensais, multiplicar por 12 para estimativa anual
+            yearlyRevenue += planPrice * 12;
+          }
+        }
+      }
+      
       res.json({
-        totalMembers: totalMembers.length,
+        totalActiveMembers: activeMembers.length,
+        newMembersThisMonth: newMembersThisMonth.length,
+        yearlyRevenue: Math.round(yearlyRevenue),
         pendingApplications: pendingApplications.length,
+        totalMembers: allUsers.length,
         adminUser: {
           username: req.adminUser.username,
           role: req.adminUser.role,

@@ -24,7 +24,10 @@ import {
   LogOut,
   BarChart3,
   Eye,
-  Edit
+  Edit,
+  TrendingUp,
+  Receipt,
+  Clock
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
@@ -46,8 +49,11 @@ interface AdminAuthResponse {
 }
 
 interface AdminStats {
-  totalMembers: number;
+  totalActiveMembers: number;
+  newMembersThisMonth: number;
+  yearlyRevenue: number;
   pendingApplications: number;
+  totalMembers: number;
   adminUser: {
     username: string;
     role: string;
@@ -357,58 +363,66 @@ export default function AdminPage() {
 
           <TabsContent value="overview" className="mt-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-              <Card>
+              {/* 👥 Total de Membros Ativos */}
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total de Membros</CardTitle>
-                  <Users className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium text-blue-700">👥 Total de Membros Ativos</CardTitle>
+                  <Users className="h-5 w-5 text-blue-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
-                    {loadingStats ? "..." : stats?.totalMembers || 0}
+                  <div className="text-3xl font-bold text-blue-800">
+                    {loadingStats ? "..." : stats?.totalActiveMembers || 0}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Membros registrados na plataforma
+                  <p className="text-xs text-blue-600 mt-1">
+                    Membros aprovados e ativos
                   </p>
                 </CardContent>
               </Card>
 
-              <Card>
+              {/* 📈 Novos Membros no Mês */}
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Inscrições Pendentes</CardTitle>
-                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <CardTitle className="text-sm font-medium text-green-700">📈 Novos Membros no Mês</CardTitle>
+                  <TrendingUp className="h-5 w-5 text-green-600" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-bold text-green-800">
+                    {loadingStats ? "..." : stats?.newMembersThisMonth || 0}
+                  </div>
+                  <p className="text-xs text-green-600 mt-1">
+                    Novos membros em {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* 💸 Valor Arrecadado no Ano */}
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-purple-700">💸 Receita Anual Estimada</CardTitle>
+                  <DollarSign className="h-5 w-5 text-purple-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-purple-800">
+                    {loadingStats ? "..." : `R$ ${stats?.yearlyRevenue?.toLocaleString('pt-BR') || 0}`}
+                  </div>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Baseado em planos ativos
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* 🧾 Membros Aguardando Aprovação */}
+              <Card className="bg-gradient-to-br from-orange-50 to-orange-100 border-orange-200">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-orange-700">🧾 Aguardando Aprovação</CardTitle>
+                  <Clock className="h-5 w-5 text-orange-600" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-3xl font-bold text-orange-800">
                     {loadingStats ? "..." : stats?.pendingApplications || 0}
                   </div>
-                  <p className="text-xs text-muted-foreground">
-                    Aguardando aprovação
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Administradores</CardTitle>
-                  <Shield className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">1</div>
-                  <p className="text-xs text-muted-foreground">
-                    Sistema administrativo ativo
-                  </p>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Status</CardTitle>
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-green-600">Online</div>
-                  <p className="text-xs text-muted-foreground">
-                    Sistema funcionando normalmente
+                  <p className="text-xs text-orange-600 mt-1">
+                    Inscrições pendentes
                   </p>
                 </CardContent>
               </Card>
