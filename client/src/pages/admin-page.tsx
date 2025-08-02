@@ -525,6 +525,270 @@ export default function AdminPage() {
               </Card>
             </div>
 
+            {/* Alertas Administrativos - Primeira seção */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Bell className="h-5 w-5 text-red-600" />
+                    🔔 Alertas Administrativos
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {stats?.adminAlerts?.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <Info className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                        <p>Nenhum alerta no momento</p>
+                      </div>
+                    ) : (
+                      stats?.adminAlerts?.map((alert) => (
+                        <div 
+                          key={alert.id} 
+                          className={`p-4 rounded-lg border-l-4 ${
+                            alert.priority === 'high' 
+                              ? 'bg-red-50 border-red-500' 
+                              : alert.priority === 'medium'
+                              ? 'bg-yellow-50 border-yellow-500'
+                              : 'bg-blue-50 border-blue-500'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {alert.type === 'warning' ? (
+                                <AlertTriangle className={`h-5 w-5 ${
+                                  alert.priority === 'high' ? 'text-red-600' : 'text-yellow-600'
+                                }`} />
+                              ) : (
+                                <Info className="h-5 w-5 text-blue-600" />
+                              )}
+                              <div>
+                                <h4 className="font-semibold text-gray-800">{alert.title}</h4>
+                                <p className="text-sm text-gray-600">{alert.message}</p>
+                              </div>
+                            </div>
+                            <Button size="sm" variant="outline">
+                              {alert.action}
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Dashboard Personalizável - Segunda seção */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5 text-purple-600" />
+                    🧭 Filtros Personalizáveis
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div>
+                      <Label htmlFor="plan-filter">Plano</Label>
+                      <Select 
+                        value={dashboardFilters.plan} 
+                        onValueChange={(value) => setDashboardFilters(prev => ({ ...prev, plan: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os planos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os planos</SelectItem>
+                          {stats?.filterData?.plans?.map((plan) => (
+                            <SelectItem key={plan} value={plan}>{plan}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="state-filter">Estado</Label>
+                      <Select 
+                        value={dashboardFilters.state} 
+                        onValueChange={(value) => setDashboardFilters(prev => ({ ...prev, state: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos os estados" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todos os estados</SelectItem>
+                          {stats?.filterData?.states?.map((state) => (
+                            <SelectItem key={state} value={state}>{state}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="area-filter">Área</Label>
+                      <Select 
+                        value={dashboardFilters.area} 
+                        onValueChange={(value) => setDashboardFilters(prev => ({ ...prev, area: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todas as áreas" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Todas as áreas</SelectItem>
+                          {stats?.filterData?.areas?.map((area) => (
+                            <SelectItem key={area} value={area}>{area}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label htmlFor="time-filter">Período</Label>
+                      <Select 
+                        value={dashboardFilters.timeRange} 
+                        onValueChange={(value) => setDashboardFilters(prev => ({ ...prev, timeRange: value }))}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Últimos 30 dias" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="7">Últimos 7 dias</SelectItem>
+                          <SelectItem value="30">Últimos 30 dias</SelectItem>
+                          <SelectItem value="90">Últimos 90 dias</SelectItem>
+                          <SelectItem value="365">Último ano</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  {/* Botão para limpar filtros */}
+                  <div className="flex justify-between items-center">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setDashboardFilters({ plan: 'all', state: 'all', area: 'all', timeRange: '30' })}
+                      className="flex items-center gap-2"
+                    >
+                      <X className="h-4 w-4" />
+                      Limpar Filtros
+                    </Button>
+                    
+                    <div className="text-sm text-gray-600">
+                      {Object.values(dashboardFilters).filter(v => v && v !== '30' && v !== 'all').length > 0 
+                        ? `${Object.values(dashboardFilters).filter(v => v && v !== '30' && v !== 'all').length} filtro(s) ativo(s)`
+                        : 'Nenhum filtro ativo'
+                      }
+                    </div>
+                  </div>
+
+                  {/* Indicadores Visuais dos Filtros Ativos */}
+                  {Object.entries(dashboardFilters).some(([key, value]) => value && !(key === 'timeRange' && value === '30') && value !== 'all') && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {dashboardFilters.plan && dashboardFilters.plan !== 'all' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          Plano: {dashboardFilters.plan}
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, plan: 'all' }))}
+                          />
+                        </Badge>
+                      )}
+                      {dashboardFilters.state && dashboardFilters.state !== 'all' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          Estado: {dashboardFilters.state}
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, state: 'all' }))}
+                          />
+                        </Badge>
+                      )}
+                      {dashboardFilters.area && dashboardFilters.area !== 'all' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          Área: {dashboardFilters.area}
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, area: 'all' }))}
+                          />
+                        </Badge>
+                      )}
+                      {dashboardFilters.timeRange !== '30' && (
+                        <Badge variant="secondary" className="flex items-center gap-1">
+                          Período: {dashboardFilters.timeRange} dias
+                          <X 
+                            className="h-3 w-3 cursor-pointer" 
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, timeRange: '30' }))}
+                          />
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Calendário de Vencimento de Anuidades - Terceira seção */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                    📅 Calendário de Vencimento de Anuidades
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Resumo de Vencimentos */}
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border border-orange-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-orange-700">Vencendo Esta Semana</p>
+                            <p className="text-2xl font-bold text-orange-800">
+                              {stats?.membershipCalendar?.expiringThisWeek || 0}
+                            </p>
+                          </div>
+                          <AlertTriangle className="h-8 w-8 text-orange-600" />
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-yellow-700">Vencendo Este Mês</p>
+                            <p className="text-2xl font-bold text-yellow-800">
+                              {stats?.membershipCalendar?.expiringThisMonth?.length || 0}
+                            </p>
+                          </div>
+                          <Clock className="h-8 w-8 text-yellow-600" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lista de Membros com Vencimento Próximo */}
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-gray-700">Próximos Vencimentos</h4>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {stats?.membershipCalendar?.expiringThisMonth?.slice(0, 8).map((member) => (
+                          <div key={member.id} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                            <div>
+                              <p className="font-medium text-sm">{member.fullName}</p>
+                              <p className="text-xs text-gray-600">{member.planName}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={member.daysUntilExpiry <= 7 ? "destructive" : "secondary"}>
+                                {member.daysUntilExpiry} dias
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
             {/* 🧑‍💼 Seção de Membros por Perfil/Nível */}
             <div className="mt-8">
               <Card>
