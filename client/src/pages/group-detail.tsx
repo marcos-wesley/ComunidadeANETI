@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield, Settings } from "lucide-react";
+import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield, Settings, Send, MessageSquare } from "lucide-react";
 
 interface Group {
   id: string;
@@ -49,6 +49,7 @@ export default function GroupDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [joiningGroup, setJoiningGroup] = useState(false);
+  const [activeSection, setActiveSection] = useState<'posts' | 'members' | 'forums'>('posts');
 
   const groupId = params.id;
 
@@ -73,6 +74,12 @@ export default function GroupDetail() {
   // Fetch group forums count
   const { data: groupForums = [] } = useQuery<any[]>({
     queryKey: [`/api/groups/${groupId}/forums`],
+    enabled: !!groupId && !!user,
+  });
+
+  // Fetch group members
+  const { data: groupMembers = [] } = useQuery<any[]>({
+    queryKey: [`/api/groups/${groupId}/members`],
     enabled: !!groupId && !!user,
   });
 
@@ -408,14 +415,20 @@ export default function GroupDetail() {
 
         {/* Group Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-8">
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'posts' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveSection('posts')}
+          >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{groupPosts.length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'members' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveSection('members')}
+          >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{group._count.members}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -424,12 +437,191 @@ export default function GroupDetail() {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card 
+            className={`cursor-pointer transition-all hover:shadow-md ${activeSection === 'forums' ? 'ring-2 ring-primary' : ''}`}
+            onClick={() => setActiveSection('forums')}
+          >
             <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{groupForums.length}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">Fóruns</div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Dynamic Content Section */}
+        <div className="mt-8">
+          {activeSection === 'posts' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Send className="h-5 w-5" />
+                  Posts do Moderador
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {groupPosts.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Send className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Nenhum post ainda
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      O moderador ainda não publicou nada neste grupo.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {groupPosts.filter(post => post.authorId === group?.moderatorId).map((post: any) => (
+                      <div key={post.id} className="border rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={post.author.profilePicture} alt={post.author.fullName} />
+                            <AvatarFallback>{post.author.fullName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <h4 className="font-semibold text-gray-900 dark:text-white">
+                                {post.author.fullName}
+                              </h4>
+                              <span className="text-sm text-gray-500">
+                                @{post.author.username}
+                              </span>
+                              <Badge variant="secondary" className="text-xs">
+                                Moderador
+                              </Badge>
+                            </div>
+                            <div className="text-gray-700 dark:text-gray-300 mb-2">
+                              {post.content}
+                            </div>
+                            {post.mediaUrl && (
+                              <img 
+                                src={post.mediaUrl} 
+                                alt="Post media" 
+                                className="max-w-full h-auto rounded-lg mt-2"
+                              />
+                            )}
+                            <div className="text-xs text-gray-500 mt-2">
+                              {new Date(post.createdAt).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === 'members' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Membros do Grupo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {groupMembers.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Nenhum membro encontrado
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Este grupo ainda não tem membros ativos.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {groupMembers.map((member: any) => (
+                      <div key={member.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div className="flex items-center gap-3">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={member.profilePicture} alt={member.fullName} />
+                            <AvatarFallback>{member.fullName[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                              {member.fullName}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              @{member.username}
+                            </p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {member.planName || 'Público'}
+                              </Badge>
+                              {member.id === group?.moderatorId && (
+                                <Badge variant="secondary" className="text-xs">
+                                  <Shield className="h-3 w-3 mr-1" />
+                                  Moderador
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {activeSection === 'forums' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5" />
+                  Fóruns do Grupo
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {groupForums.length === 0 ? (
+                  <div className="text-center py-8">
+                    <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                      Nenhum fórum criado
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Este grupo ainda não possui fóruns de discussão.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {groupForums.map((forum: any) => (
+                      <div key={forum.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <div className="flex items-center gap-4">
+                          <div
+                            className="w-4 h-4 rounded"
+                            style={{ backgroundColor: forum.color || '#3B82F6' }}
+                          />
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-gray-900 dark:text-white">
+                              {forum.title}
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              {forum.description}
+                            </p>
+                            <div className="text-xs text-gray-500 mt-1">
+                              Criado em {new Date(forum.createdAt).toLocaleDateString('pt-BR')}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
