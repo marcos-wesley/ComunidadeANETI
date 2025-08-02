@@ -101,36 +101,6 @@ export default function ForumDetailPage(): JSX.Element {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("all");
 
-  // Filter topics based on search term and tab
-  const filteredTopics = topics.filter((topic: ForumTopic) => {
-    const matchesSearch = topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         topic.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         topic.author.fullName.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    if (activeTab === "open") {
-      return matchesSearch && !topic.isLocked;
-    }
-    if (activeTab === "closed") {
-      return matchesSearch && topic.isLocked;
-    }
-    return matchesSearch; // "all" tab
-  });
-
-  // Sort topics: pinned first, then by last reply date
-  const sortedTopics = [...filteredTopics].sort((a, b) => {
-    if (a.isPinned !== b.isPinned) {
-      return a.isPinned ? -1 : 1;
-    }
-    return new Date(b.lastReplyAt || b.createdAt).getTime() - new Date(a.lastReplyAt || a.createdAt).getTime();
-  });
-
-  // Count topics by status
-  const topicCounts = {
-    all: topics.length,
-    open: topics.filter((t: ForumTopic) => !t.isLocked).length,
-    closed: topics.filter((t: ForumTopic) => t.isLocked).length,
-  };
-
   // Form setup
   const form = useForm<CreateTopicForm>({
     resolver: zodResolver(createTopicSchema),
@@ -159,6 +129,36 @@ export default function ForumDetailPage(): JSX.Element {
     },
     enabled: !!forumId,
   });
+
+  // Filter topics based on search term and tab
+  const filteredTopics = (topics || []).filter((topic: ForumTopic) => {
+    const matchesSearch = topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.author.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (activeTab === "open") {
+      return matchesSearch && !topic.isLocked;
+    }
+    if (activeTab === "closed") {
+      return matchesSearch && topic.isLocked;
+    }
+    return matchesSearch; // "all" tab
+  });
+
+  // Sort topics: pinned first, then by last reply date
+  const sortedTopics = [...filteredTopics].sort((a, b) => {
+    if (a.isPinned !== b.isPinned) {
+      return a.isPinned ? -1 : 1;
+    }
+    return new Date(b.lastReplyAt || b.createdAt).getTime() - new Date(a.lastReplyAt || a.createdAt).getTime();
+  });
+
+  // Count topics by status
+  const topicCounts = {
+    all: (topics || []).length,
+    open: (topics || []).filter((t: ForumTopic) => !t.isLocked).length,
+    closed: (topics || []).filter((t: ForumTopic) => t.isLocked).length,
+  };
 
   // Check if user is group member and has active membership
   const { data: membership } = useQuery({
@@ -271,7 +271,7 @@ export default function ForumDetailPage(): JSX.Element {
                 </span>
                 <span className="flex items-center gap-1">
                   <MessageSquare className="h-4 w-4" />
-                  {topics.length} tópicos
+                  {(topics || []).length} tópicos
                 </span>
               </div>
             </div>
@@ -402,7 +402,7 @@ export default function ForumDetailPage(): JSX.Element {
                 </div>
               ))}
             </div>
-          ) : topics.length === 0 ? (
+          ) : (topics || []).length === 0 ? (
             <div className="text-center py-8">
               <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
