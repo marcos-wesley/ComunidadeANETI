@@ -1722,6 +1722,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(0, 5)
         .map(([state, count]) => ({ state, count }));
 
+      // Calcular estatísticas de fóruns e grupos
+      const allForumTopics = await storage.getAllForumTopics();
+      const allGroups = await storage.getAllGroups();
+      const allGroupPosts = await storage.getAllGroupPosts();
+
+      // Tópicos criados por período
+      const topicsThisMonth = allForumTopics.filter(topic => 
+        topic.createdAt && new Date(topic.createdAt) >= startOfMonth
+      );
+
+      const topicsLastMonth = allForumTopics.filter(topic => 
+        topic.createdAt && 
+        new Date(topic.createdAt) >= startOfLastMonth && 
+        new Date(topic.createdAt) <= endOfLastMonth
+      );
+
+      // Grupos mais ativos (baseado em posts)
+      const groupPostCounts: Record<string, number> = {};
+      for (const post of allGroupPosts) {
+        if (post.groupId) {
+          groupPostCounts[post.groupId] = (groupPostCounts[post.groupId] || 0) + 1;
+        }
+      }
+
+      const activeGroups = allGroups
+        .map(group => ({
+          id: group.id,
+          name: group.name,
+          postCount: groupPostCounts[group.id] || 0,
+          memberCount: group.memberCount || 0
+        }))
+        .sort((a, b) => b.postCount - a.postCount)
+        .slice(0, 5);
+
+      // Membros por grupo
+      const membersByGroup = allGroups.map(group => ({
+        id: group.id,
+        name: group.name,
+        memberCount: group.memberCount || 0
+      })).sort((a, b) => b.memberCount - a.memberCount);
+
+      // Tópicos mais visualizados
+      const topTopics = allForumTopics
+        .sort((a, b) => (b.views || 0) - (a.views || 0))
+        .slice(0, 10)
+        .map(topic => ({
+          id: topic.id,
+          title: topic.title,
+          views: topic.views || 0,
+          replies: topic.replies || 0,
+          authorName: topic.authorName || 'Usuário',
+          createdAt: topic.createdAt
+        }));
+
       res.json({
         totalActiveMembers: activeMembers.length,
         newMembersThisMonth: newMembersThisMonth.length,
@@ -1734,6 +1788,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         membersByCity,
         newMembersByRegion,
         top5States,
+        forumStats: {
+          totalTopics: allForumTopics.length,
+          topicsThisMonth: topicsThisMonth.length,
+          topicsLastMonth: topicsLastMonth.length,
+          topTopics
+        },
+        groupStats: {
+          totalGroups: allGroups.length,
+          activeGroups,
+          membersByGroup
+        },
         adminUser: {
           username: req.adminUser.username,
           role: req.adminUser.role,

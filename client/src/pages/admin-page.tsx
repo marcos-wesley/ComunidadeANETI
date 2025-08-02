@@ -29,7 +29,11 @@ import {
   Receipt,
   Clock,
   Globe,
-  Map
+  Map,
+  MessageSquare,
+  Users2,
+  Activity,
+  Hash
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
@@ -76,6 +80,33 @@ interface AdminStats {
   membersByCity: Record<string, Record<string, number>>;
   newMembersByRegion: Record<string, number>;
   top5States: Array<{ state: string; count: number }>;
+  forumStats: {
+    totalTopics: number;
+    topicsThisMonth: number;
+    topicsLastMonth: number;
+    topTopics: Array<{
+      id: string;
+      title: string;
+      views: number;
+      replies: number;
+      authorName: string;
+      createdAt: string;
+    }>;
+  };
+  groupStats: {
+    totalGroups: number;
+    activeGroups: Array<{
+      id: string;
+      name: string;
+      postCount: number;
+      memberCount: number;
+    }>;
+    membersByGroup: Array<{
+      id: string;
+      name: string;
+      memberCount: number;
+    }>;
+  };
   adminUser: {
     username: string;
     role: string;
@@ -112,6 +143,9 @@ export default function AdminPage() {
   // Geographic view state
   const [selectedGeoView, setSelectedGeoView] = useState<'states' | 'cities' | 'top5' | 'newMembers'>('states');
   const [selectedStateForCities, setSelectedStateForCities] = useState<string>('');
+
+  // Forum view state
+  const [selectedForumView, setSelectedForumView] = useState<'topics' | 'groups' | 'members' | 'viewed'>('topics');
 
   // Check admin authentication
   useEffect(() => {
@@ -763,6 +797,258 @@ export default function AdminPage() {
                               <p>Nenhuma nova inscrição neste mês ainda</p>
                             </div>
                           )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 🧵 Seção de Fóruns e Grupos */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                    <MessageSquare className="h-6 w-6 text-purple-600" />
+                    <span>🧵 Fóruns e Grupos</span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Atividade da comunidade e engajamento dos membros
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {loadingStats ? (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Seletores de Visualização */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant={selectedForumView === 'topics' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedForumView('topics')}
+                          className="flex items-center space-x-2"
+                        >
+                          <Hash className="h-4 w-4" />
+                          <span>💬 Tópicos por Período</span>
+                        </Button>
+                        <Button
+                          variant={selectedForumView === 'groups' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedForumView('groups')}
+                          className="flex items-center space-x-2"
+                        >
+                          <Activity className="h-4 w-4" />
+                          <span>🧩 Grupos Ativos</span>
+                        </Button>
+                        <Button
+                          variant={selectedForumView === 'members' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedForumView('members')}
+                          className="flex items-center space-x-2"
+                        >
+                          <Users2 className="h-4 w-4" />
+                          <span>👨‍👨‍👧‍👦 Membros por Grupo</span>
+                        </Button>
+                        <Button
+                          variant={selectedForumView === 'viewed' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedForumView('viewed')}
+                          className="flex items-center space-x-2"
+                        >
+                          <Eye className="h-4 w-4" />
+                          <span>🔝 Mais Visualizados</span>
+                        </Button>
+                      </div>
+
+                      {/* Tópicos criados por período */}
+                      {selectedForumView === 'topics' && stats?.forumStats && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">💬 Tópicos criados por período</h3>
+                          <div className="grid gap-4">
+                            {/* Cards de métricas */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="bg-gradient-to-r from-purple-100 to-purple-50 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-purple-700">{stats.forumStats.totalTopics}</div>
+                                <div className="text-sm text-purple-600">Total de tópicos</div>
+                              </div>
+                              <div className="bg-gradient-to-r from-green-100 to-green-50 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-green-700">{stats.forumStats.topicsThisMonth}</div>
+                                <div className="text-sm text-green-600">Este mês</div>
+                              </div>
+                              <div className="bg-gradient-to-r from-blue-100 to-blue-50 p-4 rounded-lg">
+                                <div className="text-2xl font-bold text-blue-700">{stats.forumStats.topicsLastMonth}</div>
+                                <div className="text-sm text-blue-600">Mês anterior</div>
+                              </div>
+                            </div>
+                            
+                            {/* Comparação visual */}
+                            <div className="bg-gray-50 p-4 rounded-lg">
+                              <h4 className="font-medium text-gray-700 mb-3">Comparação mensal</h4>
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600">Este mês</span>
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-32 bg-gray-200 rounded-full h-3">
+                                      <div 
+                                        className="h-3 bg-green-500 rounded-full transition-all duration-300"
+                                        style={{ 
+                                          width: `${Math.max((stats.forumStats.topicsThisMonth / Math.max(stats.forumStats.topicsThisMonth, stats.forumStats.topicsLastMonth, 1)) * 100, 5)}%`
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-sm font-medium">{stats.forumStats.topicsThisMonth}</span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span className="text-sm text-gray-600">Mês anterior</span>
+                                  <div className="flex items-center space-x-2">
+                                    <div className="w-32 bg-gray-200 rounded-full h-3">
+                                      <div 
+                                        className="h-3 bg-blue-500 rounded-full transition-all duration-300"
+                                        style={{ 
+                                          width: `${Math.max((stats.forumStats.topicsLastMonth / Math.max(stats.forumStats.topicsThisMonth, stats.forumStats.topicsLastMonth, 1)) * 100, 5)}%`
+                                        }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-sm font-medium">{stats.forumStats.topicsLastMonth}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Tendência */}
+                              <div className="mt-3 pt-3 border-t border-gray-200">
+                                {(() => {
+                                  const diff = stats.forumStats.topicsThisMonth - stats.forumStats.topicsLastMonth;
+                                  const percentage = stats.forumStats.topicsLastMonth > 0 
+                                    ? ((diff / stats.forumStats.topicsLastMonth) * 100).toFixed(1) 
+                                    : '0';
+                                  
+                                  return (
+                                    <div className={`flex items-center space-x-2 text-sm ${diff >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                      <TrendingUp className={`h-4 w-4 ${diff < 0 ? 'rotate-180' : ''}`} />
+                                      <span>
+                                        {diff >= 0 ? '+' : ''}{diff} tópicos ({diff >= 0 ? '+' : ''}{percentage}%)
+                                      </span>
+                                    </div>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Grupos mais ativos */}
+                      {selectedForumView === 'groups' && stats?.groupStats && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">🧩 Grupos mais ativos</h3>
+                          <div className="space-y-3">
+                            {stats.groupStats.activeGroups.length > 0 ? (
+                              stats.groupStats.activeGroups.map((group, index) => {
+                                const rankColors = ['bg-yellow-500', 'bg-gray-400', 'bg-orange-500', 'bg-blue-500', 'bg-purple-500'];
+                                const rankEmojis = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+                                
+                                return (
+                                  <div key={group.id} className="flex items-center space-x-4 p-4 bg-white border rounded-lg shadow-sm">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-xl">{rankEmojis[index] || '🔸'}</span>
+                                      <div className={`w-3 h-3 rounded-full ${rankColors[index] || 'bg-gray-400'}`}></div>
+                                    </div>
+                                    <div className="flex-1">
+                                      <h4 className="font-semibold text-gray-800">{group.name}</h4>
+                                      <div className="flex items-center space-x-4 text-sm text-gray-600">
+                                        <span>📝 {group.postCount} posts</span>
+                                        <span>👥 {group.memberCount} membros</span>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-lg font-bold text-purple-600">{group.postCount}</div>
+                                      <div className="text-xs text-gray-500">atividade</div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-8 text-gray-500">
+                                <Users2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                <p>Nenhum grupo ativo encontrado</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Membros por grupo */}
+                      {selectedForumView === 'members' && stats?.groupStats && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">👨‍👨‍👧‍👦 Membros por grupo</h3>
+                          <div className="grid gap-3 max-h-64 overflow-y-auto">
+                            {stats.groupStats.membersByGroup.length > 0 ? (
+                              stats.groupStats.membersByGroup.map((group) => {
+                                const total = stats.groupStats.membersByGroup.reduce((acc, g) => acc + g.memberCount, 0);
+                                const percentage = total > 0 ? ((group.memberCount / total) * 100).toFixed(1) : '0';
+                                
+                                return (
+                                  <div key={group.id} className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
+                                    <div className="w-32 text-sm font-medium text-gray-700 truncate">{group.name}</div>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                      <div 
+                                        className="h-6 bg-blue-500 rounded-full transition-all duration-300"
+                                        style={{ width: `${Math.max(parseFloat(percentage), 3)}%` }}
+                                      ></div>
+                                      <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                                        {group.memberCount} membros ({percentage}%)
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            ) : (
+                              <div className="text-center py-8 text-gray-500">
+                                <Users2 className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                <p>Nenhum grupo encontrado</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tópicos mais visualizados */}
+                      {selectedForumView === 'viewed' && stats?.forumStats && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">🔝 Tópicos mais visualizados</h3>
+                          <div className="space-y-3">
+                            {stats.forumStats.topTopics.length > 0 ? (
+                              stats.forumStats.topTopics.map((topic, index) => (
+                                <div key={topic.id} className="flex items-center space-x-4 p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-lg font-bold text-gray-400">#{index + 1}</span>
+                                  </div>
+                                  <div className="flex-1">
+                                    <h4 className="font-semibold text-gray-800 line-clamp-2">{topic.title}</h4>
+                                    <div className="flex items-center space-x-4 text-sm text-gray-600 mt-1">
+                                      <span>👤 {topic.authorName}</span>
+                                      <span>💬 {topic.replies} respostas</span>
+                                      <span>📅 {new Date(topic.createdAt).toLocaleDateString('pt-BR')}</span>
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="text-lg font-bold text-purple-600">{topic.views}</div>
+                                    <div className="text-xs text-gray-500">👁️ visualizações</div>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-center py-8 text-gray-500">
+                                <Eye className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                                <p>Nenhum tópico encontrado</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       )}
                     </div>

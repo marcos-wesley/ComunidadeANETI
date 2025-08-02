@@ -253,6 +253,8 @@ export interface IStorage {
   updateForum(forumId: string, updates: Partial<SelectForum>): Promise<SelectForum | undefined>;
   deleteForum(forumId: string): Promise<boolean>;
   getForumTopics(forumId: string): Promise<any[]>;
+  getAllForumTopics(): Promise<any[]>;
+  getAllGroupPosts(): Promise<any[]>;
 
   // Forum replies likes methods
   getForumReply(replyId: string): Promise<SelectForumReply | undefined>;
@@ -2298,6 +2300,8 @@ export class DatabaseStorage implements IStorage {
 
         return {
           ...group,
+          name: group.title, // Adicionar field name para compatibilidade
+          memberCount: memberCount?.count || 0,
           _count: {
             members: memberCount?.count || 0,
           },
@@ -3130,6 +3134,84 @@ export class DatabaseStorage implements IStorage {
     );
 
     return topicsWithCounts;
+  }
+
+  async getAllForumTopics(): Promise<any[]> {
+    const topics = await db
+      .select({
+        id: forumTopics.id,
+        forumId: forumTopics.forumId,
+        authorId: forumTopics.authorId,
+        title: forumTopics.title,
+        content: forumTopics.content,
+        isPinned: forumTopics.isPinned,
+        isLocked: forumTopics.isLocked,
+        viewCount: forumTopics.viewCount,
+        views: forumTopics.viewCount,
+        lastReplyAt: forumTopics.lastReplyAt,
+        createdAt: forumTopics.createdAt,
+        updatedAt: forumTopics.updatedAt,
+        author: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        },
+        authorName: users.fullName
+      })
+      .from(forumTopics)
+      .leftJoin(users, eq(forumTopics.authorId, users.id))
+      .orderBy(desc(forumTopics.createdAt));
+
+    // Add reply count for each topic
+    const topicsWithCounts = await Promise.all(
+      topics.map(async (topic) => {
+        const replyCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(forumReplies)
+          .where(and(
+            eq(forumReplies.topicId, topic.id),
+            eq(forumReplies.isVisible, true)
+          ));
+
+        return {
+          ...topic,
+          replies: Number(replyCount[0]?.count || 0),
+          _count: {
+            replies: Number(replyCount[0]?.count || 0)
+          }
+        };
+      })
+    );
+
+    return topicsWithCounts;
+  }
+
+  async getAllGroupPosts(): Promise<any[]> {
+    const posts = await db
+      .select({
+        id: groupPosts.id,
+        groupId: groupPosts.groupId,
+        authorId: groupPosts.authorId,
+        content: groupPosts.content,
+        mediaType: groupPosts.mediaType,
+        mediaUrl: groupPosts.mediaUrl,
+        isActive: groupPosts.isActive,
+        createdAt: groupPosts.createdAt,
+        updatedAt: groupPosts.updatedAt,
+        author: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(groupPosts)
+      .leftJoin(users, eq(groupPosts.authorId, users.id))
+      .where(eq(groupPosts.isActive, true))
+      .orderBy(desc(groupPosts.createdAt));
+
+    return posts;
   }
 
   async getForumTopic(topicId: string): Promise<any | undefined> {
