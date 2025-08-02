@@ -2158,7 +2158,8 @@ export class DatabaseStorage implements IStorage {
           .from(groupMembers)
           .where(and(
             eq(groupMembers.groupId, group.id),
-            eq(groupMembers.isActive, true)
+            eq(groupMembers.isActive, true),
+            eq(groupMembers.status, 'approved')
           ));
 
         return {
@@ -2301,7 +2302,8 @@ export class DatabaseStorage implements IStorage {
           .from(groupMembers)
           .where(and(
             eq(groupMembers.groupId, group.id),
-            eq(groupMembers.isActive, true)
+            eq(groupMembers.isActive, true),
+            eq(groupMembers.status, 'approved')
           ));
 
         return {
@@ -2317,19 +2319,47 @@ export class DatabaseStorage implements IStorage {
   }
 
   async joinGroup(groupId: string, userId: string): Promise<GroupMember> {
-    const [membership] = await db
-      .insert(groupMembers)
-      .values({
-        groupId,
-        userId,
-        role: 'member',
-        status: 'pending',
-        isActive: false,
-        joinedAt: new Date()
-      })
-      .returning();
+    // Check if there's an existing record (might be inactive)
+    const existing = await db
+      .select()
+      .from(groupMembers)
+      .where(and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, userId)
+      ));
 
-    return membership;
+    if (existing.length > 0) {
+      // Update existing record to pending
+      const [membership] = await db
+        .update(groupMembers)
+        .set({
+          status: 'pending',
+          isActive: false,
+          joinedAt: new Date()
+        })
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.userId, userId)
+        ))
+        .returning();
+      
+      return membership;
+    } else {
+      // Create new record
+      const [membership] = await db
+        .insert(groupMembers)
+        .values({
+          groupId,
+          userId,
+          role: 'member',
+          status: 'pending',
+          isActive: false,
+          joinedAt: new Date()
+        })
+        .returning();
+
+      return membership;
+    }
   }
 
   async getGroupMembership(groupId: string, userId: string): Promise<GroupMember | undefined> {

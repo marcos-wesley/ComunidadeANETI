@@ -2081,9 +2081,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       // Public groups are accessible to all users
 
-      // Check if user is already a member
+      // Check if user has an active membership or pending request
       const existingMembership = await storage.getGroupMembership(groupId, userId);
-      if (existingMembership) {
+      if (existingMembership && existingMembership.isActive && existingMembership.status !== 'left') {
+        if (existingMembership.status === 'pending') {
+          return res.status(400).json({
+            success: false,
+            message: "Você já tem uma solicitação pendente para este grupo"
+          });
+        }
         return res.status(400).json({
           success: false,
           message: "Você já é membro deste grupo"
