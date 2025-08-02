@@ -1572,8 +1572,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all members for admin
   app.get("/api/admin/members", requireAdminAuth, async (req, res) => {
     try {
-      const members = await storage.getAllUsers();
-      res.json(members);
+      const { 
+        page = '1', 
+        limit = '10', 
+        search = '', 
+        planName = '', 
+        city = '', 
+        state = '' 
+      } = req.query;
+
+      const pageNum = parseInt(page as string);
+      const limitNum = parseInt(limit as string);
+      const offset = (pageNum - 1) * limitNum;
+
+      const members = await storage.getFilteredUsers({
+        search: search as string,
+        planName: planName as string,
+        city: city as string,
+        state: state as string,
+        limit: limitNum,
+        offset
+      });
+
+      const total = await storage.getUsersCount({
+        search: search as string,
+        planName: planName as string,
+        city: city as string,
+        state: state as string
+      });
+
+      res.json({
+        members,
+        pagination: {
+          page: pageNum,
+          limit: limitNum,
+          total,
+          totalPages: Math.ceil(total / limitNum)
+        }
+      });
     } catch (error) {
       console.error("Error fetching members:", error);
       res.status(500).json({ 

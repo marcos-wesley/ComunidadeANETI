@@ -286,6 +286,105 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getFilteredUsers(filters: {
+    search: string;
+    planName: string;
+    city: string;
+    state: string;
+    limit: number;
+    offset: number;
+  }): Promise<User[]> {
+    try {
+      let whereConditions = [eq(users.isApproved, true)];
+
+      if (filters.search) {
+        whereConditions.push(
+          or(
+            ilike(users.fullName, `%${filters.search}%`),
+            ilike(users.email, `%${filters.search}%`),
+            ilike(users.username, `%${filters.search}%`)
+          ) as any
+        );
+      }
+
+      if (filters.planName) {
+        if (filters.planName === 'sem-nivel') {
+          whereConditions.push(sql`${users.planName} IS NULL`);
+        } else {
+          whereConditions.push(eq(users.planName, filters.planName));
+        }
+      }
+
+      if (filters.city) {
+        whereConditions.push(ilike(users.city, `%${filters.city}%`));
+      }
+
+      if (filters.state) {
+        whereConditions.push(eq(users.state, filters.state));
+      }
+
+      const users_data = await db
+        .select()
+        .from(users)
+        .where(and(...whereConditions))
+        .limit(filters.limit)
+        .offset(filters.offset)
+        .orderBy(users.fullName);
+
+      return users_data;
+    } catch (error) {
+      console.error("Error in getFilteredUsers:", error);
+      return [];
+    }
+  }
+
+  async getUsersCount(filters: {
+    search: string;
+    planName: string;
+    city: string;
+    state: string;
+  }): Promise<number> {
+    try {
+      let whereConditions = [eq(users.isApproved, true)];
+
+      if (filters.search) {
+        whereConditions.push(
+          or(
+            ilike(users.fullName, `%${filters.search}%`),
+            ilike(users.email, `%${filters.search}%`),
+            ilike(users.username, `%${filters.search}%`)
+          ) as any
+        );
+      }
+
+      if (filters.planName) {
+        if (filters.planName === 'sem-nivel') {
+          whereConditions.push(sql`${users.planName} IS NULL`);
+        } else {
+          whereConditions.push(eq(users.planName, filters.planName));
+        }
+      }
+
+      if (filters.city) {
+        whereConditions.push(ilike(users.city, `%${filters.city}%`));
+      }
+
+      if (filters.state) {
+        whereConditions.push(eq(users.state, filters.state));
+      }
+
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(users)
+        .where(and(...whereConditions));
+
+      return result.count;
+    } catch (error) {
+      console.error("Error in getUsersCount:", error);
+      return 0;
+    }
+  }
+
   async getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]> {
     try {
       const members = await db

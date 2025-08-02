@@ -29,6 +29,9 @@ import {
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface AdminUser {
   id: string;
@@ -56,6 +59,16 @@ export default function AdminPage() {
   const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members' | 'groups'>('overview');
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Member filters state
+  const [memberFilters, setMemberFilters] = useState({
+    search: '',
+    planName: '',
+    city: '',
+    state: '',
+    page: 1,
+    limit: 10
+  });
 
   // Check admin authentication
   useEffect(() => {
@@ -114,11 +127,19 @@ export default function AdminPage() {
     retry: 1,
   });
 
-  // Fetch members with custom fetcher
-  const { data: members = [], isLoading: loadingMembers } = useQuery({
-    queryKey: ["/api/admin/members"],
+  // Fetch members with filters
+  const { data: membersData, isLoading: loadingMembers } = useQuery({
+    queryKey: ["/api/admin/members", memberFilters],
     queryFn: async () => {
-      const response = await fetch("/api/admin/members", {
+      const searchParams = new URLSearchParams();
+      if (memberFilters.search) searchParams.append('search', memberFilters.search);
+      if (memberFilters.planName) searchParams.append('planName', memberFilters.planName);
+      if (memberFilters.city) searchParams.append('city', memberFilters.city);
+      if (memberFilters.state) searchParams.append('state', memberFilters.state);
+      searchParams.append('page', memberFilters.page.toString());
+      searchParams.append('limit', memberFilters.limit.toString());
+
+      const response = await fetch(`/api/admin/members?${searchParams.toString()}`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch members");
@@ -506,100 +527,238 @@ export default function AdminPage() {
               <CardHeader>
                 <CardTitle>Membros Registrados</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
+                {/* Filtros */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="search">Buscar</Label>
+                    <Input
+                      id="search"
+                      placeholder="Nome, email ou usuário..."
+                      value={memberFilters.search}
+                      onChange={(e) => setMemberFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="planName">Nível</Label>
+                    <Select
+                      value={memberFilters.planName}
+                      onValueChange={(value) => setMemberFilters(prev => ({ ...prev, planName: value, page: 1 }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os níveis" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos os níveis</SelectItem>
+                        <SelectItem value="sem-nivel">Sem Nível</SelectItem>
+                        <SelectItem value="Estudante">Estudante</SelectItem>
+                        <SelectItem value="Júnior">Júnior</SelectItem>
+                        <SelectItem value="Pleno">Pleno</SelectItem>
+                        <SelectItem value="Sênior">Sênior</SelectItem>
+                        <SelectItem value="Honra">Honra</SelectItem>
+                        <SelectItem value="Diretivo">Diretivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="city">Cidade</Label>
+                    <Input
+                      id="city"
+                      placeholder="Cidade..."
+                      value={memberFilters.city}
+                      onChange={(e) => setMemberFilters(prev => ({ ...prev, city: e.target.value, page: 1 }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="state">Estado</Label>
+                    <Select
+                      value={memberFilters.state}
+                      onValueChange={(value) => setMemberFilters(prev => ({ ...prev, state: value, page: 1 }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os estados" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos os estados</SelectItem>
+                        <SelectItem value="AC">AC</SelectItem>
+                        <SelectItem value="AL">AL</SelectItem>
+                        <SelectItem value="AP">AP</SelectItem>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="BA">BA</SelectItem>
+                        <SelectItem value="CE">CE</SelectItem>
+                        <SelectItem value="DF">DF</SelectItem>
+                        <SelectItem value="ES">ES</SelectItem>
+                        <SelectItem value="GO">GO</SelectItem>
+                        <SelectItem value="MA">MA</SelectItem>
+                        <SelectItem value="MT">MT</SelectItem>
+                        <SelectItem value="MS">MS</SelectItem>
+                        <SelectItem value="MG">MG</SelectItem>
+                        <SelectItem value="PA">PA</SelectItem>
+                        <SelectItem value="PB">PB</SelectItem>
+                        <SelectItem value="PR">PR</SelectItem>
+                        <SelectItem value="PE">PE</SelectItem>
+                        <SelectItem value="PI">PI</SelectItem>
+                        <SelectItem value="RJ">RJ</SelectItem>
+                        <SelectItem value="RN">RN</SelectItem>
+                        <SelectItem value="RS">RS</SelectItem>
+                        <SelectItem value="RO">RO</SelectItem>
+                        <SelectItem value="RR">RR</SelectItem>
+                        <SelectItem value="SC">SC</SelectItem>
+                        <SelectItem value="SP">SP</SelectItem>
+                        <SelectItem value="SE">SE</SelectItem>
+                        <SelectItem value="TO">TO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="limit">Por página</Label>
+                    <Select
+                      value={memberFilters.limit.toString()}
+                      onValueChange={(value) => setMemberFilters(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Lista de membros */}
                 {loadingMembers ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   </div>
-                ) : members.length === 0 ? (
+                ) : membersData?.members.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>Nenhum membro registrado</p>
+                    <p>Nenhum membro encontrado</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {members.map((member: any) => (
-                      <div key={member.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-2">
-                              <h3 className="font-semibold text-lg">{member.fullName}</h3>
-                              <Badge variant="default" className="bg-blue-100 text-blue-800">
-                                {member.planName || 'Sem Nível'}
-                              </Badge>
-                            </div>
-                            <p className="text-sm text-gray-600">{member.email}</p>
-                            <p className="text-sm text-gray-500">@{member.username}</p>
-                            <p className="text-sm text-gray-600">{member.area} • {member.city}/{member.state}</p>
-                            <div className="flex items-center space-x-4 mt-3">
-                              <Badge variant={member.isApproved ? 'default' : 'secondary'}>
-                                {member.isApproved ? 'Aprovado' : 'Pendente'}
-                              </Badge>
-                              <Badge variant={member.isActive ? 'default' : 'destructive'}>
-                                {member.isActive ? 'Ativo' : 'Inativo'}
-                              </Badge>
-                              <Badge variant="outline" className="capitalize">
-                                {member.role === 'admin' ? 'Administrador' : 'Membro'}
-                              </Badge>
-                              {member.subscriptionStatus && (
-                                <Badge variant={member.subscriptionStatus === 'active' ? 'default' : 'outline'}>
-                                  {member.subscriptionStatus === 'active' ? 'Assinatura Ativa' : 'Assinatura Inativa'}
+                  <>
+                    <div className="space-y-4">
+                      {membersData?.members.map((member: any) => (
+                        <div key={member.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <h3 className="font-semibold text-lg">{member.fullName}</h3>
+                                <Badge variant="default" className="bg-blue-100 text-blue-800">
+                                  {member.planName || 'Sem Nível'}
                                 </Badge>
-                              )}
+                              </div>
+                              <p className="text-sm text-gray-600">{member.email}</p>
+                              <p className="text-sm text-gray-500">@{member.username}</p>
+                              <p className="text-sm text-gray-600">{member.area} • {member.city}/{member.state}</p>
+                              <div className="flex items-center space-x-4 mt-3">
+                                <Badge variant={member.isApproved ? 'default' : 'secondary'}>
+                                  {member.isApproved ? 'Aprovado' : 'Pendente'}
+                                </Badge>
+                                <Badge variant={member.isActive ? 'default' : 'destructive'}>
+                                  {member.isActive ? 'Ativo' : 'Inativo'}
+                                </Badge>
+                                <Badge variant="outline" className="capitalize">
+                                  {member.role === 'admin' ? 'Administrador' : 'Membro'}
+                                </Badge>
+                                {member.subscriptionStatus && (
+                                  <Badge variant={member.subscriptionStatus === 'active' ? 'default' : 'outline'}>
+                                    {member.subscriptionStatus === 'active' ? 'Assinatura Ativa' : 'Assinatura Inativa'}
+                                  </Badge>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <EditMemberModal
-                              member={member}
-                              trigger={
+                            <div className="flex space-x-2">
+                              <EditMemberModal
+                                member={member}
+                                trigger={
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="flex items-center space-x-1"
+                                  >
+                                    <Edit className="h-4 w-4" />
+                                    <span>Gerenciar</span>
+                                  </Button>
+                                }
+                              />
+                              {!member.isActive ? (
                                 <Button
                                   size="sm"
                                   variant="outline"
+                                  onClick={() => toggleMemberStatus(member.id, true)}
+                                  disabled={toggleStatusMutation.isPending}
                                   className="flex items-center space-x-1"
                                 >
-                                  <Edit className="h-4 w-4" />
-                                  <span>Gerenciar</span>
+                                  <UserCheck className="h-4 w-4" />
+                                  <span>Reativar</span>
                                 </Button>
-                              }
-                            />
-                            {!member.isActive ? (
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => toggleMemberStatus(member.id, false)}
+                                  disabled={toggleStatusMutation.isPending}
+                                  className="flex items-center space-x-1"
+                                >
+                                  <UserX className="h-4 w-4" />
+                                  <span>Desativar</span>
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => toggleMemberStatus(member.id, true)}
-                                disabled={toggleStatusMutation.isPending}
-                                className="flex items-center space-x-1"
+                                onClick={() => deleteMember(member.id)}
+                                disabled={deleteMemberMutation.isPending}
+                                className="flex items-center space-x-1 text-red-600 hover:text-red-700"
                               >
-                                <UserCheck className="h-4 w-4" />
-                                <span>Reativar</span>
+                                <Trash2 className="h-4 w-4" />
+                                <span>Excluir</span>
                               </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                onClick={() => toggleMemberStatus(member.id, false)}
-                                disabled={toggleStatusMutation.isPending}
-                                className="flex items-center space-x-1"
-                              >
-                                <UserX className="h-4 w-4" />
-                                <span>Desativar</span>
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => deleteMember(member.id)}
-                              disabled={deleteMemberMutation.isPending}
-                              className="flex items-center space-x-1 text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              <span>Excluir</span>
-                            </Button>
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Paginação */}
+                    {membersData?.pagination && membersData.pagination.totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-6">
+                        <div className="text-sm text-gray-500">
+                          Mostrando {((membersData.pagination.page - 1) * membersData.pagination.limit) + 1} até {Math.min(membersData.pagination.page * membersData.pagination.limit, membersData.pagination.total)} de {membersData.pagination.total} membros
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMemberFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                            disabled={membersData.pagination.page <= 1}
+                          >
+                            Anterior
+                          </Button>
+                          <span className="text-sm text-gray-500">
+                            Página {membersData.pagination.page} de {membersData.pagination.totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setMemberFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                            disabled={membersData.pagination.page >= membersData.pagination.totalPages}
+                          >
+                            Próxima
+                          </Button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
