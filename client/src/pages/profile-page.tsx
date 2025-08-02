@@ -155,15 +155,30 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
 
 
-  const ProfilePictureUploader = () => (
-    <ObjectUploader
-      uploadEndpoint="/api/profile/upload-profile-image"
-      onComplete={async (result) => {
-        const updateResponse = await fetch("/api/profile/profile-picture", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ imagePath: result.imagePath })
+  const ProfilePictureUploader = () => {
+    const [isUploading, setIsUploading] = useState(false);
+    
+    const handleProfileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const uploadResponse = await fetch('/api/profile/upload-profile-image', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        
+        if (!uploadResponse.ok) throw new Error('Upload failed');
+        
+        const { imagePath } = await uploadResponse.json();
+        
+        const updateResponse = await apiRequest("PUT", "/api/profile/profile-picture", {
+          imagePath
         });
         
         if (updateResponse.ok) {
@@ -174,22 +189,64 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             description: "Foto de perfil atualizada com sucesso!",
           });
         }
-      }}
-      buttonClassName="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 p-2 rounded-full"
-    >
-      <Camera className="h-4 w-4" />
-    </ObjectUploader>
-  );
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar foto de perfil",
+          variant: "destructive"
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    
+    return (
+      <>
+        <input
+          type="file"
+          id="profile-upload"
+          accept="image/*"
+          onChange={handleProfileUpload}
+          style={{ display: 'none' }}
+        />
+        <Button
+          size="sm"
+          variant="secondary"
+          className="w-8 h-8 p-0 rounded-full bg-white/90 text-gray-700 hover:bg-white border-0 shadow-md"
+          title="Alterar foto de perfil"
+          onClick={() => document.getElementById('profile-upload')?.click()}
+          disabled={isUploading}
+        >
+          <Camera className="h-4 w-4" />
+        </Button>
+      </>
+    );
+  };
 
-  const CoverPhotoUploader = () => (
-    <ObjectUploader
-      uploadEndpoint="/api/profile/upload-cover-image"
-      onComplete={async (result) => {
-        const updateResponse = await fetch("/api/profile/cover-photo", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ imagePath: result.imagePath })
+  const CoverPhotoUploader = () => {
+    const [isUploading, setIsUploading] = useState(false);
+    
+    const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      
+      setIsUploading(true);
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const uploadResponse = await fetch('/api/profile/upload-cover-image', {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        });
+        
+        if (!uploadResponse.ok) throw new Error('Upload failed');
+        
+        const { imagePath } = await uploadResponse.json();
+        
+        const updateResponse = await apiRequest("PUT", "/api/profile/cover-photo", {
+          imagePath
         });
         
         if (updateResponse.ok) {
@@ -200,13 +257,39 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             description: "Foto de capa atualizada com sucesso!",
           });
         }
-      }}
-      buttonClassName="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
-    >
-      <Upload className="h-4 w-4 mr-2" />
-      Alterar capa
-    </ObjectUploader>
-  );
+      } catch (error) {
+        toast({
+          title: "Erro",
+          description: "Erro ao atualizar foto de capa",
+          variant: "destructive"
+        });
+      } finally {
+        setIsUploading(false);
+      }
+    };
+    
+    return (
+      <>
+        <input
+          type="file"
+          id="cover-upload"
+          accept="image/*"
+          onChange={handleCoverUpload}
+          style={{ display: 'none' }}
+        />
+        <Button 
+          variant="secondary" 
+          size="sm"
+          className="bg-white/90 text-gray-700 hover:bg-white border-0"
+          onClick={() => document.getElementById('cover-upload')?.click()}
+          disabled={isUploading}
+        >
+          <Upload className="h-4 w-4 mr-2" />
+          {isUploading ? 'Enviando...' : 'Alterar capa'}
+        </Button>
+      </>
+    );
+  };
 
   return (
     <Card className="relative overflow-hidden border-0 shadow-sm">
@@ -256,7 +339,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
               getInitials(profile.fullName)
             )}
             {isOwnProfile && (
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition-all duration-200 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100">
+              <div className="absolute bottom-2 right-2">
                 <ProfilePictureUploader />
               </div>
             )}

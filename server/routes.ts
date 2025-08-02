@@ -910,7 +910,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const imagePath = `/images/profile-images/${req.file.filename}`;
-      res.json({ uploadURL: `http://localhost:5000${imagePath}`, imagePath });
+      res.json({ fileName: req.file.filename, imagePath });
     } catch (error) {
       console.error("Error uploading profile image:", error);
       res.status(500).json({ error: "Failed to upload image" });
@@ -925,7 +925,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const imagePath = `/images/cover-images/${req.file.filename}`;
-      res.json({ uploadURL: `http://localhost:5000${imagePath}`, imagePath });
+      res.json({ fileName: req.file.filename, imagePath });
     } catch (error) {
       console.error("Error uploading cover image:", error);
       res.status(500).json({ error: "Failed to upload image" });

@@ -63,14 +63,16 @@ export function ObjectUploader({
           continue;
         }
 
-        // Create form data for file upload
-        const formData = new FormData();
-        formData.append('file', file);
+        // Upload each file using the provided parameters
+        const { method, url } = await getUploadParameters();
         
-        // Upload file to registration endpoint
-        const response = await fetch('/api/documents/upload-registration', {
-          method: 'POST',
+        const formData = new FormData();
+        formData.append('image', file);
+        
+        const response = await fetch(url, {
+          method: method,
           body: formData,
+          credentials: 'include',
         });
 
         if (!response.ok) {
