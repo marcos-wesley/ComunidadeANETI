@@ -817,6 +817,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get professional profile with all sections
+  app.get('/api/profile/professional/:userId?', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.params.userId || req.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Get all profile sections (using mock data for now since storage methods don't exist yet)
+      const profileData = {
+        user: {
+          ...user,
+          connectionsCount: user.connectionsCount || 0
+        },
+        experiences: [],
+        educations: [],
+        certifications: [],
+        projects: [],
+        skills: [],
+        languages: [],
+        highlights: []
+      };
+
+      res.json(profileData);
+    } catch (error) {
+      console.error('Error fetching professional profile:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   // Get current user's profile for editing
   app.get("/api/profile/edit", isAuthenticated, async (req, res) => {
     try {
