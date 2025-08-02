@@ -2742,7 +2742,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(groupMembers.groupId, groupId),
           eq(groupMembers.isActive, true),
-          eq(groupMembers.status, 'accepted')
+          eq(groupMembers.status, 'approved')
         ))
         .orderBy(groupMembers.joinedAt);
 

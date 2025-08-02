@@ -260,7 +260,7 @@ export default function GroupModeration() {
           </TabsTrigger>
           <TabsTrigger value="members" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
-            Membros ({allMembers.length})
+            Membros ({groupMembers.length})
           </TabsTrigger>
           <TabsTrigger value="posts" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
@@ -386,7 +386,7 @@ export default function GroupModeration() {
                     </div>
                   ))}
                 </div>
-              ) : allMembers.length === 0 ? (
+              ) : groupMembers.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
@@ -398,13 +398,13 @@ export default function GroupModeration() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {allMembers.map((member) => (
+                  {groupMembers.map((member) => (
                     <MemberModerationCard
                       key={member.id}
                       member={member}
-                      onUpdate={() => {
-                        queryClient.invalidateQueries({ queryKey: ["/api/members"] });
-                      }}
+                      canModerate={user?.planName === "Diretivo"}
+                      isGroupContext={true}
+                      groupId={groupId}
                     />
                   ))}
                 </div>
