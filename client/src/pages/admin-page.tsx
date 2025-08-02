@@ -1094,101 +1094,9 @@ export default function AdminPage() {
               </Card>
             </div>
 
-            <div className="mt-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ações Rápidas</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-4">
-                  <Button
-                    onClick={() => setSelectedTab('applications')}
-                    className="flex items-center space-x-2"
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Ver Inscrições Pendentes</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setSelectedTab('members')}
-                    className="flex items-center space-x-2"
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Gerenciar Membros</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => window.location.href = "/"}
-                    className="flex items-center space-x-2"
-                  >
-                    <Shield className="h-4 w-4" />
-                    <span>Ver Área de Membros</span>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Calendário de Vencimento de Anuidades */}
-            <div className="mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Calendar className="h-5 w-5 text-blue-600" />
-                    📅 Calendário de Vencimento de Anuidades
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {/* Resumo de Vencimentos */}
-                    <div className="space-y-4">
-                      <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border border-orange-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-orange-700">Vencendo Esta Semana</p>
-                            <p className="text-2xl font-bold text-orange-800">
-                              {stats?.membershipCalendar?.expiringThisWeek || 0}
-                            </p>
-                          </div>
-                          <AlertTriangle className="h-8 w-8 text-orange-600" />
-                        </div>
-                      </div>
-                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border border-yellow-200">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <p className="text-sm text-yellow-700">Vencendo Este Mês</p>
-                            <p className="text-2xl font-bold text-yellow-800">
-                              {stats?.membershipCalendar?.expiringThisMonth?.length || 0}
-                            </p>
-                          </div>
-                          <Clock className="h-8 w-8 text-yellow-600" />
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Lista de Membros com Vencimento Próximo */}
-                    <div className="space-y-2">
-                      <h4 className="font-semibold text-gray-700">Próximos Vencimentos</h4>
-                      <div className="max-h-48 overflow-y-auto space-y-2">
-                        {stats?.membershipCalendar?.expiringThisMonth?.slice(0, 8).map((member) => (
-                          <div key={member.id} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
-                            <div>
-                              <p className="font-medium text-sm">{member.fullName}</p>
-                              <p className="text-xs text-gray-600">{member.planName}</p>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant={member.daysUntilExpiry <= 7 ? "destructive" : "secondary"}>
-                                {member.daysUntilExpiry} dias
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Alertas Administrativos */}
+            {/* Alertas Administrativos - Primeira seção */}
             <div className="mb-8">
               <Card>
                 <CardHeader>
@@ -1242,7 +1150,7 @@ export default function AdminPage() {
               </Card>
             </div>
 
-            {/* Dashboard Personalizável */}
+            {/* Dashboard Personalizável - Segunda seção */}
             <div className="mb-8">
               <Card>
                 <CardHeader>
@@ -1390,6 +1298,71 @@ export default function AdminPage() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Calendário de Vencimento de Anuidades - Terceira seção */}
+            <div className="mb-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Calendar className="h-5 w-5 text-blue-600" />
+                    📅 Calendário de Vencimento de Anuidades
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Resumo de Vencimentos */}
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-orange-50 to-red-50 p-4 rounded-lg border border-orange-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-orange-700">Vencendo Esta Semana</p>
+                            <p className="text-2xl font-bold text-orange-800">
+                              {stats?.membershipCalendar?.expiringThisWeek || 0}
+                            </p>
+                          </div>
+                          <AlertTriangle className="h-8 w-8 text-orange-600" />
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-r from-yellow-50 to-orange-50 p-4 rounded-lg border border-yellow-200">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm text-yellow-700">Vencendo Este Mês</p>
+                            <p className="text-2xl font-bold text-yellow-800">
+                              {stats?.membershipCalendar?.expiringThisMonth?.length || 0}
+                            </p>
+                          </div>
+                          <Clock className="h-8 w-8 text-yellow-600" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Lista de Membros com Vencimento Próximo */}
+                    <div className="space-y-2">
+                      <h4 className="font-semibold text-gray-700">Próximos Vencimentos</h4>
+                      <div className="max-h-48 overflow-y-auto space-y-2">
+                        {stats?.membershipCalendar?.expiringThisMonth?.slice(0, 8).map((member) => (
+                          <div key={member.id} className="flex justify-between items-center p-2 bg-gray-50 rounded border">
+                            <div>
+                              <p className="font-medium text-sm">{member.fullName}</p>
+                              <p className="text-xs text-gray-600">{member.planName}</p>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={member.daysUntilExpiry <= 7 ? "destructive" : "secondary"}>
+                                {member.daysUntilExpiry} dias
+                              </Badge>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+
+
+
           </TabsContent>
 
           <TabsContent value="applications" className="mt-6">
