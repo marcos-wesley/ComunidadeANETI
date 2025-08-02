@@ -2446,10 +2446,7 @@ export class DatabaseStorage implements IStorage {
   async createGroupPost(postData: InsertGroupPost): Promise<GroupPost> {
     const [post] = await db
       .insert(groupPosts)
-      .values({
-        ...postData,
-        id: postData.id || crypto.randomUUID(), // Generate ID if not provided
-      })
+      .values(postData)
       .returning();
     
     return post;
