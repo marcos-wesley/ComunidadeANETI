@@ -30,7 +30,6 @@ import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
 import AdminMembershipPlans from "./admin-membership-plans";
-import AdminDashboardWorking from './admin-dashboard-working';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -333,7 +332,7 @@ export default function AdminPage() {
           </div>
         </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -353,10 +352,6 @@ export default function AdminPage() {
             <TabsTrigger value="membership-plans" className="flex items-center space-x-2">
               <DollarSign className="h-4 w-4" />
               <span>Planos</span>
-            </TabsTrigger>
-            <TabsTrigger value="dashboard" className="flex items-center space-x-2">
-              <BarChart3 className="h-4 w-4" />
-              <span>Dashboard</span>
             </TabsTrigger>
           </TabsList>
 
@@ -956,10 +951,6 @@ export default function AdminPage() {
 
           <TabsContent value="membership-plans" className="mt-6">
             <AdminMembershipPlans />
-          </TabsContent>
-
-          <TabsContent value="dashboard" className="mt-6">
-            <AdminDashboardWorking />
           </TabsContent>
         </Tabs>
       </div>
