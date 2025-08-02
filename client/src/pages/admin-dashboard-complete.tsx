@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -105,9 +106,16 @@ export default function AdminDashboardComplete() {
 
   // Fetch comprehensive dashboard data
   const { data: dashboardData, isLoading: loadingData, refetch } = useQuery<DashboardStats>({
-    queryKey: ['/api/admin/dashboard/complete', selectedPeriod, selectedRegion],
+    queryKey: ['admin-dashboard-complete', selectedPeriod, selectedRegion],
+    queryFn: () => apiRequest(`/api/admin/dashboard/complete?period=${selectedPeriod}&region=${selectedRegion}`),
     refetchInterval: 300000, // Refresh every 5 minutes
   });
+
+  useEffect(() => {
+    if (dashboardData && !loadingData) {
+      setIsLoading(false);
+    }
+  }, [dashboardData, loadingData]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', {
