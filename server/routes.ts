@@ -2287,9 +2287,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const groupId = req.params.groupId;
       const userId = req.user.id;
       
-      // Check if user is member of this group
+      // Check if user is moderator or approved member of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
       const membership = await storage.getGroupMembership(groupId, userId);
-      if (!membership || !membership.isActive || membership.status !== 'approved') {
+      
+      if (!isModerator && (!membership || !membership.isActive || membership.status !== 'approved')) {
         return res.status(403).json({
           success: false,
           message: "Você precisa ser membro aprovado para ver as publicações"

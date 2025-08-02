@@ -9,8 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, UserX, Send, Calendar, Users, Shield } from "lucide-react";
+import { GroupPostEditor } from "@/components/GroupPostEditor";
+import { UserCheck, UserX, Calendar, Users, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -78,7 +78,7 @@ export default function GroupModeration() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [newPostContent, setNewPostContent] = useState("");
+
 
   const groupId = params.id;
 
@@ -148,33 +148,7 @@ export default function GroupModeration() {
     },
   });
 
-  // Create post mutation
-  const createPostMutation = useMutation({
-    mutationFn: async (content: string) => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/posts`, {
-        content,
-        mediaType: "text",
-      });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Sucesso",
-          description: data.message,
-        });
-        setNewPostContent("");
-        queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId, "posts"] });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao criar publicação",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   const handleApproveRequest = (requestId: string) => {
     approveRequestMutation.mutate(requestId);
@@ -184,10 +158,7 @@ export default function GroupModeration() {
     rejectRequestMutation.mutate(requestId);
   };
 
-  const handleCreatePost = () => {
-    if (!newPostContent.trim()) return;
-    createPostMutation.mutate(newPostContent);
-  };
+
 
   if (groupLoading) {
     return (
@@ -376,30 +347,12 @@ export default function GroupModeration() {
 
         <TabsContent value="posts" className="space-y-4">
           {/* Create post form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Nova Publicação</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Textarea
-                  placeholder="Compartilhe uma atualização com os membros do grupo..."
-                  value={newPostContent}
-                  onChange={(e) => setNewPostContent(e.target.value)}
-                  rows={3}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    onClick={handleCreatePost}
-                    disabled={!newPostContent.trim() || createPostMutation.isPending}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    Publicar
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <GroupPostEditor 
+            groupId={groupId!} 
+            onPostCreated={() => {
+              queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
+            }}
+          />
 
           {/* Posts list */}
           <div className="space-y-4">
