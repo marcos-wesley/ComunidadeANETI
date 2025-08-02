@@ -193,29 +193,8 @@ export class DatabaseStorage implements IStorage {
 
   // Users
   async getUser(id: string): Promise<User | undefined> {
-    const [result] = await db
-      .select({
-        id: users.id,
-        username: users.username,
-        email: users.email,
-        fullName: users.fullName,
-        area: users.area,
-        position: users.position,
-        city: users.city,
-        state: users.state,
-        gender: users.gender,
-        isActive: users.isActive,
-        isApproved: users.isApproved,
-        createdAt: users.createdAt,
-        updatedAt: users.updatedAt,
-        planName: membershipPlans.name,
-      })
-      .from(users)
-      .leftJoin(memberApplications, eq(users.id, memberApplications.userId))
-      .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
-      .where(and(eq(users.id, id), eq(memberApplications.status, 'approved')));
-    
-    return result || undefined;
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
@@ -274,6 +253,25 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(users);
     } catch (error) {
       console.error("Error in getAllUsers:", error);
+      return [];
+    }
+  }
+
+  async getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]> {
+    try {
+      const members = await db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          planName: sql<string | null>`NULL`.as('planName')
+        })
+        .from(users)
+        .where(eq(users.isActive, true));
+      
+      return members;
+    } catch (error) {
+      console.error("Error in getAllMembers:", error);
       return [];
     }
   }
