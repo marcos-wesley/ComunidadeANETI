@@ -543,14 +543,18 @@ export default function AdminPage() {
                   <div className="space-y-2">
                     <Label htmlFor="planName">Nível</Label>
                     <Select
-                      value={memberFilters.planName}
-                      onValueChange={(value) => setMemberFilters(prev => ({ ...prev, planName: value, page: 1 }))}
+                      value={memberFilters.planName || "todos"}
+                      onValueChange={(value) => setMemberFilters(prev => ({ 
+                        ...prev, 
+                        planName: value === "todos" ? "" : value, 
+                        page: 1 
+                      }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Todos os níveis" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os níveis</SelectItem>
+                        <SelectItem value="todos">Todos os níveis</SelectItem>
                         <SelectItem value="sem-nivel">Sem Nível</SelectItem>
                         <SelectItem value="Estudante">Estudante</SelectItem>
                         <SelectItem value="Júnior">Júnior</SelectItem>
@@ -575,14 +579,18 @@ export default function AdminPage() {
                   <div className="space-y-2">
                     <Label htmlFor="state">Estado</Label>
                     <Select
-                      value={memberFilters.state}
-                      onValueChange={(value) => setMemberFilters(prev => ({ ...prev, state: value, page: 1 }))}
+                      value={memberFilters.state || "todos"}
+                      onValueChange={(value) => setMemberFilters(prev => ({ 
+                        ...prev, 
+                        state: value === "todos" ? "" : value, 
+                        page: 1 
+                      }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Todos os estados" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos os estados</SelectItem>
+                        <SelectItem value="todos">Todos os estados</SelectItem>
                         <SelectItem value="AC">AC</SelectItem>
                         <SelectItem value="AL">AL</SelectItem>
                         <SelectItem value="AP">AP</SelectItem>
