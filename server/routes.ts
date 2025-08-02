@@ -3031,7 +3031,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ...forum,
           group: group ? { id: group.id, title: group.title } : null,
           topicCount: topics.length,
-          memberCount: members.filter(m => m.status === 'approved' && m.isActive).length,
+          memberCount: members.length,
           lastActivity: new Date(lastActivity),
           canAccess
         };
