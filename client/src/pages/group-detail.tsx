@@ -568,7 +568,11 @@ export default function GroupDetail() {
                 ) : (
                   <div className="space-y-3">
                     {groupForums.map((forum: any) => (
-                      <div key={forum.id} className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <div 
+                        key={forum.id} 
+                        className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                        onClick={() => setLocation(`/forums/${forum.id}`)}
+                      >
                         <div className="flex items-center gap-4">
                           <div
                             className="w-4 h-4 rounded"

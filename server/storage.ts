@@ -2960,6 +2960,128 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Forum topics methods
+  async createForumTopic(topicData: InsertForumTopic): Promise<SelectForumTopic> {
+    const topicId = `topic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const [topic] = await db
+      .insert(forumTopics)
+      .values({
+        ...topicData,
+        id: topicId
+      })
+      .returning();
+    
+    return topic;
+  }
+
+  async getForumTopics(forumId: string): Promise<any[]> {
+    const topics = await db
+      .select({
+        id: forumTopics.id,
+        forumId: forumTopics.forumId,
+        authorId: forumTopics.authorId,
+        title: forumTopics.title,
+        content: forumTopics.content,
+        isPinned: forumTopics.isPinned,
+        isLocked: forumTopics.isLocked,
+        viewCount: forumTopics.viewCount,
+        lastReplyAt: forumTopics.lastReplyAt,
+        createdAt: forumTopics.createdAt,
+        updatedAt: forumTopics.updatedAt,
+        author: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        },
+        lastReplyBy: {
+          id: sql`last_reply_user.id`,
+          fullName: sql`last_reply_user.full_name`,
+          username: sql`last_reply_user.username`,
+        }
+      })
+      .from(forumTopics)
+      .leftJoin(users, eq(forumTopics.authorId, users.id))
+      .leftJoin(sql`users as last_reply_user`, sql`forum_topics.last_reply_by_id = last_reply_user.id`)
+      .where(eq(forumTopics.forumId, forumId))
+      .orderBy(desc(forumTopics.isPinned), desc(forumTopics.lastReplyAt));
+
+    // Add reply count for each topic
+    const topicsWithCounts = await Promise.all(
+      topics.map(async (topic) => {
+        const replyCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(forumReplies)
+          .where(and(
+            eq(forumReplies.topicId, topic.id),
+            eq(forumReplies.isVisible, true)
+          ));
+
+        return {
+          ...topic,
+          _count: {
+            replies: Number(replyCount[0]?.count || 0)
+          }
+        };
+      })
+    );
+
+    return topicsWithCounts;
+  }
+
+  async getForumTopic(topicId: string): Promise<any | undefined> {
+    const [topic] = await db
+      .select({
+        id: forumTopics.id,
+        forumId: forumTopics.forumId,
+        authorId: forumTopics.authorId,
+        title: forumTopics.title,
+        content: forumTopics.content,
+        isPinned: forumTopics.isPinned,
+        isLocked: forumTopics.isLocked,
+        viewCount: forumTopics.viewCount,
+        lastReplyAt: forumTopics.lastReplyAt,
+        createdAt: forumTopics.createdAt,
+        updatedAt: forumTopics.updatedAt,
+        author: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(forumTopics)
+      .leftJoin(users, eq(forumTopics.authorId, users.id))
+      .where(eq(forumTopics.id, topicId));
+
+    if (!topic) return undefined;
+
+    // Get reply count
+    const replyCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(forumReplies)
+      .where(and(
+        eq(forumReplies.topicId, topic.id),
+        eq(forumReplies.isVisible, true)
+      ));
+
+    return {
+      ...topic,
+      _count: {
+        replies: Number(replyCount[0]?.count || 0)
+      }
+    };
+  }
+
+  async incrementTopicViewCount(topicId: string): Promise<void> {
+    await db
+      .update(forumTopics)
+      .set({ 
+        viewCount: sql`${forumTopics.viewCount} + 1`
+      })
+      .where(eq(forumTopics.id, topicId));
+  }
+
   // Group post likes and comments methods
   async toggleGroupPostLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
     try {

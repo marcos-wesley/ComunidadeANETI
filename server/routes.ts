@@ -2953,6 +2953,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get forum details
+  app.get("/api/forums/:forumId", isAuthenticated, async (req, res) => {
+    try {
+      const { forumId } = req.params;
+      const userId = req.user.id;
+      
+      const forum = await storage.getForum(forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro aprovado para acessar este fórum"
+        });
+      }
+      
+      res.json(forum);
+    } catch (error) {
+      console.error("Error fetching forum:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch forum" 
+      });
+    }
+  });
+
+  // Get forum topics
+  app.get("/api/forums/:forumId/topics", isAuthenticated, async (req, res) => {
+    try {
+      const { forumId } = req.params;
+      const userId = req.user.id;
+      
+      // Get forum to check group access
+      const forum = await storage.getForum(forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro aprovado para ver os tópicos"
+        });
+      }
+      
+      const topics = await storage.getForumTopics(forumId);
+      res.json(topics);
+    } catch (error) {
+      console.error("Error fetching forum topics:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch forum topics" 
+      });
+    }
+  });
+
+  // Create forum topic
+  app.post("/api/forums/:forumId/topics", isAuthenticated, async (req, res) => {
+    try {
+      const { forumId } = req.params;
+      const userId = req.user.id;
+      
+      // Get forum to check group access
+      const forum = await storage.getForum(forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group with active membership
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved' || !membership.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro ativo para criar tópicos"
+        });
+      }
+      
+      const topicData = {
+        ...req.body,
+        forumId,
+        authorId: userId
+      };
+      
+      const topic = await storage.createForumTopic(topicData);
+      res.json({
+        success: true,
+        topic,
+        message: "Tópico criado com sucesso"
+      });
+    } catch (error) {
+      console.error("Error creating forum topic:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create forum topic" 
+      });
+    }
+  });
+
+  // Get forum topic details
+  app.get("/api/forums/:forumId/topics/:topicId", isAuthenticated, async (req, res) => {
+    try {
+      const { forumId, topicId } = req.params;
+      const userId = req.user.id;
+      
+      // Get forum to check group access
+      const forum = await storage.getForum(forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro aprovado para ver este tópico"
+        });
+      }
+      
+      const topic = await storage.getForumTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({
+          success: false,
+          message: "Tópico não encontrado"
+        });
+      }
+      
+      // Increment view count
+      await storage.incrementTopicViewCount(topicId);
+      
+      res.json(topic);
+    } catch (error) {
+      console.error("Error fetching forum topic:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch forum topic" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
