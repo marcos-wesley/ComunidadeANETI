@@ -13,6 +13,7 @@ import {
   insertMessageSchema,
   insertNotificationSchema,
   insertGroupSchema,
+  insertAdminNotificationBroadcastSchema,
   membershipPlans 
 } from "@shared/schema";
 import { db } from "./db";
@@ -3985,6 +3986,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching membership plan:", error);
       res.status(500).json({ message: "Failed to fetch membership plan" });
+    }
+  });
+
+  // Admin notification broadcast routes
+  app.post("/api/admin/notifications/broadcast", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { title, message, actionUrl, targetType, targetValue, priority } = req.body;
+      const adminId = req.user?.id;
+
+      if (!title || !message) {
+        return res.status(400).json({ error: "Title and message are required" });
+      }
+
+      if (!adminId) {
+        return res.status(401).json({ error: "Admin authentication required" });
+      }
+
+      // Create broadcast record
+      const broadcast = await storage.createAdminNotificationBroadcast({
+        adminId,
+        title,
+        message,
+        actionUrl: actionUrl || null,
+        targetType,
+        targetValue: targetValue || null,
+        priority: priority || 'normal',
+        status: 'pending',
+        sentToCount: 0,
+      });
+
+      // Send notifications to target users
+      const result = await storage.sendBroadcastToUsers(broadcast.id, targetType, targetValue);
+
+      res.json({
+        broadcastId: broadcast.id,
+        sentToCount: result.sentToCount,
+        message: `Notification sent successfully to ${result.sentToCount} members`,
+      });
+    } catch (error) {
+      console.error("Error sending notification broadcast:", error);
+      res.status(500).json({ error: "Failed to send notification broadcast" });
+    }
+  });
+
+  app.get("/api/admin/groups", isAdminAuthenticated, async (req, res) => {
+    try {
+      const groups = await storage.getGroupsForBroadcast();
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching groups for broadcast:", error);
+      res.status(500).json({ error: "Failed to fetch groups" });
+    }
+  });
+
+  app.get("/api/admin/plans", isAdminAuthenticated, async (req, res) => {
+    try {
+      const plans = await storage.getPlansForBroadcast();
+      res.json(plans);
+    } catch (error) {
+      console.error("Error fetching plans for broadcast:", error);
+      res.status(500).json({ error: "Failed to fetch plans" });
+    }
+  });
+
+  app.get("/api/admin/notifications/broadcasts", isAdminAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const adminId = req.query.adminId as string;
+      
+      const broadcasts = await storage.getAdminNotificationBroadcasts(adminId, limit);
+      res.json(broadcasts);
+    } catch (error) {
+      console.error("Error fetching notification broadcasts:", error);
+      res.status(500).json({ error: "Failed to fetch notification broadcasts" });
     }
   });
 

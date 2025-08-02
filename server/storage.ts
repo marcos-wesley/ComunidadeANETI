@@ -72,7 +72,10 @@ import {
   type Notification,
   type InsertNotification,
   type NotificationWithDetails,
+  type AdminNotificationBroadcast,
+  type InsertAdminNotificationBroadcast,
   adminUsers,
+  adminNotificationBroadcasts,
   type AdminUser,
   type InsertAdminUser,
   type ApplicationAppeal,
@@ -264,6 +267,13 @@ export interface IStorage {
   isReplyLikedByUser(replyId: string, userId: string): Promise<boolean>;
 
   sessionStore: any;
+
+  // Admin notification broadcasts
+  createAdminNotificationBroadcast(broadcast: InsertAdminNotificationBroadcast): Promise<AdminNotificationBroadcast>;
+  getAdminNotificationBroadcasts(adminId?: string, limit?: number): Promise<AdminNotificationBroadcast[]>;
+  getGroupsForBroadcast(): Promise<{ id: string; name: string; memberCount: number }[]>;
+  getPlansForBroadcast(): Promise<{ id: string; name: string; memberCount: number }[]>;
+  sendBroadcastToUsers(broadcastId: string, targetType: string, targetValue?: string): Promise<{ sentToCount: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3586,6 +3596,165 @@ export class DatabaseStorage implements IStorage {
       ));
     
     return !!like;
+  }
+
+  // Admin notification broadcasts
+  async createAdminNotificationBroadcast(broadcast: InsertAdminNotificationBroadcast): Promise<AdminNotificationBroadcast> {
+    const [newBroadcast] = await db
+      .insert(adminNotificationBroadcasts)
+      .values(broadcast)
+      .returning();
+    return newBroadcast;
+  }
+
+  async getAdminNotificationBroadcasts(adminId?: string, limit = 50): Promise<AdminNotificationBroadcast[]> {
+    let query = db.select().from(adminNotificationBroadcasts);
+    
+    if (adminId) {
+      query = query.where(eq(adminNotificationBroadcasts.adminId, adminId));
+    }
+    
+    return await query
+      .orderBy(desc(adminNotificationBroadcasts.createdAt))
+      .limit(limit);
+  }
+
+  async getGroupsForBroadcast(): Promise<{ id: string; name: string; memberCount: number }[]> {
+    const groupsData = await db
+      .select({
+        id: groups.id,
+        name: groups.name,
+        memberCount: count(groupMembers.id),
+      })
+      .from(groups)
+      .leftJoin(groupMembers, and(
+        eq(groups.id, groupMembers.groupId),
+        eq(groupMembers.isActive, true)
+      ))
+      .where(eq(groups.isActive, true))
+      .groupBy(groups.id, groups.name)
+      .orderBy(groups.name);
+
+    return groupsData.map(group => ({
+      id: group.id,
+      name: group.name,
+      memberCount: Number(group.memberCount),
+    }));
+  }
+
+  async getPlansForBroadcast(): Promise<{ id: string; name: string; memberCount: number }[]> {
+    const plansData = await db
+      .select({
+        id: membershipPlans.id,
+        name: membershipPlans.name,
+        memberCount: count(users.id),
+      })
+      .from(membershipPlans)
+      .leftJoin(users, and(
+        eq(membershipPlans.id, users.currentPlanId),
+        eq(users.isApproved, true),
+        eq(users.isActive, true)
+      ))
+      .where(eq(membershipPlans.isActive, true))
+      .groupBy(membershipPlans.id, membershipPlans.name)
+      .orderBy(membershipPlans.name);
+
+    return plansData.map(plan => ({
+      id: plan.id,
+      name: plan.name,
+      memberCount: Number(plan.memberCount),
+    }));
+  }
+
+  async sendBroadcastToUsers(broadcastId: string, targetType: string, targetValue?: string): Promise<{ sentToCount: number }> {
+    // Get the broadcast details
+    const [broadcast] = await db
+      .select()
+      .from(adminNotificationBroadcasts)
+      .where(eq(adminNotificationBroadcasts.id, broadcastId));
+
+    if (!broadcast) {
+      throw new Error('Broadcast not found');
+    }
+
+    // Get target users based on type
+    let targetUsers: string[] = [];
+
+    switch (targetType) {
+      case 'all_members':
+        const allUsers = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(
+            eq(users.isApproved, true),
+            eq(users.isActive, true)
+          ));
+        targetUsers = allUsers.map(u => u.id);
+        break;
+
+      case 'group_members':
+        if (!targetValue) throw new Error('Group ID required');
+        const groupUsers = await db
+          .select({ id: users.id })
+          .from(users)
+          .innerJoin(groupMembers, eq(users.id, groupMembers.userId))
+          .where(and(
+            eq(groupMembers.groupId, targetValue),
+            eq(groupMembers.isActive, true),
+            eq(users.isApproved, true),
+            eq(users.isActive, true)
+          ));
+        targetUsers = groupUsers.map(u => u.id);
+        break;
+
+      case 'plan_members':
+        if (!targetValue) throw new Error('Plan ID required');
+        const planUsers = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(and(
+            eq(users.currentPlanId, targetValue),
+            eq(users.isApproved, true),
+            eq(users.isActive, true)
+          ));
+        targetUsers = planUsers.map(u => u.id);
+        break;
+
+      default:
+        throw new Error('Invalid target type');
+    }
+
+    // Create individual notifications for each user
+    if (targetUsers.length > 0) {
+      const notificationData = targetUsers.map(userId => ({
+        userId,
+        type: 'admin_broadcast',
+        title: broadcast.title,
+        message: broadcast.message,
+        actionUrl: broadcast.actionUrl,
+        actorId: broadcast.adminId,
+        relatedEntityId: broadcast.id,
+        relatedEntityType: 'admin_broadcast',
+        metadata: {
+          priority: broadcast.priority,
+          broadcastId: broadcast.id,
+        },
+      }));
+
+      await db.insert(notifications).values(notificationData);
+
+      // Update broadcast with sent count
+      await db
+        .update(adminNotificationBroadcasts)
+        .set({ 
+          sentToCount: targetUsers.length,
+          status: 'sent',
+          updatedAt: new Date(),
+        })
+        .where(eq(adminNotificationBroadcasts.id, broadcastId));
+    }
+
+    return { sentToCount: targetUsers.length };
   }
 }
 
