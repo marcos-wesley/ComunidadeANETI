@@ -2491,8 +2491,8 @@ export class DatabaseStorage implements IStorage {
     return post;
   }
 
-  async getGroupPosts(groupId: string): Promise<(GroupPost & { author: { id: string; fullName: string; username: string; profilePicture?: string } })[]> {
-    return await db
+  async getGroupPosts(groupId: string, userId?: string): Promise<any[]> {
+    const posts = await db
       .select({
         id: groupPosts.id,
         groupId: groupPosts.groupId,
@@ -2517,6 +2517,49 @@ export class DatabaseStorage implements IStorage {
         eq(groupPosts.isActive, true)
       ))
       .orderBy(desc(groupPosts.createdAt));
+
+    // Add likes and comments count for each post
+    const postsWithCounts = await Promise.all(
+      posts.map(async (post) => {
+        // Count likes
+        const likesCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(groupPostLikes)
+          .where(eq(groupPostLikes.postId, post.id));
+
+        // Count comments
+        const commentsCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(groupPostComments)
+          .where(and(
+            eq(groupPostComments.postId, post.id),
+            eq(groupPostComments.isActive, true)
+          ));
+
+        // Check if current user liked this post
+        let isLiked = false;
+        if (userId) {
+          const userLike = await db
+            .select()
+            .from(groupPostLikes)
+            .where(and(
+              eq(groupPostLikes.postId, post.id),
+              eq(groupPostLikes.userId, userId)
+            ))
+            .limit(1);
+          isLiked = userLike.length > 0;
+        }
+
+        return {
+          ...post,
+          likesCount: Number(likesCount[0]?.count || 0),
+          commentsCount: Number(commentsCount[0]?.count || 0),
+          isLiked
+        };
+      })
+    );
+
+    return postsWithCounts;
   }
 
   async updateGroupPost(postId: string, updateData: { content: string }): Promise<boolean> {

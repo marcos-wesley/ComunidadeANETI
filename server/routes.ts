@@ -2585,7 +2585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const posts = await storage.getGroupPosts(groupId);
+      const posts = await storage.getGroupPosts(groupId, userId);
       res.json(posts);
     } catch (error) {
       console.error("Error fetching group posts:", error);
@@ -2735,7 +2735,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         success: true,
         liked: result.liked,
-        likes: result.likesCount
+        likesCount: result.likesCount
       });
     } catch (error) {
       console.error("Error toggling group post like:", error);

@@ -40,7 +40,7 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MarkdownRenderer } from "./MarkdownRenderer";
 import { ReactionSelector } from "./ReactionSelector";
-import { CommentSection } from "./CommentSection";
+import { GroupCommentSection } from "./GroupCommentSection";
 
 export interface GroupPost {
   id: string;
@@ -50,6 +50,9 @@ export interface GroupPost {
   authorId: string;
   groupId: string;
   createdAt: string;
+  likesCount?: number;
+  commentsCount?: number;
+  isLiked?: boolean;
   author: {
     id: string;
     username: string;
@@ -74,9 +77,9 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
   const [editContent, setEditContent] = useState(post.content);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showComments, setShowComments] = useState(false);
-  const [isLiked, setIsLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
-  const [commentsCount, setCommentsCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(post.isLiked || false);
+  const [likesCount, setLikesCount] = useState(post.likesCount || 0);
+  const [commentsCount, setCommentsCount] = useState(post.commentsCount || 0);
   const [userReaction, setUserReaction] = useState<string | undefined>();
 
   // Check if current user can edit/delete this post (author or group moderator)
@@ -90,7 +93,7 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
     },
     onSuccess: (data) => {
       setIsLiked(data.liked);
-      setLikesCount(data.likes);
+      setLikesCount(data.likesCount);
       queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
     },
     onError: (error: Error) => {
@@ -364,9 +367,11 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
       {/* Comments Section */}
       {showComments && !isEditing && (
         <div className="border-t border-gray-100 dark:border-gray-800">
-          <CommentSection
+          <GroupCommentSection
             postId={post.id}
+            groupId={groupId}
             onUpdate={() => {
+              setCommentsCount(prev => prev + 1);
               queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
               onUpdate();
             }}
