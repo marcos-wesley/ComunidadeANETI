@@ -1363,10 +1363,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('Files uploaded:', files.map(f => f.originalname));
       }
 
-      // Update application status if it's an appeal
+      // Update application status if it's an appeal - return to pending for admin review
       if (type === 'appeal') {
         await storage.updateApplication(id, {
-          status: 'under_review',
+          status: 'pending',
           adminNotes: application.adminNotes ? 
             application.adminNotes + `\n\n[Questionamento do usuário]: ${message}` :
             `[Questionamento do usuário]: ${message}`,

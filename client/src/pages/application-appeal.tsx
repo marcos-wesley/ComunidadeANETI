@@ -78,7 +78,11 @@ export default function ApplicationAppeal() {
           : "Resposta e documentos enviados com sucesso!",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/user/application"] });
-      setLocation("/dashboard");
+      
+      // Redirect to pending approval dashboard after successful submission
+      setTimeout(() => {
+        setLocation("/pending-approval");
+      }, 1500);
     },
     onError: (error: any) => {
       toast({
