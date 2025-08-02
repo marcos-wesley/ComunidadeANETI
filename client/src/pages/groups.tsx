@@ -111,71 +111,47 @@ export default function Groups() {
 
   if (groupsLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-foreground">Grupos</h1>
-                <p className="text-sm text-muted-foreground">
-                  Participe de grupos e comitês especializados da ANETI
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold">Grupos</h1>
+          <p className="text-muted-foreground">
+            Participe de grupos e comitês especializados da ANETI
+          </p>
         </div>
-        <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(8)].map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <div className="relative h-24 bg-gray-200 rounded-t-lg"></div>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                      <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                    </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <div className="relative h-24 bg-gray-200 rounded-t-lg"></div>
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                  <div className="h-8 bg-gray-200 rounded"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="h-3 bg-gray-200 rounded mb-4"></div>
+                <div className="h-8 bg-gray-200 rounded"></div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-foreground">Grupos</h1>
-              <p className="text-sm text-muted-foreground">
-                Participe de grupos e comitês especializados da ANETI
-              </p>
-            </div>
-            
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{groups.length} grupos</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div className="p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">Grupos</h1>
+        <p className="text-muted-foreground">
+          Participe de grupos e comitês especializados da ANETI
+        </p>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {groups.map((group) => {
           const isMember = isMemberOfGroup(group.id);
           const canJoin = group.isPublic || canJoinPrivateGroups();
@@ -319,18 +295,17 @@ export default function Groups() {
             </Card>
           );
         })}
-        </div>
-
-        {groups.length === 0 && (
-          <div className="text-center py-12">
-            <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Nenhum grupo disponível</h3>
-            <p className="text-muted-foreground">
-              Os grupos serão exibidos aqui quando estiverem disponíveis.
-            </p>
-          </div>
-        )}
       </div>
+
+      {groups.length === 0 && (
+        <div className="text-center py-12">
+          <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Nenhum grupo disponível</h3>
+          <p className="text-muted-foreground">
+            Os grupos serão exibidos aqui quando estiverem disponíveis.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
