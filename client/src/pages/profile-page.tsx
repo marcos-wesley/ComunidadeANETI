@@ -182,8 +182,15 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         });
         
         if (updateResponse.ok) {
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          // Force refresh all user data
+          await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          await queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          await queryClient.refetchQueries({ queryKey: ["/api/user"] });
+          await queryClient.refetchQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          
+          // Force page reload to show new image
+          window.location.reload();
+          
           toast({
             title: "Sucesso",
             description: "Foto de perfil atualizada com sucesso!",
@@ -250,8 +257,15 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         });
         
         if (updateResponse.ok) {
-          queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          // Force refresh all user data
+          await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+          await queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          await queryClient.refetchQueries({ queryKey: ["/api/user"] });
+          await queryClient.refetchQueries({ queryKey: [`/api/profile/${profile.id}`] });
+          
+          // Force page reload to show new image
+          window.location.reload();
+          
           toast({
             title: "Sucesso",
             description: "Foto de capa atualizada com sucesso!",
