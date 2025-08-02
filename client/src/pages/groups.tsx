@@ -55,8 +55,8 @@ export default function Groups() {
     enabled: !!user,
   });
 
-  // Fetch user's memberships
-  const { data: memberships = [] } = useQuery<GroupMembership[]>({
+  // Fetch user's memberships with status
+  const { data: memberships = [] } = useQuery<any[]>({
     queryKey: ["/api/groups/my-memberships"],
     enabled: !!user,
   });
@@ -74,6 +74,7 @@ export default function Groups() {
           description: data.message,
         });
         queryClient.invalidateQueries({ queryKey: ["/api/groups/my-memberships"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
       } else {
         toast({
           title: "Erro",
@@ -93,14 +94,53 @@ export default function Groups() {
     },
   });
 
+  // Leave group mutation
+  const leaveGroupMutation = useMutation({
+    mutationFn: async (groupId: string) => {
+      const response = await apiRequest("POST", `/api/groups/${groupId}/leave`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Sucesso",
+          description: data.message,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups/my-memberships"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups"] });
+      } else {
+        toast({
+          title: "Erro",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao sair do grupo",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleJoinGroup = (groupId: string) => {
     setJoiningGroupId(groupId);
     joinGroupMutation.mutate(groupId);
   };
 
-  // Check if user is member of a group
-  const isMemberOfGroup = (groupId: string) => {
-    return memberships.some(m => m.groupId === groupId && m.isActive);
+  const handleLeaveGroup = (groupId: string) => {
+    leaveGroupMutation.mutate(groupId);
+  };
+
+  // Get membership status for a group
+  const getMembershipStatus = (groupId: string) => {
+    const membership = memberships.find(m => m.groupId === groupId);
+    if (!membership) return 'not-member';
+    if (membership.status === 'pending') return 'pending';
+    if (membership.status === 'approved' && membership.isActive) return 'member';
+    return 'not-member';
   };
 
   // Check if user can join private groups
@@ -153,7 +193,7 @@ export default function Groups() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {groups.map((group) => {
-          const isMember = isMemberOfGroup(group.id);
+          const membershipStatus = getMembershipStatus(group.id);
           const canJoin = group.isPublic || canJoinPrivateGroups();
           const isJoining = joiningGroupId === group.id;
 
@@ -246,15 +286,29 @@ export default function Groups() {
                 </div>
 
                 {/* Action Button */}
-                {isMember ? (
+                {membershipStatus === 'member' ? (
                   <Button 
                     size="sm" 
-                    className="w-full" 
+                    variant="outline"
+                    className="w-full border-red-300 text-red-700 hover:bg-red-50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLeaveGroup(group.id);
+                    }}
+                    disabled={leaveGroupMutation.isPending}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Sair do Grupo
+                  </Button>
+                ) : membershipStatus === 'pending' ? (
+                  <Button 
+                    size="sm" 
+                    className="w-full bg-yellow-100 text-yellow-700 hover:bg-yellow-200" 
                     disabled
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Membro
+                    <Clock className="w-4 h-4 mr-2" />
+                    Aguardando Aprovação
                   </Button>
                 ) : (
                   <Button
