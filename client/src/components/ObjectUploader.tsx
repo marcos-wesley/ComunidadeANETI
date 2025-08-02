@@ -51,7 +51,7 @@ export function ObjectUploader({
         }
 
         // Check file type
-        const isValidType = allowedFileTypes.some(type => {
+        const isValidType = allowedFileTypes?.some(type => {
           if (type === 'image/*') return file.type.startsWith('image/');
           if (type === 'application/pdf') return file.type === 'application/pdf';
           return file.type === type;
@@ -103,7 +103,7 @@ export function ObjectUploader({
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
-        accept={allowedFileTypes.join(',')}
+        accept={allowedFileTypes?.join(',') || '*'}
         multiple={maxFiles > 1}
         style={{ display: 'none' }}
       />
@@ -126,7 +126,7 @@ export function ObjectUploader({
               Clique para selecionar arquivo
             </span>
             <span className="text-xs text-muted-foreground">
-              {allowedFileTypes.includes('application/pdf') ? 'PDF ou imagem' : 'Imagem'} • 
+              {allowedFileTypes?.includes('application/pdf') ? 'PDF ou imagem' : 'Imagem'} • 
               Máx. {(restrictions.maxFileSize / (1024 * 1024)).toFixed(0)}MB •
               {maxFiles > 1 ? ` Até ${maxFiles} arquivos` : ' 1 arquivo'}
             </span>
