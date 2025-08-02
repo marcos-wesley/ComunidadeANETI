@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -45,6 +46,7 @@ export default function Groups() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [joiningGroupId, setJoiningGroupId] = useState<string | null>(null);
 
   // Fetch all groups
@@ -156,7 +158,11 @@ export default function Groups() {
           const isJoining = joiningGroupId === group.id;
 
           return (
-            <Card key={group.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            <Card 
+              key={group.id} 
+              className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer hover:border-primary/50"
+              onClick={() => setLocation(`/groups/${group.id}`)}
+            >
               {/* Cover Photo */}
               <div 
                 className="relative h-24 bg-gradient-to-r from-blue-500 to-purple-600"
@@ -241,7 +247,12 @@ export default function Groups() {
 
                 {/* Action Button */}
                 {isMember ? (
-                  <Button size="sm" className="w-full" disabled>
+                  <Button 
+                    size="sm" 
+                    className="w-full" 
+                    disabled
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Membro
                   </Button>
@@ -250,7 +261,10 @@ export default function Groups() {
                     size="sm"
                     variant={canJoin ? "default" : "secondary"}
                     className="w-full"
-                    onClick={() => handleJoinGroup(group.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleJoinGroup(group.id);
+                    }}
                     disabled={!canJoin || isJoining}
                   >
                     {isJoining ? (

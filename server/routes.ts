@@ -1916,6 +1916,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific group details
+  app.get("/api/groups/:groupId", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const group = await storage.getGroupById(groupId);
+      
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          message: "Grupo não encontrado"
+        });
+      }
+
+      res.json(group);
+    } catch (error) {
+      console.error("Error fetching group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch group" 
+      });
+    }
+  });
+
   // Request to join a group
   app.post("/api/groups/:groupId/join", isAuthenticated, async (req, res) => {
     try {

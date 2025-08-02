@@ -22,6 +22,7 @@ import ProfilePage from "./pages/profile-page";
 import EditProfilePage from "./pages/edit-profile-page";
 import ChatPage from "./pages/chat-page";
 import GroupsPage from "./pages/groups";
+import GroupDetailPage from "./pages/group-detail";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function MainLayout(): JSX.Element {
@@ -41,6 +42,7 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/profile" component={ProfilePage} />
         <ProtectedRoute path="/chat" component={ChatPage} />
         <ProtectedRoute path="/groups" component={GroupsPage} />
+        <ProtectedRoute path="/groups/:id" component={GroupDetailPage} />
         <ProtectedRoute path="/forums" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Fóruns - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
