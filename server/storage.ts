@@ -174,6 +174,9 @@ export interface IStorage {
   searchUsers(query: string): Promise<Pick<User, 'id' | 'fullName' | 'username'>[]>;
   getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
   getAllUsers(): Promise<User[]>;
+  getApprovedUsers(): Promise<User[]>;
+  getUsersByPlan(planId: string): Promise<User[]>;
+  getGroupMembers(groupId: string): Promise<User[]>;
   
   // Profile methods
   getUserProfile(userId: string): Promise<any>;
@@ -353,6 +356,84 @@ export class DatabaseStorage implements IStorage {
       return users_data;
     } catch (error) {
       console.error("Error in getAllUsers:", error);
+      return [];
+    }
+  }
+
+  async getApprovedUsers(): Promise<User[]> {
+    try {
+      const users_data = await db
+        .select()
+        .from(users)
+        .where(and(eq(users.isApproved, true), eq(users.isActive, true)));
+      return users_data;
+    } catch (error) {
+      console.error("Error in getApprovedUsers:", error);
+      return [];
+    }
+  }
+
+  async getUsersByPlan(planId: string): Promise<User[]> {
+    try {
+      const users_data = await db
+        .select()
+        .from(users)
+        .where(and(
+          eq(users.currentPlanId, planId),
+          eq(users.isApproved, true)
+        ));
+      return users_data;
+    } catch (error) {
+      console.error("Error in getUsersByPlan:", error);
+      return [];
+    }
+  }
+
+  async getGroupMembers(groupId: string): Promise<User[]> {
+    try {
+      const users_data = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          fullName: users.fullName,
+          city: users.city,
+          state: users.state,
+          area: users.area,
+          position: users.position,
+          company: users.company,
+          phone: users.phone,
+          linkedin: users.linkedin,
+          github: users.github,
+          website: users.website,
+          bio: users.bio,
+          gender: users.gender,
+          profilePicture: users.profilePicture,
+          coverPhoto: users.coverPhoto,
+          aboutMe: users.aboutMe,
+          professionalTitle: users.professionalTitle,
+          isApproved: users.isApproved,
+          isActive: users.isActive,
+          role: users.role,
+          currentPlanId: users.currentPlanId,
+          planName: users.planName,
+          stripeCustomerId: users.stripeCustomerId,
+          stripeSubscriptionId: users.stripeSubscriptionId,
+          subscriptionStatus: users.subscriptionStatus,
+          connectionsCount: users.connectionsCount,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+          password: users.password
+        })
+        .from(users)
+        .innerJoin(groupMembers, eq(groupMembers.userId, users.id))
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(users.isApproved, true)
+        ));
+      return users_data;
+    } catch (error) {
+      console.error("Error in getGroupMembers:", error);
       return [];
     }
   }

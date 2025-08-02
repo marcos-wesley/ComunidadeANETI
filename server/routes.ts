@@ -1402,6 +1402,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin middleware
+  const requireAdminAuth = (req: any, res: any, next: any) => {
+    if (!req.session?.adminUser?.isAuthenticated) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Admin authentication required" 
+      });
+    }
+    req.adminUser = req.session.adminUser;
+    next();
+  };
+
+  // Bulk notification endpoint (admin only)
+  app.post("/api/admin/notifications/bulk", requireAdminAuth, async (req, res) => {
+    try {
+      const {
+        title,
+        message,
+        actionUrl,
+        type,
+        targetType,
+        groupId,
+        planId,
+        includeInactive
+      } = req.body;
+
+      // Validate required fields
+      if (!title || !message || !type || !targetType) {
+        return res.status(400).json({
+          success: false,
+          message: "Campos obrigatórios: title, message, type, targetType"
+        });
+      }
+
+      let targetUsers: any[] = [];
+
+      // Get target users based on targetType
+      switch (targetType) {
+        case "all_members":
+          targetUsers = await storage.getAllUsers();
+          break;
+        
+        case "approved_members":
+          targetUsers = await storage.getApprovedUsers();
+          break;
+        
+        case "group_members":
+          if (!groupId) {
+            return res.status(400).json({
+              success: false,
+              message: "groupId é obrigatório para notificações de grupo"
+            });
+          }
+          targetUsers = await storage.getGroupMembers(groupId);
+          break;
+        
+        case "by_plan":
+          if (!planId) {
+            return res.status(400).json({
+              success: false,
+              message: "planId é obrigatório para notificações por plano"
+            });
+          }
+          targetUsers = await storage.getUsersByPlan(planId);
+          break;
+        
+        default:
+          return res.status(400).json({
+            success: false,
+            message: "Tipo de destinatário inválido"
+          });
+      }
+
+      // Filter out inactive users if includeInactive is false
+      if (!includeInactive) {
+        targetUsers = targetUsers.filter(user => user.isActive);
+      }
+
+      // Create notifications for all target users
+      let sentCount = 0;
+      const batchSize = 50; // Process in batches to avoid overwhelming the database
+
+      for (let i = 0; i < targetUsers.length; i += batchSize) {
+        const batch = targetUsers.slice(i, i + batchSize);
+        
+        const notificationPromises = batch.map(user => 
+          storage.createNotification({
+            userId: user.id,
+            type: type,
+            title: title,
+            message: message,
+            actionUrl: actionUrl || null,
+            actorId: req.adminUser.adminUserId,
+            relatedEntityType: "bulk_notification",
+            metadata: {
+              bulkSent: true,
+              targetType: targetType,
+              groupId: groupId || null,
+              planId: planId || null
+            }
+          })
+        );
+
+        try {
+          await Promise.all(notificationPromises);
+          sentCount += batch.length;
+        } catch (batchError) {
+          console.error("Error sending notification batch:", batchError);
+          // Continue with other batches even if one fails
+        }
+      }
+
+      res.json({
+        success: true,
+        message: `${sentCount} notificações enviadas com sucesso`,
+        sentCount: sentCount,
+        totalTargets: targetUsers.length
+      });
+
+    } catch (error) {
+      console.error("Error sending bulk notifications:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor"
+      });
+    }
+  });
+
   // Application appeal routes
   app.post("/api/applications/:id/appeal", isAuthenticated, multer().array('documents'), async (req, res) => {
     try {
@@ -1569,18 +1697,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ isAuthenticated: false });
     }
   });
-
-  // Admin middleware
-  const requireAdminAuth = (req: any, res: any, next: any) => {
-    if (!req.session?.adminUser?.isAuthenticated) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Admin authentication required" 
-      });
-    }
-    req.adminUser = req.session.adminUser;
-    next();
-  };
 
   // Admin dashboard stats
   app.get("/api/admin/stats", requireAdminAuth, async (req, res) => {

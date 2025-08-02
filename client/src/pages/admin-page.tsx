@@ -44,6 +44,7 @@ import {
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 import { CreateMemberModal } from "@/components/CreateMemberModal";
+import { BulkNotificationModal } from "@/components/BulkNotificationModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
 import AdminMembershipPlans from "./admin-membership-plans";
 import { Input } from "@/components/ui/input";
@@ -1883,14 +1884,24 @@ export default function AdminPage() {
               <CardHeader>
                 <div className="flex justify-between items-center">
                   <CardTitle>Membros Registrados</CardTitle>
-                  <CreateMemberModal
-                    trigger={
-                      <Button className="flex items-center space-x-2">
-                        <UserPlus className="h-4 w-4" />
-                        <span>Adicionar Novo Membro</span>
-                      </Button>
-                    }
-                  />
+                  <div className="flex space-x-3">
+                    <BulkNotificationModal
+                      trigger={
+                        <Button variant="outline" className="flex items-center space-x-2">
+                          <Bell className="h-4 w-4" />
+                          <span>Notificar Membros</span>
+                        </Button>
+                      }
+                    />
+                    <CreateMemberModal
+                      trigger={
+                        <Button className="flex items-center space-x-2">
+                          <UserPlus className="h-4 w-4" />
+                          <span>Adicionar Novo Membro</span>
+                        </Button>
+                      }
+                    />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
