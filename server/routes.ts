@@ -1776,6 +1776,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
           createdAt: topic.createdAt
         }));
 
+      // Calcular vencimentos de anuidades
+      // Reutilizar currentDate já declarado acima
+      const next30Days = new Date(currentDate.getTime() + (30 * 24 * 60 * 60 * 1000));
+      const next7Days = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+
+      // Membros com anuidades vencendo
+      const membersExpiringThisMonth = activeMembers.filter(member => {
+        if (!member.createdAt) return false;
+        const membershipDate = new Date(member.createdAt);
+        const nextAnniversary = new Date(membershipDate);
+        nextAnniversary.setFullYear(currentDate.getFullYear());
+        
+        // Se já passou este ano, considerar o próximo ano
+        if (nextAnniversary < currentDate) {
+          nextAnniversary.setFullYear(currentDate.getFullYear() + 1);
+        }
+        
+        return nextAnniversary <= next30Days;
+      });
+
+      const membersExpiringThisWeek = membersExpiringThisMonth.filter(member => {
+        if (!member.createdAt) return false;
+        const membershipDate = new Date(member.createdAt);
+        const nextAnniversary = new Date(membershipDate);
+        nextAnniversary.setFullYear(currentDate.getFullYear());
+        
+        if (nextAnniversary < currentDate) {
+          nextAnniversary.setFullYear(currentDate.getFullYear() + 1);
+        }
+        
+        return nextAnniversary <= next7Days;
+      });
+
+      // Alertas administrativos
+      const adminAlerts = [];
+      
+      // Alerta para muitos cadastros pendentes
+      if (pendingApplications.length > 10) {
+        adminAlerts.push({
+          id: 'pending-applications',
+          type: 'warning',
+          title: 'Muitos cadastros pendentes',
+          message: `${pendingApplications.length} aplicações aguardando aprovação`,
+          action: 'Revisar aplicações',
+          priority: 'high'
+        });
+      }
+
+      // Alerta para vencimentos próximos
+      if (membersExpiringThisWeek.length > 0) {
+        adminAlerts.push({
+          id: 'expiring-memberships',
+          type: 'warning',
+          title: 'Anuidades vencendo',
+          message: `${membersExpiringThisWeek.length} membros com anuidade vencendo em 7 dias`,
+          action: 'Enviar lembrete',
+          priority: 'medium'
+        });
+      }
+
+      // Alerta para baixa atividade no fórum
+      if (topicsThisMonth.length < 5) {
+        adminAlerts.push({
+          id: 'low-forum-activity',
+          type: 'info',
+          title: 'Baixa atividade no fórum',
+          message: `Apenas ${topicsThisMonth.length} tópicos criados este mês`,
+          action: 'Incentivar participação',
+          priority: 'low'
+        });
+      }
+
+      // Preparar dados para filtros
+      const filterData = {
+        plans: [...new Set(activeMembers.map(m => m.planName).filter(Boolean))],
+        states: Object.keys(membersByState),
+        cities: Object.keys(membersByCity).reduce((acc, state) => {
+          acc[state] = Object.keys(membersByCity[state]);
+          return acc;
+        }, {} as Record<string, string[]>),
+        areas: [...new Set(activeMembers.map(m => m.area).filter(Boolean))]
+      };
+
       res.json({
         totalActiveMembers: activeMembers.length,
         newMembersThisMonth: newMembersThisMonth.length,
@@ -1799,6 +1882,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           activeGroups,
           membersByGroup
         },
+        membershipCalendar: {
+          expiringThisMonth: membersExpiringThisMonth.map(m => ({
+            id: m.id,
+            fullName: m.fullName,
+            planName: m.planName,
+            memberSince: m.createdAt,
+            daysUntilExpiry: Math.ceil((new Date(m.createdAt!).getTime() + (365 * 24 * 60 * 60 * 1000) - currentDate.getTime()) / (24 * 60 * 60 * 1000))
+          })),
+          expiringThisWeek: membersExpiringThisWeek.length
+        },
+        adminAlerts,
+        filterData,
         adminUser: {
           username: req.adminUser.username,
           role: req.adminUser.role,
