@@ -3111,6 +3111,212 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get topic replies
+  app.get("/api/topics/:topicId/replies", isAuthenticated, async (req, res) => {
+    try {
+      const { topicId } = req.params;
+      const userId = req.user.id;
+      
+      // Get topic to check forum and group access
+      const topic = await storage.getForumTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({
+          success: false,
+          message: "Tópico não encontrado"
+        });
+      }
+
+      const forum = await storage.getForum(topic.forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro aprovado para ver as respostas"
+        });
+      }
+      
+      const replies = await storage.getTopicReplies(topicId);
+      res.json(replies);
+    } catch (error) {
+      console.error("Error fetching topic replies:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch topic replies" 
+      });
+    }
+  });
+
+  // Create topic reply
+  app.post("/api/topics/:topicId/replies", isAuthenticated, async (req, res) => {
+    try {
+      const { topicId } = req.params;
+      const userId = req.user.id;
+      
+      // Get topic to check forum and group access
+      const topic = await storage.getForumTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({
+          success: false,
+          message: "Tópico não encontrado"
+        });
+      }
+
+      // Check if topic is locked
+      if (topic.isLocked) {
+        return res.status(403).json({
+          success: false,
+          message: "Este tópico está fechado para novas respostas"
+        });
+      }
+
+      const forum = await storage.getForum(topic.forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group with active membership
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved' || !membership.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro ativo para responder"
+        });
+      }
+      
+      const replyData = {
+        ...req.body,
+        topicId,
+        authorId: userId
+      };
+      
+      const reply = await storage.createForumReply(replyData);
+      res.json({
+        success: true,
+        reply,
+        message: "Resposta criada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error creating topic reply:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create topic reply" 
+      });
+    }
+  });
+
+  // Lock/unlock topic (author or moderator only)
+  app.patch("/api/topics/:topicId/lock", isAuthenticated, async (req, res) => {
+    try {
+      const { topicId } = req.params;
+      const userId = req.user.id;
+      const { isLocked } = req.body;
+      
+      // Get topic to check ownership and forum access
+      const topic = await storage.getForumTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({
+          success: false,
+          message: "Tópico não encontrado"
+        });
+      }
+
+      const forum = await storage.getForum(topic.forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+
+      // Check if user is topic author or group moderator
+      const isModerator = await storage.isGroupModerator(forum.groupId, userId);
+      const isAuthor = topic.authorId === userId;
+      
+      if (!isAuthor && !isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas o autor do tópico ou moderadores podem fechar/abrir tópicos"
+        });
+      }
+      
+      const success = isLocked ? 
+        await storage.lockTopic(topicId) : 
+        await storage.unlockTopic(topicId);
+        
+      if (!success) {
+        return res.status(500).json({
+          success: false,
+          message: "Erro ao atualizar status do tópico"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: isLocked ? "Tópico fechado com sucesso" : "Tópico reaberto com sucesso"
+      });
+    } catch (error) {
+      console.error("Error toggling topic lock:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to toggle topic lock" 
+      });
+    }
+  });
+
+  // Get topic participants count
+  app.get("/api/topics/:topicId/participants", isAuthenticated, async (req, res) => {
+    try {
+      const { topicId } = req.params;
+      const userId = req.user.id;
+      
+      // Get topic to check forum and group access
+      const topic = await storage.getForumTopic(topicId);
+      if (!topic) {
+        return res.status(404).json({
+          success: false,
+          message: "Tópico não encontrado"
+        });
+      }
+
+      const forum = await storage.getForum(topic.forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved') {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro aprovado para ver esta informação"
+        });
+      }
+      
+      const count = await storage.getTopicParticipantsCount(topicId);
+      res.json({ participantsCount: count });
+    } catch (error) {
+      console.error("Error fetching topic participants:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch topic participants" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

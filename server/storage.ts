@@ -3082,6 +3082,109 @@ export class DatabaseStorage implements IStorage {
       .where(eq(forumTopics.id, topicId));
   }
 
+  async updateTopicActivity(topicId: string, lastReplyById: string): Promise<void> {
+    await db
+      .update(forumTopics)
+      .set({ 
+        lastReplyAt: new Date(),
+        lastReplyById: lastReplyById
+      })
+      .where(eq(forumTopics.id, topicId));
+  }
+
+  async lockTopic(topicId: string): Promise<boolean> {
+    try {
+      const [updated] = await db
+        .update(forumTopics)
+        .set({ isLocked: true })
+        .where(eq(forumTopics.id, topicId))
+        .returning();
+      
+      return !!updated;
+    } catch (error) {
+      console.error("Error locking topic:", error);
+      return false;
+    }
+  }
+
+  async unlockTopic(topicId: string): Promise<boolean> {
+    try {
+      const [updated] = await db
+        .update(forumTopics)
+        .set({ isLocked: false })
+        .where(eq(forumTopics.id, topicId))
+        .returning();
+      
+      return !!updated;
+    } catch (error) {
+      console.error("Error unlocking topic:", error);
+      return false;
+    }
+  }
+
+  // Forum replies methods
+  async createForumReply(replyData: InsertForumReply): Promise<SelectForumReply> {
+    const replyId = `reply-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const [reply] = await db
+      .insert(forumReplies)
+      .values({
+        ...replyData,
+        id: replyId
+      })
+      .returning();
+    
+    // Update topic activity
+    await this.updateTopicActivity(replyData.topicId, replyData.authorId);
+    
+    return reply;
+  }
+
+  async getTopicReplies(topicId: string): Promise<any[]> {
+    return await db
+      .select({
+        id: forumReplies.id,
+        topicId: forumReplies.topicId,
+        authorId: forumReplies.authorId,
+        content: forumReplies.content,
+        replyToId: forumReplies.replyToId,
+        isVisible: forumReplies.isVisible,
+        createdAt: forumReplies.createdAt,
+        updatedAt: forumReplies.updatedAt,
+        author: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(forumReplies)
+      .leftJoin(users, eq(forumReplies.authorId, users.id))
+      .where(and(
+        eq(forumReplies.topicId, topicId),
+        eq(forumReplies.isVisible, true)
+      ))
+      .orderBy(asc(forumReplies.createdAt));
+  }
+
+  async getTopicParticipantsCount(topicId: string): Promise<number> {
+    const participantsQuery = await db
+      .selectDistinct({ authorId: forumReplies.authorId })
+      .from(forumReplies)
+      .where(and(
+        eq(forumReplies.topicId, topicId),
+        eq(forumReplies.isVisible, true)
+      ));
+
+    // Include the topic author
+    const topic = await this.getForumTopic(topicId);
+    const uniqueParticipants = new Set([
+      ...(topic ? [topic.authorId] : []),
+      ...participantsQuery.map(p => p.authorId)
+    ]);
+
+    return uniqueParticipants.size;
+  }
+
   // Group post likes and comments methods
   async toggleGroupPostLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
     try {
