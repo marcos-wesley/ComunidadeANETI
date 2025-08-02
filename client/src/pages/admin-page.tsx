@@ -30,7 +30,7 @@ import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
 import AdminMembershipPlans from "./admin-membership-plans";
-import AdminDashboardComplete from './admin-dashboard-complete';
+import AdminDashboardSimple from './admin-dashboard-simple';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -959,7 +959,7 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="dashboard" className="mt-6">
-            <AdminDashboardComplete />
+            <AdminDashboardSimple />
           </TabsContent>
         </Tabs>
       </div>
