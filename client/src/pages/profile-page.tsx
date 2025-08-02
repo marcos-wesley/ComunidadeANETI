@@ -182,19 +182,9 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         });
         
         if (updateResponse.ok) {
-          // Force refresh all user data
-          await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          await queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
-          await queryClient.refetchQueries({ queryKey: ["/api/user"] });
-          await queryClient.refetchQueries({ queryKey: [`/api/profile/${profile.id}`] });
-          
-          // Force page reload to show new image
+          // Clear all caches and force reload
+          queryClient.clear();
           window.location.reload();
-          
-          toast({
-            title: "Sucesso",
-            description: "Foto de perfil atualizada com sucesso!",
-          });
         }
       } catch (error) {
         toast({
@@ -257,19 +247,9 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         });
         
         if (updateResponse.ok) {
-          // Force refresh all user data
-          await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-          await queryClient.invalidateQueries({ queryKey: [`/api/profile/${profile.id}`] });
-          await queryClient.refetchQueries({ queryKey: ["/api/user"] });
-          await queryClient.refetchQueries({ queryKey: [`/api/profile/${profile.id}`] });
-          
-          // Force page reload to show new image
+          // Clear all caches and force reload
+          queryClient.clear();
           window.location.reload();
-          
-          toast({
-            title: "Sucesso",
-            description: "Foto de capa atualizada com sucesso!",
-          });
         }
       } catch (error) {
         toast({
@@ -311,7 +291,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
       <div className="h-56 bg-gradient-to-r from-blue-600 to-blue-800 relative group">
         {profile.coverPhoto && (
           <img 
-            src={`http://localhost:5000${profile.coverPhoto}`} 
+            src={`http://localhost:5000${profile.coverPhoto}?v=${Date.now()}`} 
             alt="Foto de capa" 
             className="w-full h-full object-cover"
             onError={(e) => {
@@ -341,7 +321,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg">
             {profile.profilePicture ? (
               <img 
-                src={`http://localhost:5000${profile.profilePicture}`} 
+                src={`http://localhost:5000${profile.profilePicture}?v=${Date.now()}`} 
                 alt={profile.fullName}
                 className="w-full h-full rounded-full object-cover"
                 onError={(e) => {
