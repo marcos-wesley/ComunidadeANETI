@@ -23,12 +23,30 @@ export function ProtectedRoute({
     retry: false,
   });
 
+  // Check if user is approved and has a valid membership plan
+  const isUserFullyApproved = (user: any) => {
+    return user && 
+           user.isApproved === true && 
+           user.planName && 
+           user.planName !== null && 
+           user.planName !== '';
+  };
+
   useEffect(() => {
-    // If user has pending application and is not already on pending approval page
-    if (user && !appLoading && application && 
+    if (!user || adminOnly) return;
+
+    // First check: User must be approved and have a valid plan
+    if (!isUserFullyApproved(user)) {
+      if (!location.startsWith('/pending-approval')) {
+        setLocation("/pending-approval");
+      }
+      return;
+    }
+
+    // Second check: If user has pending application
+    if (!appLoading && application && 
         application.status === 'pending' && 
-        !location.startsWith('/pending-approval') &&
-        !adminOnly) {
+        !location.startsWith('/pending-approval')) {
       setLocation("/pending-approval");
       return;
     }
@@ -63,6 +81,15 @@ export function ProtectedRoute({
             </p>
           </div>
         </div>
+      </Route>
+    );
+  }
+
+  // If user is not fully approved (not approved or no plan), redirect to pending approval
+  if (!adminOnly && user && !isUserFullyApproved(user) && !location.startsWith('/pending-approval')) {
+    return (
+      <Route path={path}>
+        <Redirect to="/pending-approval" />
       </Route>
     );
   }
