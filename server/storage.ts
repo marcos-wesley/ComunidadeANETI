@@ -274,8 +274,11 @@ export class DatabaseStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     try {
-      const users_data = await db.select().from(users);
-      console.log("Sample user data:", users_data[0]); // Debug log
+      const users_data = await db
+        .select()
+        .from(users)
+        .where(eq(users.isApproved, true));
+      console.log("Sample approved user data:", users_data[0]); // Debug log
       return users_data;
     } catch (error) {
       console.error("Error in getAllUsers:", error);
