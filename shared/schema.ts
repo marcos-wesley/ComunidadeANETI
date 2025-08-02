@@ -283,6 +283,21 @@ export const notifications = pgTable("notifications", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Application appeals/responses table
+export const applicationAppeals = pgTable("application_appeals", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  applicationId: varchar("application_id").references(() => memberApplications.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  type: text("type").notNull(), // 'appeal' or 'response'
+  message: text("message").notNull(),
+  status: text("status").default("pending"), // pending, reviewed, accepted, rejected
+  adminResponse: text("admin_response"),
+  reviewedBy: varchar("reviewed_by").references(() => adminUsers.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   applications: many(memberApplications),
@@ -313,6 +328,22 @@ export const memberApplicationsRelations = relations(memberApplications, ({ one,
     references: [users.id],
   }),
   documents: many(documents),
+  appeals: many(applicationAppeals),
+}));
+
+export const applicationAppealsRelations = relations(applicationAppeals, ({ one }) => ({
+  application: one(memberApplications, {
+    fields: [applicationAppeals.applicationId],
+    references: [memberApplications.id],
+  }),
+  user: one(users, {
+    fields: [applicationAppeals.userId],
+    references: [users.id],
+  }),
+  reviewer: one(adminUsers, {
+    fields: [applicationAppeals.reviewedBy],
+    references: [adminUsers.id],
+  }),
 }));
 
 export const membershipPlansRelations = relations(membershipPlans, ({ many }) => ({
@@ -578,6 +609,16 @@ export const insertNotificationSchema = createInsertSchema(notifications).omit({
   isDeleted: true,
 });
 
+export const insertApplicationAppealSchema = createInsertSchema(applicationAppeals).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  adminResponse: true,
+});
+
 // Main types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -659,3 +700,7 @@ export const insertAdminUserSchema = createInsertSchema(adminUsers).omit({
 
 export type InsertAdminUser = z.infer<typeof insertAdminUserSchema>;
 export type AdminUser = typeof adminUsers.$inferSelect;
+
+// Application appeal types
+export type ApplicationAppeal = typeof applicationAppeals.$inferSelect;
+export type InsertApplicationAppeal = z.infer<typeof insertApplicationAppealSchema>;

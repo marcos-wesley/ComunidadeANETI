@@ -66,6 +66,9 @@ import {
   adminUsers,
   type AdminUser,
   type InsertAdminUser,
+  type ApplicationAppeal,
+  type InsertApplicationAppeal,
+  applicationAppeals,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
@@ -109,6 +112,12 @@ export interface IStorage {
   // Documents
   getDocumentsByApplication(applicationId: string): Promise<Document[]>;
   createDocument(document: InsertDocument): Promise<Document>;
+
+  // Application Appeals
+  createApplicationAppeal(appeal: InsertApplicationAppeal): Promise<ApplicationAppeal>;
+  getApplicationAppeals(applicationId: string): Promise<ApplicationAppeal[]>;
+  getApplicationById(id: string): Promise<MemberApplication | undefined>;
+  updateApplication(id: string, updates: Partial<MemberApplication>): Promise<MemberApplication | undefined>;
 
   // Social Feed
   getFeedPosts(userId: string): Promise<PostWithDetails[]>;
@@ -486,6 +495,37 @@ export class DatabaseStorage implements IStorage {
       .values(insertDocument)
       .returning();
     return document;
+  }
+
+  // Application Appeals
+  async createApplicationAppeal(insertAppeal: InsertApplicationAppeal): Promise<ApplicationAppeal> {
+    const [appeal] = await db
+      .insert(applicationAppeals)
+      .values(insertAppeal)
+      .returning();
+    return appeal;
+  }
+
+  async getApplicationAppeals(applicationId: string): Promise<ApplicationAppeal[]> {
+    return await db
+      .select()
+      .from(applicationAppeals)
+      .where(eq(applicationAppeals.applicationId, applicationId))
+      .orderBy(desc(applicationAppeals.createdAt));
+  }
+
+  async getApplicationById(id: string): Promise<MemberApplication | undefined> {
+    const [application] = await db.select().from(memberApplications).where(eq(memberApplications.id, id));
+    return application || undefined;
+  }
+
+  async updateApplication(id: string, updates: Partial<MemberApplication>): Promise<MemberApplication | undefined> {
+    const [application] = await db
+      .update(memberApplications)
+      .set(updates)
+      .where(eq(memberApplications.id, id))
+      .returning();
+    return application || undefined;
   }
 
   // Social Feed Methods

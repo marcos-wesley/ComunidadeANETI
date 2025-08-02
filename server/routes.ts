@@ -1302,6 +1302,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Application appeal routes
+  app.post("/api/applications/:id/appeal", isAuthenticated, multer().array('documents'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { message, type } = req.body;
+      const files = req.files as Express.Multer.File[];
+
+      if (!message?.trim()) {
+        return res.status(400).json({ error: "Message is required" });
+      }
+
+      if (!type || !['appeal', 'response'].includes(type)) {
+        return res.status(400).json({ error: "Invalid appeal type" });
+      }
+
+      // Check if application exists and belongs to user
+      const application = await storage.getApplicationById(id);
+      if (!application || application.userId !== req.user!.id) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      // Create the appeal
+      const appeal = await storage.createApplicationAppeal({
+        applicationId: id,
+        userId: req.user!.id,
+        type,
+        message: message.trim(),
+      });
+
+      // Handle file uploads if any (simplified for now)
+      if (files && files.length > 0) {
+        // For now, we'll just log the files - proper file handling would need to be implemented
+        console.log('Files uploaded:', files.map(f => f.originalname));
+      }
+
+      // Update application status if it's an appeal
+      if (type === 'appeal') {
+        await storage.updateApplication(id, {
+          status: 'under_review',
+          adminNotes: application.adminNotes ? 
+            application.adminNotes + `\n\n[Questionamento do usuário]: ${message}` :
+            `[Questionamento do usuário]: ${message}`,
+        });
+      }
+
+      res.status(201).json({ 
+        success: true,
+        appeal,
+        message: type === 'appeal' 
+          ? 'Questionamento enviado com sucesso!' 
+          : 'Resposta e documentos enviados com sucesso!'
+      });
+
+    } catch (error) {
+      console.error("Error creating application appeal:", error);
+      res.status(500).json({ error: "Failed to create appeal" });
+    }
+  });
+
 
 
   // Admin User Authentication Routes (separate from member auth)

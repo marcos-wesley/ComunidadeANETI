@@ -14,6 +14,7 @@ import AdminPage from "./pages/admin-page";
 import AdminLogin from "./pages/admin-login";
 import AdminApplicationDetails from "./pages/admin-application-details";
 import PendingApprovalDashboard from "./pages/pending-approval-dashboard";
+import ApplicationAppeal from "./pages/application-appeal";
 import SocialFeedPage from "./pages/social-feed-page";
 import PublishPage from "./pages/publish-page";
 import MembersPage from "./pages/members-page";
@@ -64,6 +65,7 @@ function App() {
             <Route path="/admin" component={AdminPage} />
             {/* Pending approval dashboard - outside main layout */}
             <Route path="/pending-approval" component={PendingApprovalDashboard} />
+            <Route path="/application/:id/appeal" component={ApplicationAppeal} />
             {/* Main app routes */}
             <Route path="*" component={MainLayout} />
           </Switch>

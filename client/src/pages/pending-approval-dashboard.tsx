@@ -232,15 +232,28 @@ export default function PendingApprovalDashboard() {
                 </p>
               </div>
               
-              {application.status === 'documents_requested' && (
-                <div className="mt-4">
+              {(application.status === 'documents_requested' || application.status === 'rejected') && (
+                <div className="mt-4 space-y-3">
                   <Button 
-                    onClick={() => setLocation('/documents/upload')}
+                    onClick={() => setLocation(`/application/${application.id}/appeal`)}
                     className="w-full"
+                    variant={application.status === 'rejected' ? 'default' : 'secondary'}
                   >
                     <FileText className="w-4 h-4 mr-2" />
-                    Enviar Documentos Adicionais
+                    {application.status === 'rejected' ? 'Questionar Rejeição' : 'Responder e Enviar Documentos'}
                   </Button>
+                  
+                  {application.status === 'documents_requested' && (
+                    <p className="text-xs text-center text-gray-600">
+                      Você pode responder às observações do administrador e enviar documentos adicionais
+                    </p>
+                  )}
+                  
+                  {application.status === 'rejected' && (
+                    <p className="text-xs text-center text-gray-600">
+                      Você pode questionar esta decisão e fornecer informações adicionais
+                    </p>
+                  )}
                 </div>
               )}
               
