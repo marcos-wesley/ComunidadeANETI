@@ -2119,6 +2119,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create new member (admin only)
+  app.post("/api/admin/members", requireAdminAuth, async (req, res) => {
+    try {
+      const {
+        username,
+        email,
+        password,
+        fullName,
+        city,
+        state,
+        area,
+        position,
+        company,
+        phone,
+        linkedin,
+        github,
+        website,
+        bio,
+        gender,
+        planId,
+        role = "member"
+      } = req.body;
+
+      // Validate required fields
+      if (!username || !email || !password || !fullName || !city || !state || !area) {
+        return res.status(400).json({
+          success: false,
+          message: "Campos obrigatórios: username, email, password, fullName, city, state, area"
+        });
+      }
+
+      // Check if username or email already exists
+      const existingUser = await storage.getUserByEmailOrUsername(email, username);
+      if (existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: existingUser.email === email 
+            ? "Este email já está em uso" 
+            : "Este nome de usuário já está em uso"
+        });
+      }
+
+      // Hash password
+      const { hashPassword } = await import("./auth");
+      const hashedPassword = await hashPassword(password);
+
+      // Get plan info if planId is provided
+      let planName = null;
+      if (planId) {
+        const plan = await storage.getMembershipPlan(planId);
+        if (plan) {
+          planName = plan.name;
+        }
+      }
+
+      // Create user
+      const newUser = await storage.createUser({
+        username,
+        email,
+        password: hashedPassword,
+        fullName,
+        city,
+        state,
+        area,
+        position: position || null,
+        company: company || null,
+        phone: phone || null,
+        linkedin: linkedin || null,
+        github: github || null,
+        website: website || null,
+        bio: bio || null,
+        gender: gender || null,
+        isApproved: true, // Admin-created members are auto-approved
+        isActive: true,
+        role: role,
+        currentPlanId: planId || null,
+        planName: planName
+      });
+
+      res.json({
+        success: true,
+        message: "Membro criado com sucesso",
+        member: {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          fullName: newUser.fullName,
+          role: newUser.role,
+          planName: newUser.planName
+        }
+      });
+    } catch (error) {
+      console.error("Error creating member:", error);
+      res.status(500).json({
+        success: false,
+        message: "Erro interno do servidor"
+      });
+    }
+  });
+
   // Approve application
   app.post("/api/admin/applications/:id/approve", requireAdminAuth, async (req, res) => {
     try {

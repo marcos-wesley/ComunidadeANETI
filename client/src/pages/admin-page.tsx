@@ -14,6 +14,7 @@ import {
   XCircle, 
   UserCheck,
   UserX,
+  UserPlus,
   Calendar,
   DollarSign,
   MapPin,
@@ -42,6 +43,7 @@ import {
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
+import { CreateMemberModal } from "@/components/CreateMemberModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
 import AdminMembershipPlans from "./admin-membership-plans";
 import { Input } from "@/components/ui/input";
@@ -1879,7 +1881,17 @@ export default function AdminPage() {
           <TabsContent value="members" className="mt-6">
             <Card>
               <CardHeader>
-                <CardTitle>Membros Registrados</CardTitle>
+                <div className="flex justify-between items-center">
+                  <CardTitle>Membros Registrados</CardTitle>
+                  <CreateMemberModal
+                    trigger={
+                      <Button className="flex items-center space-x-2">
+                        <UserPlus className="h-4 w-4" />
+                        <span>Adicionar Novo Membro</span>
+                      </Button>
+                    }
+                  />
+                </div>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Filtros */}
