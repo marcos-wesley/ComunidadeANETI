@@ -1690,6 +1690,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Calcular distribuição geográfica
+      const membersByState: Record<string, number> = {};
+      const membersByCity: Record<string, Record<string, number>> = {};
+      const newMembersByRegion: Record<string, number> = {};
+
+      // Contar membros por estado e cidade
+      for (const member of activeMembers) {
+        const state = member.state || 'Não informado';
+        const city = member.city || 'Não informada';
+        
+        // Por estado
+        membersByState[state] = (membersByState[state] || 0) + 1;
+        
+        // Por cidade dentro do estado
+        if (!membersByCity[state]) {
+          membersByCity[state] = {};
+        }
+        membersByCity[state][city] = (membersByCity[state][city] || 0) + 1;
+      }
+
+      // Novos membros por região no mês
+      for (const member of newMembersThisMonth) {
+        const state = member.state || 'Não informado';
+        newMembersByRegion[state] = (newMembersByRegion[state] || 0) + 1;
+      }
+
+      // Top 5 estados com mais membros
+      const top5States = Object.entries(membersByState)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5)
+        .map(([state, count]) => ({ state, count }));
+
       res.json({
         totalActiveMembers: activeMembers.length,
         newMembersThisMonth: newMembersThisMonth.length,
@@ -1698,6 +1730,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalMembers: allUsers.length,
         membersByProfile,
         lastMonthMembersByProfile,
+        membersByState,
+        membersByCity,
+        newMembersByRegion,
+        top5States,
         adminUser: {
           username: req.adminUser.username,
           role: req.adminUser.role,

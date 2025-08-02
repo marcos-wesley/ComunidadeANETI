@@ -27,7 +27,9 @@ import {
   Edit,
   TrendingUp,
   Receipt,
-  Clock
+  Clock,
+  Globe,
+  Map
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
@@ -70,6 +72,10 @@ interface AdminStats {
     'Honra': number;
     'Diretivo': number;
   };
+  membersByState: Record<string, number>;
+  membersByCity: Record<string, Record<string, number>>;
+  newMembersByRegion: Record<string, number>;
+  top5States: Array<{ state: string; count: number }>;
   adminUser: {
     username: string;
     role: string;
@@ -102,6 +108,10 @@ export default function AdminPage() {
     page: 1,
     limit: 10
   });
+
+  // Geographic view state
+  const [selectedGeoView, setSelectedGeoView] = useState<'states' | 'cities' | 'top5' | 'newMembers'>('states');
+  const [selectedStateForCities, setSelectedStateForCities] = useState<string>('');
 
   // Check admin authentication
   useEffect(() => {
@@ -532,6 +542,229 @@ export default function AdminPage() {
                           })}
                         </div>
                       </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 🌎 Seção de Distribuição Geográfica */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                    <Globe className="h-6 w-6 text-green-600" />
+                    <span>🌎 Distribuição Geográfica</span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Membros distribuídos por regiões do Brasil
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {loadingStats ? (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* Seletores de Visualização */}
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          variant={selectedGeoView === 'states' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedGeoView('states')}
+                          className="flex items-center space-x-2"
+                        >
+                          <Map className="h-4 w-4" />
+                          <span>🗺️ Por Estado</span>
+                        </Button>
+                        <Button
+                          variant={selectedGeoView === 'cities' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedGeoView('cities')}
+                          className="flex items-center space-x-2"
+                        >
+                          <MapPin className="h-4 w-4" />
+                          <span>🏙️ Por Cidade</span>
+                        </Button>
+                        <Button
+                          variant={selectedGeoView === 'top5' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedGeoView('top5')}
+                          className="flex items-center space-x-2"
+                        >
+                          <BarChart3 className="h-4 w-4" />
+                          <span>📊 Top 5 Estados</span>
+                        </Button>
+                        <Button
+                          variant={selectedGeoView === 'newMembers' ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedGeoView('newMembers')}
+                          className="flex items-center space-x-2"
+                        >
+                          <TrendingUp className="h-4 w-4" />
+                          <span>📌 Novas Inscrições</span>
+                        </Button>
+                      </div>
+
+                      {/* Visualização por Estados */}
+                      {selectedGeoView === 'states' && stats?.membersByState && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">🗺️ Membros por Estado (UF)</h3>
+                          <div className="grid gap-3 max-h-96 overflow-y-auto">
+                            {Object.entries(stats.membersByState)
+                              .sort(([, a], [, b]) => b - a)
+                              .map(([state, count]) => {
+                                const total = Object.values(stats.membersByState).reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
+                                
+                                return (
+                                  <div key={state} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                                    <div className="w-12 text-sm font-bold text-center bg-blue-100 text-blue-700 rounded px-2 py-1">
+                                      {state}
+                                    </div>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                      <div 
+                                        className="h-6 bg-green-500 rounded-full transition-all duration-300"
+                                        style={{ width: `${Math.max(parseFloat(percentage), 2)}%` }}
+                                      ></div>
+                                      <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                                        {count} membros ({percentage}%)
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Visualização por Cidades */}
+                      {selectedGeoView === 'cities' && stats?.membersByCity && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">🏙️ Membros por Cidade</h3>
+                          <div className="mb-4">
+                            <Label htmlFor="state-select" className="text-sm font-medium text-gray-700">
+                              Selecione um estado:
+                            </Label>
+                            <Select value={selectedStateForCities} onValueChange={setSelectedStateForCities}>
+                              <SelectTrigger className="w-full mt-1">
+                                <SelectValue placeholder="Escolha um estado para ver as cidades" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Object.keys(stats.membersByCity).map((state) => (
+                                  <SelectItem key={state} value={state}>
+                                    {state} ({Object.values(stats.membersByCity[state]).reduce((a, b) => a + b, 0)} membros)
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          
+                          {selectedStateForCities && stats.membersByCity[selectedStateForCities] && (
+                            <div className="grid gap-3 max-h-64 overflow-y-auto">
+                              {Object.entries(stats.membersByCity[selectedStateForCities])
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([city, count]) => {
+                                  const stateTotal = Object.values(stats.membersByCity[selectedStateForCities]).reduce((a, b) => a + b, 0);
+                                  const percentage = stateTotal > 0 ? ((count / stateTotal) * 100).toFixed(1) : '0';
+                                  
+                                  return (
+                                    <div key={city} className="flex items-center space-x-3 p-2 bg-blue-50 rounded">
+                                      <div className="w-32 text-sm font-medium text-gray-600 truncate">{city}</div>
+                                      <div className="flex-1 bg-gray-200 rounded-full h-5 relative">
+                                        <div 
+                                          className="h-5 bg-blue-500 rounded-full transition-all duration-300"
+                                          style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
+                                        ></div>
+                                        <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-gray-700">
+                                          {count} ({percentage}%)
+                                        </div>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Top 5 Estados */}
+                      {selectedGeoView === 'top5' && stats?.top5States && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">📊 Top 5 Estados com mais membros</h3>
+                          <div className="space-y-4">
+                            {stats.top5States.map((item, index) => {
+                              const total = stats.totalActiveMembers;
+                              const percentage = total > 0 ? ((item.count / total) * 100).toFixed(1) : '0';
+                              const podiumColors = ['bg-yellow-500', 'bg-gray-400', 'bg-orange-500', 'bg-blue-500', 'bg-purple-500'];
+                              const podiumEmojis = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+                              
+                              return (
+                                <div key={item.state} className="flex items-center space-x-4 p-4 bg-white border rounded-lg shadow-sm">
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-2xl">{podiumEmojis[index]}</span>
+                                    <div className={`w-3 h-3 rounded-full ${podiumColors[index]}`}></div>
+                                  </div>
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-center">
+                                      <span className="font-semibold text-gray-800">{item.state}</span>
+                                      <span className="text-lg font-bold text-gray-900">{item.count} membros</span>
+                                    </div>
+                                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                      <div 
+                                        className={`h-2 rounded-full ${podiumColors[index]} transition-all duration-500`}
+                                        style={{ width: `${Math.max(parseFloat(percentage), 2)}%` }}
+                                      ></div>
+                                    </div>
+                                    <span className="text-sm text-gray-600">{percentage}% do total</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Novas Inscrições por Região */}
+                      {selectedGeoView === 'newMembers' && stats?.newMembersByRegion && (
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 text-gray-700">
+                            📌 Novas inscrições por região no mês ({new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })})
+                          </h3>
+                          <div className="grid gap-3">
+                            {Object.entries(stats.newMembersByRegion)
+                              .sort(([, a], [, b]) => b - a)
+                              .map(([state, count]) => {
+                                const total = Object.values(stats.newMembersByRegion).reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
+                                
+                                return (
+                                  <div key={state} className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                                    <div className="w-12 text-sm font-bold text-center bg-green-100 text-green-700 rounded px-2 py-1">
+                                      {state}
+                                    </div>
+                                    <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                      <div 
+                                        className="h-6 bg-green-600 rounded-full transition-all duration-300"
+                                        style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
+                                      ></div>
+                                      <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
+                                        +{count} novos ({percentage}%)
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                          {Object.keys(stats.newMembersByRegion).length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                              <MapPin className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                              <p>Nenhuma nova inscrição neste mês ainda</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
