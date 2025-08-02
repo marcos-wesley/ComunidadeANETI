@@ -254,12 +254,16 @@ export function MemberModerationCard({ member, onUpdate }: MemberModerationCardP
                 <div className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
                   <span>
-                    Membro há {formatDistanceToNow(new Date(member.createdAt), {
-                      locale: ptBR,
-                    })}
+                    {member.createdAt && !isNaN(new Date(member.createdAt).getTime()) ? 
+                      `Membro há ${formatDistanceToNow(new Date(member.createdAt), {
+                        addSuffix: true,
+                        locale: ptBR,
+                      })}` : 
+                      'Membro desde data não disponível'
+                    }
                   </span>
                 </div>
-                {member.lastLoginAt && (
+                {member.lastLoginAt && !isNaN(new Date(member.lastLoginAt).getTime()) && (
                   <div className="flex items-center gap-1">
                     <span className="text-xs">
                       Último acesso: {formatDistanceToNow(new Date(member.lastLoginAt), {
