@@ -1360,17 +1360,13 @@ export default function AdminPage() {
               </Card>
             </div>
 
+          </TabsContent>
 
-
-            {/* Alertas Administrativos - Primeira seção */}
-            <div className="mb-8">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Bell className="h-5 w-5 text-red-600" />
-                    🔔 Alertas Administrativos
-                  </CardTitle>
-                </CardHeader>
+          <TabsContent value="applications" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Inscrições Pendentes</CardTitle>
+              </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {stats?.adminAlerts?.length === 0 ? (
