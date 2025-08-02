@@ -1,14 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PageContainer, PageHeader } from "@/components/ui/page-container";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,9 +27,7 @@ import {
   Mail,
   Filter,
   Star,
-  Eye,
-  Award,
-  Calendar
+  Eye
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -50,215 +47,13 @@ type Member = {
   connectionStatus?: "none" | "pending" | "connected";
   followersCount?: number;
   connectionsCount?: number;
-  createdAt?: string;
 };
-
-// Sidebar de filtros
-function FiltersSidebar({ 
-  stateFilter, setStateFilter,
-  planFilter, setPlanFilter,
-  genderFilter, setGenderFilter,
-  areaFilter, setAreaFilter,
-  sortBy, setSortBy
-}: any) {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="p-6">
-          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            Filtros
-          </h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Ordenar por
-              </label>
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="recent">Mais Recentes</SelectItem>
-                  <SelectItem value="newest">Mais Novos</SelectItem>
-                  <SelectItem value="alphabetical">Alfabética</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Plano
-              </label>
-              <Select value={planFilter} onValueChange={setPlanFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os planos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos os planos</SelectItem>
-                  <SelectItem value="Público">Público</SelectItem>
-                  <SelectItem value="Júnior">Júnior</SelectItem>
-                  <SelectItem value="Pleno">Pleno</SelectItem>
-                  <SelectItem value="Sênior">Sênior</SelectItem>
-                  <SelectItem value="Honra">Honra</SelectItem>
-                  <SelectItem value="Diretivo">Diretivo</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Estado
-              </label>
-              <Select value={stateFilter} onValueChange={setStateFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos os estados" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos os estados</SelectItem>
-                  <SelectItem value="SP">São Paulo</SelectItem>
-                  <SelectItem value="RJ">Rio de Janeiro</SelectItem>
-                  <SelectItem value="MG">Minas Gerais</SelectItem>
-                  <SelectItem value="RS">Rio Grande do Sul</SelectItem>
-                  <SelectItem value="SC">Santa Catarina</SelectItem>
-                  <SelectItem value="PR">Paraná</SelectItem>
-                  <SelectItem value="BA">Bahia</SelectItem>
-                  <SelectItem value="GO">Goiás</SelectItem>
-                  <SelectItem value="DF">Distrito Federal</SelectItem>
-                  <SelectItem value="PE">Pernambuco</SelectItem>
-                  <SelectItem value="CE">Ceará</SelectItem>
-                  <SelectItem value="PA">Pará</SelectItem>
-                  <SelectItem value="MA">Maranhão</SelectItem>
-                  <SelectItem value="PB">Paraíba</SelectItem>
-                  <SelectItem value="ES">Espírito Santo</SelectItem>
-                  <SelectItem value="PI">Piauí</SelectItem>
-                  <SelectItem value="AL">Alagoas</SelectItem>
-                  <SelectItem value="RN">Rio Grande do Norte</SelectItem>
-                  <SelectItem value="MT">Mato Grosso</SelectItem>
-                  <SelectItem value="MS">Mato Grosso do Sul</SelectItem>
-                  <SelectItem value="SE">Sergipe</SelectItem>
-                  <SelectItem value="AM">Amazonas</SelectItem>
-                  <SelectItem value="RO">Rondônia</SelectItem>
-                  <SelectItem value="AC">Acre</SelectItem>
-                  <SelectItem value="RR">Roraima</SelectItem>
-                  <SelectItem value="AP">Amapá</SelectItem>
-                  <SelectItem value="TO">Tocantins</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Área de Atuação
-              </label>
-              <Select value={areaFilter} onValueChange={setAreaFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todas as áreas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todas as áreas</SelectItem>
-                  <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
-                  <SelectItem value="DevOps">DevOps</SelectItem>
-                  <SelectItem value="Data Science">Data Science</SelectItem>
-                  <SelectItem value="Segurança">Segurança</SelectItem>
-                  <SelectItem value="Gestão">Gestão</SelectItem>
-                  <SelectItem value="Arquitetura">Arquitetura</SelectItem>
-                  <SelectItem value="UX/UI">UX/UI</SelectItem>
-                  <SelectItem value="Mobile">Mobile</SelectItem>
-                  <SelectItem value="QA">QA</SelectItem>
-                  <SelectItem value="Infraestrutura">Infraestrutura</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
-                Gênero
-              </label>
-              <Select value={genderFilter} onValueChange={setGenderFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Todos" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="Masculino">Masculino</SelectItem>
-                  <SelectItem value="Feminino">Feminino</SelectItem>
-                  <SelectItem value="Outro">Outro</SelectItem>
-                  <SelectItem value="Prefiro não informar">Prefiro não informar</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-// Sidebar de estatísticas
-function StatsSidebar({ user }: { user: any }) {
-  return (
-    <div className="space-y-6">
-      <Card>
-        <CardContent className="p-6">
-          <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
-            <Star className="h-5 w-5" />
-            Sua Rede
-          </h3>
-          
-          <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="flex items-center gap-3">
-                <UserCheck className="h-5 w-5 text-blue-600" />
-                <span className="font-medium">Conexões</span>
-              </div>
-              <Badge variant="secondary">128</Badge>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Eye className="h-5 w-5 text-green-600" />
-                <span className="font-medium">Visualizações</span>
-              </div>
-              <Badge variant="secondary">2.4k</Badge>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <div className="flex items-center gap-3">
-                <Award className="h-5 w-5 text-purple-600" />
-                <span className="font-medium">Seu Plano</span>
-              </div>
-              <Badge variant="outline" className="font-medium">
-                {user?.planName || "Público"}
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-6">
-          <h3 className="font-semibold text-lg mb-4">Sugestões</h3>
-          <div className="space-y-3">
-            <div className="text-center py-4 text-gray-500">
-              <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm">
-                Convide colegas para se juntarem à ANETI
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
 
 export default function MembersPage(): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [searchInput, setSearchInput] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState(""); // Input local state
+  const [searchQuery, setSearchQuery] = useState(""); // Query que vai para a API
   const [stateFilter, setStateFilter] = useState("");
   const [planFilter, setPlanFilter] = useState("");
   const [genderFilter, setGenderFilter] = useState("");
@@ -267,11 +62,11 @@ export default function MembersPage(): JSX.Element {
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 20;
 
-  // Debounce da pesquisa
+  // Debounce da pesquisa - 500ms delay
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       setSearchQuery(searchInput);
-      setCurrentPage(1);
+      setCurrentPage(1); // Reset para primeira página ao pesquisar
     }, 500);
 
     return () => clearTimeout(timeoutId);
@@ -303,286 +98,474 @@ export default function MembersPage(): JSX.Element {
     },
   });
 
-  // Verificar se o usuário pode conectar/seguir
-  const canConnect = user?.planName && !['Público'].includes(user.planName);
+  // Check if user can connect/follow (Junior, Pleno, Sênior only)
+  const canConnect = user?.planName && ['Júnior', 'Pleno', 'Sênior'].includes(user.planName);
+  
+  console.log('User plan check:', { 
+    userPlan: user?.planName, 
+    canConnect, 
+    userExists: !!user,
+    allowedPlans: ['Júnior', 'Pleno', 'Sênior']
+  });
 
-  // Mutation para conectar/seguir
-  const connectMutation = useMutation({
-    mutationFn: async ({ memberId, action }: { memberId: string; action: 'connect' | 'follow' }) => {
-      return apiRequest("POST", `/api/members/${memberId}/${action}`);
+  // Members are already filtered by backend
+  const filteredMembers = members;
+
+  // Get unique values for filters from all members (for filter dropdowns)
+  const { data: allMembersForFilters = [] } = useQuery<Member[]>({
+    queryKey: ["/api/members-for-filters"],
+    queryFn: async () => {
+      const res = await fetch('/api/members?limit=1000', {
+        credentials: 'include',
+      });
+      if (!res.ok) return [];
+      return res.json();
     },
-    onSuccess: () => {
+  });
+
+  const states = Array.from(new Set(allMembersForFilters.map(m => m.state))).sort();
+  const plans = Array.from(new Set(allMembersForFilters.map(m => m.planName).filter(Boolean))).sort();
+  const areas = Array.from(new Set(allMembersForFilters.map(m => m.area))).sort();
+
+  // Reset to first page when filters change
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
+
+  // Connection mutations
+  const connectMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      console.log('connectMutation called with:', memberId);
+      const res = await apiRequest("POST", "/api/connections", { receiverId: memberId });
+      console.log('connectMutation response:', res.status);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      console.log('connectMutation success:', data);
       queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
-        title: "Sucesso",
-        description: "Solicitação enviada com sucesso!",
+        title: "Solicitação enviada",
+        description: "Sua solicitação de conexão foi enviada!",
       });
     },
-    onError: (error: any) => {
+    onError: (error) => {
+      console.error('connectMutation error:', error);
       toast({
         title: "Erro",
-        description: error.message || "Erro ao enviar solicitação",
+        description: "Não foi possível enviar a solicitação de conexão.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const followMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      console.log('followMutation called with:', memberId);
+      const res = await apiRequest("POST", "/api/follows", { followingId: memberId });
+      console.log('followMutation response:', res.status);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      console.log('followMutation success:', data);
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      toast({
+        title: "Seguindo",
+        description: "Você agora está seguindo este membro!",
+      });
+    },
+    onError: (error) => {
+      console.error('followMutation error:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível seguir este membro.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: async (memberId: string) => {
+      console.log('unfollowMutation called with:', memberId);
+      const res = await apiRequest("DELETE", `/api/follows/${memberId}`);
+      console.log('unfollowMutation response:', res.status);
+      return res.json();
+    },
+    onSuccess: (data) => {
+      console.log('unfollowMutation success:', data);
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      toast({
+        title: "Deixou de seguir",
+        description: "Você não está mais seguindo este membro.",
+      });
+    },
+    onError: (error) => {
+      console.error('unfollowMutation error:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível deixar de seguir este membro.",
         variant: "destructive",
       });
     },
   });
 
   const handleConnect = (memberId: string) => {
-    connectMutation.mutate({ memberId, action: 'connect' });
+    console.log('handleConnect called with:', { memberId, canConnect, userPlan: user?.planName });
+    if (!canConnect) {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas membros Júnior, Pleno e Sênior podem conectar-se.",
+        variant: "destructive",
+      });
+      return;
+    }
+    console.log('Calling connectMutation.mutate with:', memberId);
+    connectMutation.mutate(memberId);
   };
 
-  const handleFollow = (memberId: string) => {
-    connectMutation.mutate({ memberId, action: 'follow' });
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setSearchQuery(searchInput);
-    setCurrentPage(1);
-  };
-
-  const getPlanBadgeColor = (planName?: string) => {
-    switch (planName) {
-      case 'Público':
-        return 'bg-gray-100 text-gray-700 border-gray-200';
-      case 'Júnior':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'Pleno':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'Sênior':
-        return 'bg-purple-100 text-purple-700 border-purple-200';
-      case 'Honra':
-        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-      case 'Diretivo':
-        return 'bg-red-100 text-red-700 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+  const handleFollow = (memberId: string, isCurrentlyFollowing: boolean) => {
+    console.log('handleFollow called with:', { memberId, isCurrentlyFollowing, canConnect });
+    
+    if (!canConnect) {
+      toast({
+        title: "Acesso restrito",
+        description: "Apenas membros Júnior, Pleno e Sênior podem seguir outros membros.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isCurrentlyFollowing) {
+      console.log('Calling unfollowMutation.mutate');
+      unfollowMutation.mutate(memberId);
+    } else {
+      console.log('Calling followMutation.mutate');
+      followMutation.mutate(memberId);
     }
   };
 
-  return (
-    <PageContainer
-      sidebar={
-        <FiltersSidebar
-          stateFilter={stateFilter}
-          setStateFilter={setStateFilter}
-          planFilter={planFilter}
-          setPlanFilter={setPlanFilter}
-          genderFilter={genderFilter}
-          setGenderFilter={setGenderFilter}
-          areaFilter={areaFilter}
-          setAreaFilter={setAreaFilter}
-          sortBy={sortBy}
-          setSortBy={setSortBy}
-        />
-      }
-      rightSidebar={<StatsSidebar user={user} />}
-    >
-      <div className="space-y-6">
-        <PageHeader
-          title="Membros ANETI"
-          subtitle="Conecte-se com outros profissionais de TI"
-          actions={
-            <form onSubmit={handleSearch} className="flex gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Buscar membros..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  className="pl-10 w-80"
-                />
-              </div>
-              <Button type="submit" disabled={isLoading}>
-                Buscar
-              </Button>
-            </form>
-          }
-        />
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
-        {/* Members Grid */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="h-16 w-16 bg-gray-200 rounded-full" />
-                    <div className="space-y-2 flex-1">
-                      <div className="h-4 w-32 bg-gray-200 rounded" />
-                      <div className="h-3 w-24 bg-gray-200 rounded" />
-                      <div className="h-3 w-20 bg-gray-200 rounded" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-7xl mx-auto p-4 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Users className="h-8 w-8" />
+            Membros da Comunidade
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-2">
+            Conecte-se com outros profissionais de TI
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
+            {members.length} membros
+          </span>
+        </div>
+      </div>
+
+      {/* Search and Filters */}
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+            <Input
+              placeholder="Buscar por nome, cargo ou área de atuação..."
+              value={searchInput}
+              onChange={(e) => {
+                setSearchInput(e.target.value);
+              }}
+              className="pl-10"
+            />
           </div>
-        ) : members.length === 0 ? (
-          <Card>
-            <CardContent className="text-center py-12">
-              <Users className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-              <h3 className="text-xl font-semibold mb-2">Nenhum membro encontrado</h3>
-              <p className="text-gray-600 mb-6">
-                Tente ajustar seus filtros de busca.
-              </p>
+          
+          <div className="flex flex-wrap gap-3">
+            <Select value={sortBy} onValueChange={(value: 'recent' | 'newest' | 'alphabetical') => setSortBy(value)}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Ordenar por" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="recent">Ativo recentemente</SelectItem>
+                <SelectItem value="newest">Membros mais novos</SelectItem>
+                <SelectItem value="alphabetical">Alfabético</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={stateFilter || "all"} onValueChange={(value) => { setStateFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os estados</SelectItem>
+                {states.map(state => (
+                  <SelectItem key={state} value={state}>{state}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={planFilter || "all"} onValueChange={(value) => { setPlanFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Plano" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os planos</SelectItem>
+                {plans.map(plan => (
+                  <SelectItem key={plan} value={plan}>{plan}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={genderFilter || "all"} onValueChange={(value) => { setGenderFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Gênero" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="masculino">Masculino</SelectItem>
+                <SelectItem value="feminino">Feminino</SelectItem>
+                <SelectItem value="outro">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={areaFilter || "all"} onValueChange={(value) => { setAreaFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Área de atuação" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as áreas</SelectItem>
+                {areas.map(area => (
+                  <SelectItem key={area} value={area}>{area}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(stateFilter || planFilter || genderFilter || areaFilter || searchQuery) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setStateFilter("");
+                  setPlanFilter("");
+                  setGenderFilter("");
+                  setAreaFilter("");
+                  setSearchInput(""); // Limpa o input também
+                  setSearchQuery("");
+                  handleFilterChange();
+                }}
+              >
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Members Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {filteredMembers.map((member) => (
+          <Card key={member.id} className="hover:shadow-lg transition-all duration-200 group">
+            <CardHeader className="relative pb-4">
+              <div className="absolute top-4 right-4">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/profile/${member.id}`} className="flex items-center cursor-pointer">
+                        <Eye className="h-4 w-4 mr-2" />
+                        Ver Detalhes
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Mail className="h-4 w-4 mr-2" />
+                      Enviar mensagem
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+
+              <Avatar className="h-20 w-20 mx-auto border-4 border-background shadow-lg">
+                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
+                  {getInitials(member.fullName)}
+                </AvatarFallback>
+              </Avatar>
+              
+              <div className="text-center mt-3">
+                <Link href={`/profile/${member.id}`}>
+                  <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
+                </Link>
+                <p className="text-sm text-muted-foreground">@{member.username}</p>
+                
+                {member.planName && (
+                  <Badge 
+                    variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
+                    className="mt-2"
+                  >
+                    {member.planName}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-3 pt-0">
+              {member.position && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Briefcase className="h-4 w-4 flex-shrink-0" />
+                  <span className="truncate">{member.position}</span>
+                </div>
+              )}
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{member.area}</span>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <MapPin className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{member.city}, {member.state}</span>
+              </div>
+
+              {(member.connectionsCount || member.followersCount) && (
+                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                  {member.connectionsCount && (
+                    <div className="flex items-center gap-1">
+                      <UserCheck className="h-3 w-3" />
+                      <span>{member.connectionsCount} conexões</span>
+                    </div>
+                  )}
+                  {member.followersCount && (
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3 w-3" />
+                      <span>{member.followersCount} seguidores</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="flex gap-2 pt-3">
+                {member.connectionStatus === "connected" ? (
+                  <Button size="sm" variant="outline" className="flex-1" disabled>
+                    <UserCheck className="h-4 w-4 mr-1" />
+                    Conectado
+                  </Button>
+                ) : member.connectionStatus === "pending" ? (
+                  <Button size="sm" variant="outline" className="flex-1" disabled>
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    Pendente
+                  </Button>
+                ) : (
+                  <Button 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('Button clicked!', member.id, canConnect);
+                      handleConnect(member.id);
+                    }}
+                    disabled={!canConnect || connectMutation.isPending}
+                    style={{ pointerEvents: 'auto' }}
+                  >
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Conectar
+                  </Button>
+                )}
+
+                <Button
+                  size="sm"
+                  variant={member.isFollowing ? "default" : "outline"}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Follow button clicked!', member.id, canConnect, member.isFollowing);
+                    handleFollow(member.id, member.isFollowing || false);
+                  }}
+                  disabled={!canConnect || followMutation.isPending || unfollowMutation.isPending}
+                  style={{ pointerEvents: 'auto' }}
+                  className={member.isFollowing ? "bg-blue-600 text-white hover:bg-blue-700" : ""}
+                >
+                  {followMutation.isPending || unfollowMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : member.isFollowing ? (
+                    <>
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Seguindo
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      Seguir
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {!canConnect && (
+                <p className="text-xs text-muted-foreground text-center pt-2 border-t">
+                  Recursos de conexão disponíveis para membros Júnior, Pleno e Sênior
+                </p>
+              )}
             </CardContent>
           </Card>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {members.map((member) => (
-              <Card key={member.id} className="hover:shadow-lg transition-shadow duration-300">
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    {/* Header */}
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="h-16 w-16">
-                          <AvatarFallback className="text-lg font-semibold bg-blue-100 text-blue-700">
-                            {member.fullName
-                              .split(' ')
-                              .map(n => n[0])
-                              .join('')
-                              .toUpperCase()
-                              .slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <Link 
-                            href={`/profile/${member.id}`}
-                            className="text-lg font-semibold text-gray-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          >
-                            {member.fullName}
-                          </Link>
-                          <p className="text-gray-600 dark:text-gray-400">@{member.username}</p>
-                          {member.planName && (
-                            <Badge 
-                              variant="outline" 
-                              className={`mt-1 text-xs ${getPlanBadgeColor(member.planName)}`}
-                            >
-                              {member.planName}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/profile/${member.id}`}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Ver Perfil
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Enviar Mensagem
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    {/* Info */}
-                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-2">
-                        <Briefcase className="h-4 w-4" />
-                        <span>{member.area}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4" />
-                        <span>{member.city}, {member.state}</span>
-                      </div>
-                      {member.position && (
-                        <div className="flex items-center gap-2">
-                          <Award className="h-4 w-4" />
-                          <span>{member.position}</span>
-                        </div>
-                      )}
-                      {member.createdAt && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" />
-                          <span>Membro desde {new Date(member.createdAt).getFullYear()}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    {canConnect && member.id !== user?.id && (
-                      <div className="flex gap-2 pt-2">
-                        {member.connectionStatus === 'connected' ? (
-                          <Button variant="outline" size="sm" disabled className="flex-1">
-                            <UserCheck className="h-4 w-4 mr-2" />
-                            Conectado
-                          </Button>
-                        ) : member.connectionStatus === 'pending' ? (
-                          <Button variant="outline" size="sm" disabled className="flex-1">
-                            <UserX className="h-4 w-4 mr-2" />
-                            Pendente
-                          </Button>
-                        ) : (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => handleConnect(member.id)}
-                            disabled={connectMutation.isPending}
-                            className="flex-1"
-                          >
-                            <UserPlus className="h-4 w-4 mr-2" />
-                            Conectar
-                          </Button>
-                        )}
-                        
-                        <Button 
-                          variant="default" 
-                          size="sm"
-                          onClick={() => handleFollow(member.id)}
-                          disabled={connectMutation.isPending}
-                          className="flex-1"
-                        >
-                          <Star className="h-4 w-4 mr-2" />
-                          {member.isFollowing ? 'Seguindo' : 'Seguir'}
-                        </Button>
-                      </div>
-                    )}
-
-                    {!canConnect && member.id !== user?.id && (
-                      <div className="pt-2">
-                        <p className="text-xs text-gray-500 text-center bg-gray-50 dark:bg-gray-800 p-2 rounded">
-                          Upgrade seu plano para conectar com outros membros
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
-
-        {/* Load More */}
-        {members.length >= limit && (
-          <div className="text-center">
-            <Button
-              variant="outline"
-              onClick={() => setCurrentPage(prev => prev + 1)}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Carregando...
-                </>
-              ) : (
-                'Carregar Mais'
-              )}
-            </Button>
-          </div>
-        )}
+        ))}
       </div>
-    </PageContainer>
+
+      {filteredMembers.length === 0 && !isLoading && (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              Nenhum membro encontrado
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Tente ajustar os filtros de busca
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Pagination */}
+      {filteredMembers.length > 0 && (
+        <div className="flex justify-center items-center gap-4 mt-8">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+          >
+            Anterior
+          </Button>
+          
+          <span className="text-sm text-muted-foreground">
+            Página {currentPage} • {filteredMembers.length} membros
+          </span>
+          
+          <Button
+            variant="outline"
+            onClick={() => setCurrentPage(currentPage + 1)}
+            disabled={filteredMembers.length < limit}
+          >
+            Próxima
+          </Button>
+        </div>
+      )}
+    </div>
   );
 }
