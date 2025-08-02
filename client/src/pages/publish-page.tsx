@@ -7,24 +7,32 @@ export default function PublishPage(): JSX.Element {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 space-y-6">
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-          Publicar Artigo
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-2">
-          Compartilhe seus conhecimentos com a comunidade ANETI
-        </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Publicar Artigo</h1>
+              <p className="text-sm text-muted-foreground">
+                Compartilhe seus conhecimentos com a comunidade ANETI
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Criar nova publicação</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PostEditor onPostCreated={handlePostCreated} />
-        </CardContent>
-      </Card>
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Criar nova publicação</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <PostEditor onPostCreated={handlePostCreated} />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

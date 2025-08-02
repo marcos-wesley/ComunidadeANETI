@@ -438,21 +438,45 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="h-screen flex bg-gray-50 dark:bg-gray-900">
-      {/* Sidebar - Conversations List */}
-      <div className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-              <MessageCircle className="h-5 w-5" />
-              Mensagens
-            </h1>
-            <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="h-8 w-8 p-0">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Mensagens</h1>
+              <p className="text-sm text-muted-foreground">
+                Converse com outros membros da ANETI
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">{conversations.length} conversas</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="h-[calc(100vh-200px)] flex bg-card rounded-lg border border-border overflow-hidden">
+          {/* Sidebar - Conversations List */}
+          <div className="w-80 bg-card border-r border-border flex flex-col">
+            <div className="p-4 border-b border-border">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Conversas
+                </h2>
+                <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" className="h-8 w-8 p-0">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Nova Conversa</DialogTitle>
