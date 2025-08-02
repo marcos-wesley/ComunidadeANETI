@@ -58,10 +58,10 @@ export default function GroupDetail() {
     enabled: !!groupId && !!user,
   });
 
-  // Fetch user's memberships
-  const { data: memberships = [] } = useQuery<GroupMembership[]>({
-    queryKey: ["/api/groups/my-memberships"],
-    enabled: !!user,
+  // Fetch user's membership status for this specific group
+  const { data: membership, isLoading: membershipLoading } = useQuery<GroupMembership | null>({
+    queryKey: ["/api/groups", groupId, "membership"],
+    enabled: !!user && !!groupId,
   });
 
   // Join group mutation
@@ -76,7 +76,7 @@ export default function GroupDetail() {
           title: "Sucesso",
           description: data.message,
         });
-        queryClient.invalidateQueries({ queryKey: ["/api/groups/my-memberships"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId, "membership"] });
       } else {
         toast({
           title: "Erro",
@@ -101,9 +101,38 @@ export default function GroupDetail() {
     joinGroupMutation.mutate();
   };
 
-  // Check if user is member of the group
-  const isMemberOfGroup = () => {
-    return memberships.some(m => m.groupId === groupId && m.isActive);
+  // Leave group mutation
+  const leaveGroupMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/groups/${groupId}/leave`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Sucesso",
+          description: data.message,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId, "membership"] });
+      } else {
+        toast({
+          title: "Erro",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao sair do grupo",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLeaveGroup = () => {
+    leaveGroupMutation.mutate();
   };
 
   // Check if user can join private groups
@@ -149,7 +178,15 @@ export default function GroupDetail() {
     );
   }
 
-  const isMember = isMemberOfGroup();
+  // Determine membership state and button content
+  const getMembershipState = () => {
+    if (!membership) return 'not-member';
+    if (membership.status === 'pending') return 'pending';
+    if (membership.status === 'approved' && membership.isActive) return 'member';
+    return 'not-member';
+  };
+
+  const membershipState = getMembershipState();
   const canJoin = group.isPublic || canJoinPrivateGroups();
 
   return (
@@ -246,10 +283,21 @@ export default function GroupDetail() {
 
               {/* Action Buttons */}
               <div className="flex-shrink-0 flex gap-3">
-                {isMember ? (
-                  <Button size="lg" disabled className="bg-gray-100 text-gray-600">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Membro
+                {membershipState === 'member' ? (
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={handleLeaveGroup}
+                    disabled={leaveGroupMutation.isPending}
+                    className="border-red-300 text-red-700 hover:bg-red-50"
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Sair do Grupo
+                  </Button>
+                ) : membershipState === 'pending' ? (
+                  <Button size="lg" disabled className="bg-yellow-100 text-yellow-700">
+                    <Clock className="w-4 h-4 mr-2" />
+                    Aguardando Aprovação
                   </Button>
                 ) : (
                   <Button
@@ -295,7 +343,7 @@ export default function GroupDetail() {
         </Card>
 
         {/* Request Access Section */}
-        {!isMember && (
+        {membershipState === 'not-member' && (
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">

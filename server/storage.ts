@@ -219,6 +219,7 @@ export interface IStorage {
   createGroupPost(postData: InsertGroupPost): Promise<GroupPost>;
   getGroupPosts(groupId: string): Promise<(GroupPost & { author: { id: string; fullName: string; username: string; profilePicture?: string } })[]>;
   deleteGroupPost(postId: string, authorId: string): Promise<boolean>;
+  leaveGroup(groupId: string, userId: string): Promise<boolean>;
 
   sessionStore: any;
 }
@@ -2470,6 +2471,23 @@ export class DatabaseStorage implements IStorage {
       .where(eq(groups.id, groupId));
     
     return group?.moderatorId === userId;
+  }
+
+  // Leave group
+  async leaveGroup(groupId: string, userId: string): Promise<boolean> {
+    const [updated] = await db
+      .update(groupMembers)
+      .set({ 
+        isActive: false,
+        status: 'left'
+      })
+      .where(and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, userId)
+      ))
+      .returning();
+    
+    return !!updated;
   }
 
   async getFilteredApplications(filters: {

@@ -2121,6 +2121,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get specific group membership status
+  app.get("/api/groups/:groupId/membership", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      
+      const membership = await storage.getGroupMembership(groupId, userId);
+      res.json(membership || null);
+    } catch (error) {
+      console.error("Error fetching group membership:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch membership" 
+      });
+    }
+  });
+
+  // Leave group
+  app.post("/api/groups/:groupId/leave", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      
+      const membership = await storage.getGroupMembership(groupId, userId);
+      if (!membership) {
+        return res.status(404).json({
+          success: false,
+          message: "Você não é membro deste grupo"
+        });
+      }
+      
+      const left = await storage.leaveGroup(groupId, userId);
+      if (!left) {
+        return res.status(500).json({
+          success: false,
+          message: "Erro ao sair do grupo"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Você saiu do grupo com sucesso"
+      });
+    } catch (error) {
+      console.error("Error leaving group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to leave group" 
+      });
+    }
+  });
+
   // Group moderation routes (for moderators)
   
   // Get pending group requests (moderator only)
