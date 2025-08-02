@@ -44,7 +44,7 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   // Fetch conversations
   const { data: conversations = [] } = useQuery<any[]>({
     queryKey: ["/api/conversations"],
-    refetchInterval: 5000, // Refresh every 5 seconds
+    // refetchInterval: 5000, // Refresh every 5 seconds - temporarily disabled
   });
 
   // Fetch messages for selected conversation

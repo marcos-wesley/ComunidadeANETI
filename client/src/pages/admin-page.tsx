@@ -1367,50 +1367,50 @@ export default function AdminPage() {
               <CardHeader>
                 <CardTitle>Inscrições Pendentes</CardTitle>
               </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {stats?.adminAlerts?.length === 0 ? (
-                      <div className="text-center py-8 text-gray-500">
-                        <Info className="h-12 w-12 mx-auto mb-2 text-gray-400" />
-                        <p>Nenhum alerta no momento</p>
-                      </div>
-                    ) : (
-                      stats?.adminAlerts?.map((alert) => (
-                        <div 
-                          key={alert.id} 
-                          className={`p-4 rounded-lg border-l-4 ${
-                            alert.priority === 'high' 
-                              ? 'bg-red-50 border-red-500' 
-                              : alert.priority === 'medium'
-                              ? 'bg-yellow-50 border-yellow-500'
-                              : 'bg-blue-50 border-blue-500'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {alert.type === 'warning' ? (
-                                <AlertTriangle className={`h-5 w-5 ${
-                                  alert.priority === 'high' ? 'text-red-600' : 'text-yellow-600'
-                                }`} />
-                              ) : (
-                                <Info className="h-5 w-5 text-blue-600" />
-                              )}
-                              <div>
-                                <h4 className="font-semibold text-gray-800">{alert.title}</h4>
-                                <p className="text-sm text-gray-600">{alert.message}</p>
-                              </div>
+              <CardContent>
+                <div className="space-y-3">
+                  {stats?.adminAlerts?.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <Info className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                      <p>Nenhum alerta no momento</p>
+                    </div>
+                  ) : (
+                    stats?.adminAlerts?.map((alert) => (
+                      <div 
+                        key={alert.id} 
+                        className={`p-4 rounded-lg border-l-4 ${
+                          alert.priority === 'high' 
+                            ? 'bg-red-50 border-red-500' 
+                            : alert.priority === 'medium'
+                            ? 'bg-yellow-50 border-yellow-500'
+                            : 'bg-blue-50 border-blue-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            {alert.type === 'warning' ? (
+                              <AlertTriangle className={`h-5 w-5 ${
+                                alert.priority === 'high' ? 'text-red-600' : 'text-yellow-600'
+                              }`} />
+                            ) : (
+                              <Info className="h-5 w-5 text-blue-600" />
+                            )}
+                            <div>
+                              <h4 className="font-semibold text-gray-800">{alert.title}</h4>
+                              <p className="text-sm text-gray-600">{alert.message}</p>
                             </div>
-                            <Button size="sm" variant="outline">
-                              {alert.action}
-                            </Button>
                           </div>
+                          <Button size="sm" variant="outline">
+                            {alert.action}
+                          </Button>
                         </div>
-                      ))
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
             {/* Dashboard Personalizável - Segunda seção */}
             <div className="mb-8">
