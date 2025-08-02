@@ -1494,13 +1494,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             title: title,
             message: message,
             actionUrl: actionUrl || null,
-            actorId: req.adminUser.adminUserId,
+            actorId: null, // System generated notifications don't need an actor
             relatedEntityType: "bulk_notification",
             metadata: {
               bulkSent: true,
               targetType: targetType,
               groupId: groupId || null,
-              planId: planId || null
+              planId: planId || null,
+              sentByAdmin: req.adminUser.adminUserId
             }
           })
         );
