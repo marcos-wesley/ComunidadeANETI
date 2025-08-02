@@ -151,7 +151,7 @@ export default function ApplicationAppeal() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => setLocation("/dashboard")} className="w-full">
+            <Button onClick={() => setLocation("/pending-approval")} className="w-full">
               Voltar ao Dashboard
             </Button>
           </CardContent>
@@ -170,7 +170,7 @@ export default function ApplicationAppeal() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setLocation("/dashboard")}
+            onClick={() => setLocation("/pending-approval")}
             className="flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -334,7 +334,7 @@ export default function ApplicationAppeal() {
                 <Button 
                   type="button" 
                   variant="outline" 
-                  onClick={() => setLocation("/dashboard")}
+                  onClick={() => setLocation("/pending-approval")}
                 >
                   Cancelar
                 </Button>

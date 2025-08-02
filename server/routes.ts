@@ -510,6 +510,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get application details (for users to view their own applications)
+  app.get("/api/applications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const application = await storage.getApplicationById(id);
+      
+      if (!application) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+      
+      // Only allow users to view their own application
+      if (application.userId !== req.user?.id) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      res.json(application);
+    } catch (error) {
+      console.error("Error fetching application:", error);
+      res.status(500).json({ error: "Failed to fetch application" });
+    }
+  });
+
   // Get application documents
   app.get("/api/applications/:id/documents", isAuthenticated, async (req, res) => {
     try {
