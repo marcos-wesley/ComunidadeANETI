@@ -70,6 +70,16 @@ export default function AdminPage() {
     limit: 10
   });
 
+  // Application filters state
+  const [applicationFilters, setApplicationFilters] = useState({
+    search: '',
+    planName: '',
+    city: '',
+    state: '',
+    page: 1,
+    limit: 10
+  });
+
   // Check admin authentication
   useEffect(() => {
     const checkAdminAuth = async () => {
@@ -113,11 +123,19 @@ export default function AdminPage() {
     retry: 1,
   });
 
-  // Fetch applications with custom fetcher
-  const { data: applications = [], isLoading: loadingApplications } = useQuery({
-    queryKey: ["/api/admin/applications"],
+  // Fetch applications with filters
+  const { data: applicationsData, isLoading: loadingApplications } = useQuery({
+    queryKey: ["/api/admin/applications", applicationFilters],
     queryFn: async () => {
-      const response = await fetch("/api/admin/applications", {
+      const searchParams = new URLSearchParams();
+      if (applicationFilters.search) searchParams.append('search', applicationFilters.search);
+      if (applicationFilters.planName) searchParams.append('planName', applicationFilters.planName);
+      if (applicationFilters.city) searchParams.append('city', applicationFilters.city);
+      if (applicationFilters.state) searchParams.append('state', applicationFilters.state);
+      searchParams.append('page', applicationFilters.page.toString());
+      searchParams.append('limit', applicationFilters.limit.toString());
+
+      const response = await fetch(`/api/admin/applications?${searchParams.toString()}`, {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch applications");
@@ -430,93 +448,243 @@ export default function AdminPage() {
               <CardHeader>
                 <CardTitle>Inscrições Pendentes</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
+                {/* Filtros */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="space-y-2">
+                    <Label htmlFor="app-search">Buscar</Label>
+                    <Input
+                      id="app-search"
+                      placeholder="Nome ou email..."
+                      value={applicationFilters.search}
+                      onChange={(e) => setApplicationFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="app-planName">Nível</Label>
+                    <Select
+                      value={applicationFilters.planName || "todos"}
+                      onValueChange={(value) => setApplicationFilters(prev => ({ 
+                        ...prev, 
+                        planName: value === "todos" ? "" : value, 
+                        page: 1 
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os níveis" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos os níveis</SelectItem>
+                        <SelectItem value="sem-nivel">Sem Nível</SelectItem>
+                        <SelectItem value="Estudante">Estudante</SelectItem>
+                        <SelectItem value="Júnior">Júnior</SelectItem>
+                        <SelectItem value="Pleno">Pleno</SelectItem>
+                        <SelectItem value="Sênior">Sênior</SelectItem>
+                        <SelectItem value="Honra">Honra</SelectItem>
+                        <SelectItem value="Diretivo">Diretivo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="app-city">Cidade</Label>
+                    <Input
+                      id="app-city"
+                      placeholder="Cidade..."
+                      value={applicationFilters.city}
+                      onChange={(e) => setApplicationFilters(prev => ({ ...prev, city: e.target.value, page: 1 }))}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="app-state">Estado</Label>
+                    <Select
+                      value={applicationFilters.state || "todos"}
+                      onValueChange={(value) => setApplicationFilters(prev => ({ 
+                        ...prev, 
+                        state: value === "todos" ? "" : value, 
+                        page: 1 
+                      }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Todos os estados" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos os estados</SelectItem>
+                        <SelectItem value="AC">AC</SelectItem>
+                        <SelectItem value="AL">AL</SelectItem>
+                        <SelectItem value="AP">AP</SelectItem>
+                        <SelectItem value="AM">AM</SelectItem>
+                        <SelectItem value="BA">BA</SelectItem>
+                        <SelectItem value="CE">CE</SelectItem>
+                        <SelectItem value="DF">DF</SelectItem>
+                        <SelectItem value="ES">ES</SelectItem>
+                        <SelectItem value="GO">GO</SelectItem>
+                        <SelectItem value="MA">MA</SelectItem>
+                        <SelectItem value="MT">MT</SelectItem>
+                        <SelectItem value="MS">MS</SelectItem>
+                        <SelectItem value="MG">MG</SelectItem>
+                        <SelectItem value="PA">PA</SelectItem>
+                        <SelectItem value="PB">PB</SelectItem>
+                        <SelectItem value="PR">PR</SelectItem>
+                        <SelectItem value="PE">PE</SelectItem>
+                        <SelectItem value="PI">PI</SelectItem>
+                        <SelectItem value="RJ">RJ</SelectItem>
+                        <SelectItem value="RN">RN</SelectItem>
+                        <SelectItem value="RS">RS</SelectItem>
+                        <SelectItem value="RO">RO</SelectItem>
+                        <SelectItem value="RR">RR</SelectItem>
+                        <SelectItem value="SC">SC</SelectItem>
+                        <SelectItem value="SP">SP</SelectItem>
+                        <SelectItem value="SE">SE</SelectItem>
+                        <SelectItem value="TO">TO</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="app-limit">Por página</Label>
+                    <Select
+                      value={applicationFilters.limit.toString()}
+                      onValueChange={(value) => setApplicationFilters(prev => ({ ...prev, limit: parseInt(value), page: 1 }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Lista de inscrições */}
                 {loadingApplications ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   </div>
-                ) : applications.length === 0 ? (
+                ) : applicationsData?.applications.length === 0 ? (
                   <div className="text-center py-8 text-gray-500">
                     <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                    <p>Nenhuma inscrição pendente</p>
+                    <p>Nenhuma inscrição encontrada</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {applications.map((app: any) => (
-                      <div key={app.id} className="border rounded-lg p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h3 className="font-semibold">{app.user?.fullName || 'Nome não informado'}</h3>
-                            <p className="text-sm text-gray-600">{app.user?.email || 'Email não informado'}</p>
-                            <p className="text-sm text-gray-500">
-                              Plano: {app.plan?.name || 'Plano não informado'} - 
-                              R$ {app.plan?.price?.toFixed(2) || '0.00'}
-                            </p>
-                            <div className="flex items-center space-x-4 mt-2">
-                              <Badge 
-                                variant={
-                                  app.status === 'pending' ? 'secondary' : 
-                                  app.status === 'approved' ? 'default' : 
-                                  app.status === 'rejected' ? 'destructive' :
-                                  app.status === 'documents_requested' ? 'outline' :
-                                  'secondary'
-                                }
-                              >
-                                {app.status === 'pending' ? 'Pendente' :
-                                 app.status === 'approved' ? 'Aprovado' :
-                                 app.status === 'rejected' ? 'Rejeitado' :
-                                 app.status === 'documents_requested' ? 'Documentos Solicitados' :
-                                 app.status}
-                              </Badge>
-                              <Badge variant={app.paymentStatus === 'paid' ? 'default' : 'secondary'}>
-                                {app.paymentStatus === 'paid' ? 'Pago' : 
-                                 app.paymentStatus === 'pending' ? 'Pendente' :
-                                 app.paymentStatus}
-                              </Badge>
-                            </div>
-                            {app.adminNotes && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
-                                <strong>Observações:</strong> {app.adminNotes}
+                  <>
+                    <div className="space-y-4">
+                      {applicationsData?.applications.map((app: any) => (
+                        <div key={app.id} className="border rounded-lg p-4">
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-3 mb-2">
+                                <h3 className="font-semibold text-lg">{app.user?.fullName || 'Nome não informado'}</h3>
+                                <Badge variant="default" className="bg-blue-100 text-blue-800">
+                                  {app.plan?.name || 'Sem Nível'}
+                                </Badge>
                               </div>
-                            )}
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setLocation(`/admin/applications/${app.id}`)}
-                              className="flex items-center space-x-1"
-                            >
-                              <Eye className="h-4 w-4" />
-                              <span>Ver Detalhes</span>
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => approveApplicationMutation.mutate(app.id)}
-                              disabled={approveApplicationMutation.isPending}
-                              className="flex items-center space-x-1"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                              <span>Aprovar</span>
-                            </Button>
-                            <RejectApplicationModal
-                              applicationId={app.id}
-                              trigger={
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="flex items-center space-x-1"
+                              <p className="text-sm text-gray-600">{app.user?.email || 'Email não informado'}</p>
+                              <p className="text-sm text-gray-600">{app.user?.area} • {app.user?.city}/{app.user?.state}</p>
+                              <p className="text-sm text-gray-500">
+                                Plano: {app.plan?.name || 'Plano não informado'} - 
+                                R$ {app.plan?.price?.toFixed(2) || '0.00'}
+                              </p>
+                              <div className="flex items-center space-x-4 mt-3">
+                                <Badge 
+                                  variant={
+                                    app.status === 'pending' ? 'secondary' : 
+                                    app.status === 'approved' ? 'default' : 
+                                    app.status === 'rejected' ? 'destructive' :
+                                    app.status === 'documents_requested' ? 'outline' :
+                                    'secondary'
+                                  }
                                 >
-                                  <XCircle className="h-4 w-4" />
-                                  <span>Rejeitar</span>
-                                </Button>
-                              }
-                            />
+                                  {app.status === 'pending' ? 'Pendente' :
+                                   app.status === 'approved' ? 'Aprovado' :
+                                   app.status === 'rejected' ? 'Rejeitado' :
+                                   app.status === 'documents_requested' ? 'Documentos Solicitados' :
+                                   app.status}
+                                </Badge>
+                                <Badge variant={app.paymentStatus === 'completed' ? 'default' : 'secondary'}>
+                                  {app.paymentStatus === 'completed' ? 'Pago' : 'Pendente'}
+                                </Badge>
+                              </div>
+                              {app.adminNotes && (
+                                <div className="mt-2 p-2 bg-gray-50 rounded text-sm">
+                                  <strong>Observações:</strong> {app.adminNotes}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setLocation(`/admin/applications/${app.id}`)}
+                                className="flex items-center space-x-1"
+                              >
+                                <Eye className="h-4 w-4" />
+                                <span>Ver Detalhes</span>
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => approveApplicationMutation.mutate(app.id)}
+                                disabled={approveApplicationMutation.isPending}
+                                className="flex items-center space-x-1"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                                <span>Aprovar</span>
+                              </Button>
+                              <RejectApplicationModal
+                                applicationId={app.id}
+                                trigger={
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="flex items-center space-x-1"
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                    <span>Rejeitar</span>
+                                  </Button>
+                                }
+                              />
+                            </div>
                           </div>
                         </div>
+                      ))}
+                    </div>
+
+                    {/* Paginação */}
+                    {applicationsData?.pagination && applicationsData.pagination.totalPages > 1 && (
+                      <div className="flex items-center justify-between mt-6">
+                        <div className="text-sm text-gray-500">
+                          Mostrando {((applicationsData.pagination.page - 1) * applicationsData.pagination.limit) + 1} até {Math.min(applicationsData.pagination.page * applicationsData.pagination.limit, applicationsData.pagination.total)} de {applicationsData.pagination.total} inscrições
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setApplicationFilters(prev => ({ ...prev, page: prev.page - 1 }))}
+                            disabled={applicationsData.pagination.page <= 1}
+                          >
+                            Anterior
+                          </Button>
+                          <span className="text-sm text-gray-500">
+                            Página {applicationsData.pagination.page} de {applicationsData.pagination.totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setApplicationFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                            disabled={applicationsData.pagination.page >= applicationsData.pagination.totalPages}
+                          >
+                            Próxima
+                          </Button>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

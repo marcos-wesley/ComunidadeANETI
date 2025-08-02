@@ -2334,6 +2334,142 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(groupMembers.joinedAt));
   }
+
+  async getFilteredApplications(filters: {
+    search: string;
+    planName: string;
+    city: string;
+    state: string;
+    limit: number;
+    offset: number;
+  }): Promise<any[]> {
+    try {
+      let whereConditions = [eq(memberApplications.status, 'pending')];
+
+      if (filters.search) {
+        whereConditions.push(
+          or(
+            ilike(users.fullName, `%${filters.search}%`),
+            ilike(users.email, `%${filters.search}%`)
+          ) as any
+        );
+      }
+
+      if (filters.planName) {
+        if (filters.planName === 'sem-nivel') {
+          whereConditions.push(sql`${membershipPlans.name} IS NULL`);
+        } else {
+          whereConditions.push(eq(membershipPlans.name, filters.planName));
+        }
+      }
+
+      if (filters.city) {
+        whereConditions.push(ilike(users.city, `%${filters.city}%`));
+      }
+
+      if (filters.state) {
+        whereConditions.push(eq(users.state, filters.state));
+      }
+
+      const applications = await db
+        .select({
+          id: memberApplications.id,
+          userId: memberApplications.userId,
+          planId: memberApplications.planId,
+          status: memberApplications.status,
+          paymentStatus: memberApplications.paymentStatus,
+          paymentId: memberApplications.paymentId,
+          mercadoPagoPreferenceId: memberApplications.mercadoPagoPreferenceId,
+          experienceYears: memberApplications.experienceYears,
+          isStudent: memberApplications.isStudent,
+          studentProof: memberApplications.studentProof,
+          adminNotes: memberApplications.adminNotes,
+          reviewedBy: memberApplications.reviewedBy,
+          reviewedAt: memberApplications.reviewedAt,
+          createdAt: memberApplications.createdAt,
+          updatedAt: memberApplications.updatedAt,
+          user: {
+            id: users.id,
+            fullName: users.fullName,
+            email: users.email,
+            username: users.username,
+            city: users.city,
+            state: users.state,
+            area: users.area,
+            phone: users.phone,
+          },
+          plan: {
+            id: membershipPlans.id,
+            name: membershipPlans.name,
+            price: membershipPlans.price,
+          }
+        })
+        .from(memberApplications)
+        .innerJoin(users, eq(memberApplications.userId, users.id))
+        .innerJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+        .where(and(...whereConditions))
+        .limit(filters.limit)
+        .offset(filters.offset)
+        .orderBy(memberApplications.createdAt);
+
+      // Fix payment status logic based on presence of paymentId
+      return applications.map(app => ({
+        ...app,
+        paymentStatus: app.paymentId ? 'completed' : 'pending'
+      }));
+    } catch (error) {
+      console.error("Error in getFilteredApplications:", error);
+      return [];
+    }
+  }
+
+  async getApplicationsCount(filters: {
+    search: string;
+    planName: string;
+    city: string;
+    state: string;
+  }): Promise<number> {
+    try {
+      let whereConditions = [eq(memberApplications.status, 'pending')];
+
+      if (filters.search) {
+        whereConditions.push(
+          or(
+            ilike(users.fullName, `%${filters.search}%`),
+            ilike(users.email, `%${filters.search}%`)
+          ) as any
+        );
+      }
+
+      if (filters.planName) {
+        if (filters.planName === 'sem-nivel') {
+          whereConditions.push(sql`${membershipPlans.name} IS NULL`);
+        } else {
+          whereConditions.push(eq(membershipPlans.name, filters.planName));
+        }
+      }
+
+      if (filters.city) {
+        whereConditions.push(ilike(users.city, `%${filters.city}%`));
+      }
+
+      if (filters.state) {
+        whereConditions.push(eq(users.state, filters.state));
+      }
+
+      const [result] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(memberApplications)
+        .innerJoin(users, eq(memberApplications.userId, users.id))
+        .innerJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+        .where(and(...whereConditions));
+
+      return result.count;
+    } catch (error) {
+      console.error("Error in getApplicationsCount:", error);
+      return 0;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();

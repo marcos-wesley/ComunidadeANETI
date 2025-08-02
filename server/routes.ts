@@ -1535,8 +1535,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get pending applications for admin
   app.get("/api/admin/applications", requireAdminAuth, async (req, res) => {
     try {
-      const applications = await storage.getPendingApplications();
-      res.json(applications);
+      const filters = {
+        search: req.query.search as string || '',
+        planName: req.query.planName as string || '',
+        city: req.query.city as string || '',
+        state: req.query.state as string || '',
+        page: parseInt(req.query.page as string) || 1,
+        limit: parseInt(req.query.limit as string) || 10
+      };
+      
+      const offset = (filters.page - 1) * filters.limit;
+      
+      const applications = await storage.getFilteredApplications({
+        ...filters,
+        offset
+      });
+      
+      const totalApplications = await storage.getApplicationsCount(filters);
+      const totalPages = Math.ceil(totalApplications / filters.limit);
+      
+      res.json({
+        applications,
+        pagination: {
+          page: filters.page,
+          limit: filters.limit,
+          total: totalApplications,
+          totalPages
+        }
+      });
     } catch (error) {
       console.error("Error fetching pending applications:", error);
       res.status(500).json({ 
