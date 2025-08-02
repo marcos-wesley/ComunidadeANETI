@@ -2413,11 +2413,7 @@ export class DatabaseStorage implements IStorage {
     return await db
       .select()
       .from(groupMembers)
-      .where(and(
-        eq(groupMembers.userId, userId),
-        eq(groupMembers.isActive, true),
-        eq(groupMembers.status, 'approved')
-      ))
+      .where(eq(groupMembers.userId, userId))
       .orderBy(desc(groupMembers.joinedAt));
   }
 
