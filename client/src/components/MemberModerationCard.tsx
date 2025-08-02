@@ -63,10 +63,12 @@ export interface Member {
 
 interface MemberModerationCardProps {
   member: Member;
-  onUpdate: () => void;
+  canModerate: boolean;
+  isGroupContext?: boolean;
+  groupId?: string;
 }
 
-export function MemberModerationCard({ member, onUpdate }: MemberModerationCardProps): JSX.Element {
+export function MemberModerationCard({ member, canModerate, isGroupContext, groupId }: MemberModerationCardProps): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -76,7 +78,7 @@ export function MemberModerationCard({ member, onUpdate }: MemberModerationCardP
   const [notificationMessage, setNotificationMessage] = useState("");
 
   // Check if current user is admin/moderator
-  const isAdmin = user?.planName === "Diretivo";
+  const hasAdminPrivileges = user?.planName === "Diretivo";
 
   // Ban member mutation
   const banMemberMutation = useMutation({
@@ -278,7 +280,7 @@ export function MemberModerationCard({ member, onUpdate }: MemberModerationCardP
           </div>
 
           {/* Admin Actions */}
-          {isAdmin && member.id !== user?.id && (
+          {canModerate && member.id !== user?.id && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

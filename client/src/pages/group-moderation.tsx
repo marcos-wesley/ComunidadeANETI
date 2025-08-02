@@ -103,9 +103,9 @@ export default function GroupModeration() {
   });
 
   // Fetch all members for moderation
-  const { data: allMembers = [], isLoading: membersLoading } = useQuery<Member[]>({
-    queryKey: ["/api/members"],
-    enabled: !!user,
+  const { data: groupMembers = [], isLoading: membersLoading } = useQuery<Member[]>({
+    queryKey: ["/api/groups", groupId, "members"],
+    enabled: !!user && !!groupId,
   });
 
   // Approve request mutation

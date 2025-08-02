@@ -2064,6 +2064,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get group members for moderation
+  app.get("/api/groups/:groupId/members", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId } = req.params;
+      const userId = req.user!.id;
+      
+      // Check if user is moderator of this group or has admin privileges
+      const isGroupModerator = await storage.isGroupModerator(groupId, userId);
+      const isAdmin = req.user?.planName === "Diretivo";
+      
+      if (!isGroupModerator && !isAdmin) {
+        return res.status(403).json({
+          success: false,
+          message: "Acesso negado"
+        });
+      }
+      
+      const members = await storage.getGroupMembers(groupId);
+      res.json(members);
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch group members" 
+      });
+    }
+  });
+
   // Get single group details
   app.get("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
     try {

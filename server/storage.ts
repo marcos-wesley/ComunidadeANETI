@@ -2715,6 +2715,65 @@ export class DatabaseStorage implements IStorage {
       return false;
     }
   }
+
+  // Get group members with user details
+  async getGroupMembers(groupId: string): Promise<any[]> {
+    try {
+      const members = await db
+        .select({
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          email: users.email,
+          city: users.city,
+          state: users.state,
+          area: users.area,
+          planName: users.planName,
+          profilePicture: users.profilePicture,
+          isActive: users.isActive,
+          createdAt: users.createdAt,
+          lastLoginAt: users.updatedAt, // Using updatedAt as proxy for lastLogin
+          memberRole: groupMembers.role,
+          joinedAt: groupMembers.joinedAt,
+          memberStatus: groupMembers.status
+        })
+        .from(groupMembers)
+        .innerJoin(users, eq(groupMembers.userId, users.id))
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.isActive, true),
+          eq(groupMembers.status, 'accepted')
+        ))
+        .orderBy(groupMembers.joinedAt);
+
+      return members;
+    } catch (error) {
+      console.error("Error fetching group members:", error);
+      return [];
+    }
+  }
+
+  // Remove member from group (for group moderation)
+  async removeFromGroup(groupId: string, memberId: string): Promise<boolean> {
+    try {
+      const [updated] = await db
+        .update(groupMembers)
+        .set({ 
+          isActive: false,
+          status: 'removed'
+        })
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.userId, memberId)
+        ))
+        .returning();
+      
+      return !!updated;
+    } catch (error) {
+      console.error("Error removing member from group:", error);
+      return false;
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
