@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupPostEditor } from "@/components/GroupPostEditor";
 import { GroupPostCard } from "@/components/GroupPostCard";
+import { MemberModerationCard, Member } from "@/components/MemberModerationCard";
 import { UserCheck, UserX, Send, Calendar, Users, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -99,6 +100,12 @@ export default function GroupModeration() {
   const { data: groupPosts = [], isLoading: postsLoading } = useQuery<GroupPost[]>({
     queryKey: ["/api/groups", groupId, "posts"],
     enabled: !!groupId && !!user,
+  });
+
+  // Fetch all members for moderation
+  const { data: allMembers = [], isLoading: membersLoading } = useQuery<Member[]>({
+    queryKey: ["/api/members"],
+    enabled: !!user,
   });
 
   // Approve request mutation
@@ -241,10 +248,19 @@ export default function GroupModeration() {
       </div>
 
       <Tabs defaultValue="requests" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="requests" className="flex items-center gap-2">
             <UserCheck className="h-4 w-4" />
-            Solicitações ({pendingRequests.length})
+            Solicitações
+            {pendingRequests.length > 0 && (
+              <Badge variant="secondary" className="ml-1">
+                {pendingRequests.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="members" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Membros ({allMembers.length})
           </TabsTrigger>
           <TabsTrigger value="posts" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
@@ -339,6 +355,57 @@ export default function GroupModeration() {
                         </Button>
                       </div>
                     </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="members" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Gerenciar Membros
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {membersLoading ? (
+                <div className="space-y-4">
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="flex items-center gap-4 p-4 border rounded-lg">
+                        <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+                        <div className="flex-1">
+                          <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                          <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                        <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : allMembers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Nenhum membro encontrado
+                  </h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Não há membros cadastrados na plataforma.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {allMembers.map((member) => (
+                    <MemberModerationCard
+                      key={member.id}
+                      member={member}
+                      onUpdate={() => {
+                        queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+                      }}
+                    />
                   ))}
                 </div>
               )}

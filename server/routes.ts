@@ -1632,6 +1632,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin member moderation routes
+  app.post("/api/admin/members/:memberId/ban", requireAdminAuth, async (req, res) => {
+    try {
+
+      const { memberId } = req.params;
+      
+      // Ban the member (set as inactive)
+      const success = await storage.banMember(memberId);
+      
+      if (success) {
+        return res.json({ 
+          success: true, 
+          message: "Membro banido com sucesso" 
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Não foi possível banir o membro" 
+        });
+      }
+    } catch (error) {
+      console.error("Error banning member:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
+  app.post("/api/admin/members/:memberId/kick", requireAdminAuth, async (req, res) => {
+    try {
+
+      const { memberId } = req.params;
+      
+      // Kick the member (temporary suspension)
+      const success = await storage.kickMember(memberId);
+      
+      if (success) {
+        return res.json({ 
+          success: true, 
+          message: "Membro expulso com sucesso" 
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Não foi possível expulsar o membro" 
+        });
+      }
+    } catch (error) {
+      console.error("Error kicking member:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
+  app.post("/api/admin/members/:memberId/notify", requireAdminAuth, async (req, res) => {
+    try {
+
+      const { memberId } = req.params;
+      const { message } = req.body;
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mensagem é obrigatória" 
+        });
+      }
+      
+      // Send notification to member
+      const notificationId = await storage.createNotification({
+        userId: memberId,
+        title: "Notificação da Moderação",
+        message: message.trim(),
+        type: "admin"
+      });
+      
+      if (notificationId) {
+        return res.json({ 
+          success: true, 
+          message: "Notificação enviada com sucesso" 
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Não foi possível enviar a notificação" 
+        });
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
   // Get all members for admin
   app.get("/api/admin/members", requireAdminAuth, async (req, res) => {
     try {

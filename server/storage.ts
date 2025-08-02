@@ -2502,7 +2502,7 @@ export class DatabaseStorage implements IStorage {
       .update(groupPosts)
       .set({ 
         content: updateData.content,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date()
       })
       .where(eq(groupPosts.id, postId))
       .returning();
@@ -2680,6 +2680,39 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getApplicationsCount:", error);
       return 0;
+    }
+  }
+
+  // Member moderation methods
+  async banMember(memberId: string): Promise<boolean> {
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({ isActive: false })
+        .where(eq(users.id, memberId))
+        .returning();
+      
+      return !!updated;
+    } catch (error) {
+      console.error("Error banning member:", error);
+      return false;
+    }
+  }
+
+  async kickMember(memberId: string): Promise<boolean> {
+    try {
+      // For kick, we could implement a temporary suspension
+      // For now, we'll just mark as inactive similar to ban
+      const [updated] = await db
+        .update(users)
+        .set({ isActive: false })
+        .where(eq(users.id, memberId))
+        .returning();
+      
+      return !!updated;
+    } catch (error) {
+      console.error("Error kicking member:", error);
+      return false;
     }
   }
 }
