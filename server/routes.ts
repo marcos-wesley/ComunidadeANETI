@@ -110,6 +110,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Post image upload for authenticated users
+  const postImageUpload = multer({ 
+    dest: 'public/uploads/posts/',
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+    fileFilter: (req, file, cb) => {
+      // Accept only images
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Apenas imagens são permitidas'));
+      }
+    }
+  });
+
+  // Upload endpoint for post images
+  app.post("/api/posts/upload-image", isAuthenticated, postImageUpload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhuma imagem enviada" });
+      }
+
+      const imageUrl = `/uploads/posts/${req.file.filename}`;
+      
+      res.json({ 
+        success: true,
+        imageId: req.file.filename,
+        fileName: req.file.originalname,
+        imageUrl: imageUrl,
+        size: req.file.size,
+        type: req.file.mimetype
+      });
+    } catch (error) {
+      console.error("Error uploading post image:", error);
+      res.status(500).json({ error: "Falha no upload da imagem" });
+    }
+  });
+
   // Check email availability (public endpoint)
   app.post("/api/check-email", async (req, res) => {
     try {
@@ -2343,6 +2380,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to create post" 
+      });
+    }
+  });
+
+  // Edit group post (moderator only)
+  app.put("/api/groups/:groupId/posts/:postId", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, postId } = req.params;
+      const userId = req.user.id;
+      const { content } = req.body;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem editar publicações"
+        });
+      }
+      
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Conteúdo é obrigatório"
+        });
+      }
+      
+      const updated = await storage.updateGroupPost(postId, { content: content.trim() });
+      if (!updated) {
+        return res.status(404).json({
+          success: false,
+          message: "Publicação não encontrada"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Publicação atualizada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error updating group post:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update post" 
       });
     }
   });

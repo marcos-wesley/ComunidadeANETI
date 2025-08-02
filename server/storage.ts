@@ -2497,6 +2497,19 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(groupPosts.createdAt));
   }
 
+  async updateGroupPost(postId: string, updateData: { content: string }): Promise<boolean> {
+    const [updated] = await db
+      .update(groupPosts)
+      .set({ 
+        content: updateData.content,
+        updatedAt: new Date().toISOString()
+      })
+      .where(eq(groupPosts.id, postId))
+      .returning();
+    
+    return !!updated;
+  }
+
   async deleteGroupPost(postId: string, authorId: string): Promise<boolean> {
     const [updated] = await db
       .update(groupPosts)

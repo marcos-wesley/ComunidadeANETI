@@ -275,11 +275,34 @@ export function PostEditor({ onPostCreated }: PostEditorProps): JSX.Element {
     // If there are media files, upload the first one
     if (mediaFiles.length > 0) {
       const file = mediaFiles[0];
-      mediaType = file.type.startsWith('image/') ? 'image' : 
-                  file.type.startsWith('video/') ? 'video' : 'document';
       
-      // For now, use the object URL - in production you'd upload to cloud storage
-      mediaUrl = mediaUrls[0];
+      if (file.type.startsWith('image/')) {
+        try {
+          // Upload image to server
+          const formData = new FormData();
+          formData.append('image', file);
+          
+          const uploadResponse = await apiRequest("POST", "/api/posts/upload-image", formData);
+          const uploadData = await uploadResponse.json();
+          
+          if (uploadData.success) {
+            mediaType = 'image';
+            mediaUrl = uploadData.imageUrl;
+          } else {
+            throw new Error(uploadData.error || 'Falha no upload da imagem');
+          }
+        } catch (error) {
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        mediaType = file.type.startsWith('video/') ? 'video' : 'document';
+        mediaUrl = mediaUrls[0]; // Fallback for non-image files
+      }
     }
     
     createPostMutation.mutate({

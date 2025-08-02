@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupPostEditor } from "@/components/GroupPostEditor";
+import { GroupPostCard } from "@/components/GroupPostCard";
 import { UserCheck, UserX, Send, Calendar, Users, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -386,40 +387,14 @@ export default function GroupModeration() {
               </Card>
             ) : (
               groupPosts.map((post) => (
-                <Card key={post.id}>
-                  <CardContent className="p-6">
-                    <div className="flex items-start gap-4">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={post.author.profilePicture} alt={post.author.fullName} />
-                        <AvatarFallback>{post.author.fullName[0]}</AvatarFallback>
-                      </Avatar>
-                      
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <h4 className="font-semibold text-gray-900 dark:text-white">
-                            {post.author.fullName}
-                          </h4>
-                          <span className="text-sm text-gray-500">
-                            @{post.author.username}
-                          </span>
-                          <span className="text-sm text-gray-400">•</span>
-                          <span className="text-sm text-gray-500">
-                            {formatDistanceToNow(new Date(post.createdAt), { 
-                              addSuffix: true, 
-                              locale: ptBR 
-                            })}
-                          </span>
-                        </div>
-                        
-                        <div className="prose prose-sm max-w-none">
-                          <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
-                            {post.content}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <GroupPostCard 
+                  key={post.id} 
+                  post={post} 
+                  groupId={groupId!}
+                  onUpdate={() => {
+                    queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
+                  }}
+                />
               ))
             )}
           </div>

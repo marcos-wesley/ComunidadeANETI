@@ -133,19 +133,39 @@ export function GroupPostEditor({ groupId, onPostCreated }: GroupPostEditorProps
     setMediaUrls(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!content.trim()) return;
     
     const postData: { content: string; mediaType?: string; mediaUrl?: string } = {
       content: content.trim()
     };
 
-    // Handle media upload (simplified for now)
+    // Handle media upload
     if (mediaFiles.length > 0) {
       const firstFile = mediaFiles[0];
       if (firstFile.type.startsWith('image/')) {
-        postData.mediaType = 'image';
-        postData.mediaUrl = mediaUrls[0];
+        try {
+          // Upload image to server
+          const formData = new FormData();
+          formData.append('image', firstFile);
+          
+          const uploadResponse = await apiRequest("POST", "/api/posts/upload-image", formData);
+          const uploadData = await uploadResponse.json();
+          
+          if (uploadData.success) {
+            postData.mediaType = 'image';
+            postData.mediaUrl = uploadData.imageUrl;
+          } else {
+            throw new Error(uploadData.error || 'Falha no upload da imagem');
+          }
+        } catch (error) {
+          toast({
+            title: "Erro no upload",
+            description: "Não foi possível fazer upload da imagem.",
+            variant: "destructive",
+          });
+          return;
+        }
       } else if (firstFile.type.startsWith('video/')) {
         postData.mediaType = 'video';
         postData.mediaUrl = mediaUrls[0];
