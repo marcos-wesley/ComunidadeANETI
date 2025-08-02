@@ -1622,12 +1622,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Calcular membros por perfil/nível
+      const membersByProfile = {
+        'Público': 0,
+        'Júnior': 0,
+        'Pleno': 0,
+        'Sênior': 0,
+        'Honra': 0,
+        'Diretivo': 0
+      };
+
+      // Contar membros por plano
+      for (const member of activeMembers) {
+        if (member.planName) {
+          const planName = member.planName.toLowerCase();
+          if (planName.includes('público')) {
+            membersByProfile['Público']++;
+          } else if (planName.includes('júnior') || planName.includes('junior')) {
+            membersByProfile['Júnior']++;
+          } else if (planName.includes('pleno')) {
+            membersByProfile['Pleno']++;
+          } else if (planName.includes('sênior') || planName.includes('senior')) {
+            membersByProfile['Sênior']++;
+          } else if (planName.includes('honra')) {
+            membersByProfile['Honra']++;
+          } else if (planName.includes('diretivo') || planName.includes('diretor')) {
+            membersByProfile['Diretivo']++;
+          }
+        }
+      }
+
+      // Calcular dados do mês anterior para comparação
+      const startOfLastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+      
+      const lastMonthMembers = activeMembers.filter(user => 
+        user.createdAt && 
+        new Date(user.createdAt) >= startOfLastMonth && 
+        new Date(user.createdAt) <= endOfLastMonth
+      );
+
+      const lastMonthMembersByProfile = {
+        'Público': 0,
+        'Júnior': 0,
+        'Pleno': 0,
+        'Sênior': 0,
+        'Honra': 0,
+        'Diretivo': 0
+      };
+
+      for (const member of lastMonthMembers) {
+        if (member.planName) {
+          const planName = member.planName.toLowerCase();
+          if (planName.includes('público')) {
+            lastMonthMembersByProfile['Público']++;
+          } else if (planName.includes('júnior') || planName.includes('junior')) {
+            lastMonthMembersByProfile['Júnior']++;
+          } else if (planName.includes('pleno')) {
+            lastMonthMembersByProfile['Pleno']++;
+          } else if (planName.includes('sênior') || planName.includes('senior')) {
+            lastMonthMembersByProfile['Sênior']++;
+          } else if (planName.includes('honra')) {
+            lastMonthMembersByProfile['Honra']++;
+          } else if (planName.includes('diretivo') || planName.includes('diretor')) {
+            lastMonthMembersByProfile['Diretivo']++;
+          }
+        }
+      }
+
       res.json({
         totalActiveMembers: activeMembers.length,
         newMembersThisMonth: newMembersThisMonth.length,
         yearlyRevenue: Math.round(yearlyRevenue),
         pendingApplications: pendingApplications.length,
         totalMembers: allUsers.length,
+        membersByProfile,
+        lastMonthMembersByProfile,
         adminUser: {
           username: req.adminUser.username,
           role: req.adminUser.role,

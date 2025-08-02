@@ -54,6 +54,22 @@ interface AdminStats {
   yearlyRevenue: number;
   pendingApplications: number;
   totalMembers: number;
+  membersByProfile: {
+    'Público': number;
+    'Júnior': number;
+    'Pleno': number;
+    'Sênior': number;
+    'Honra': number;
+    'Diretivo': number;
+  };
+  lastMonthMembersByProfile: {
+    'Público': number;
+    'Júnior': number;
+    'Pleno': number;
+    'Sênior': number;
+    'Honra': number;
+    'Diretivo': number;
+  };
   adminUser: {
     username: string;
     role: string;
@@ -424,6 +440,100 @@ export default function AdminPage() {
                   <p className="text-xs text-orange-600 mt-1">
                     Inscrições pendentes
                   </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 🧑‍💼 Seção de Membros por Perfil/Nível */}
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-xl font-bold text-gray-800 flex items-center space-x-2">
+                    <Users className="h-6 w-6 text-blue-600" />
+                    <span>🧑‍💼 Membros por Perfil / Nível</span>
+                  </CardTitle>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Distribuição de membros por categoria de profissional
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {loadingStats ? (
+                    <div className="flex items-center justify-center h-64">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 gap-8">
+                      {/* Gráfico de Barras - Distribuição Atual */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-gray-700">Distribuição Atual</h3>
+                        <div className="space-y-3">
+                          {stats?.membersByProfile && Object.entries(stats.membersByProfile).map(([profile, count]) => {
+                            const total = Object.values(stats.membersByProfile).reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? ((count / total) * 100).toFixed(1) : '0';
+                            const colors = {
+                              'Público': 'bg-blue-500',
+                              'Júnior': 'bg-green-500',
+                              'Pleno': 'bg-yellow-500',
+                              'Sênior': 'bg-orange-500',
+                              'Honra': 'bg-purple-500',
+                              'Diretivo': 'bg-red-500'
+                            };
+                            
+                            return (
+                              <div key={profile} className="flex items-center space-x-3">
+                                <div className="w-20 text-sm font-medium text-gray-600">{profile}</div>
+                                <div className="flex-1 bg-gray-200 rounded-full h-6 relative">
+                                  <div 
+                                    className={`h-6 rounded-full ${colors[profile as keyof typeof colors]} transition-all duration-300`}
+                                    style={{ width: `${Math.max(percentage, 2)}%` }}
+                                  ></div>
+                                  <div className="absolute inset-0 flex items-center justify-center text-xs font-medium text-white">
+                                    {count} ({percentage}%)
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Comparativo Mês Atual vs Anterior */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 text-gray-700">Comparativo Mensal</h3>
+                        <div className="space-y-3">
+                          {stats?.membersByProfile && Object.entries(stats.membersByProfile).map(([profile, currentCount]) => {
+                            const lastMonthCount = stats.lastMonthMembersByProfile?.[profile as keyof typeof stats.lastMonthMembersByProfile] || 0;
+                            const difference = currentCount - lastMonthCount;
+                            const isPositive = difference > 0;
+                            const isNegative = difference < 0;
+                            
+                            return (
+                              <div key={profile} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm font-medium text-gray-700">{profile}</span>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-sm text-gray-600">
+                                    {lastMonthCount} → {currentCount}
+                                  </span>
+                                  {difference !== 0 && (
+                                    <div className={`flex items-center space-x-1 text-xs px-2 py-1 rounded-full ${
+                                      isPositive ? 'bg-green-100 text-green-700' : 
+                                      isNegative ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                      {isPositive && <TrendingUp className="h-3 w-3" />}
+                                      {isNegative && <span className="rotate-180"><TrendingUp className="h-3 w-3" /></span>}
+                                      <span>{isPositive ? '+' : ''}{difference}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
