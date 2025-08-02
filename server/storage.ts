@@ -2412,11 +2412,8 @@ export class DatabaseStorage implements IStorage {
         .offset(filters.offset)
         .orderBy(memberApplications.createdAt);
 
-      // Fix payment status logic based on presence of paymentId
-      return applications.map(app => ({
-        ...app,
-        paymentStatus: app.paymentId ? 'completed' : 'pending'
-      }));
+      // Return applications with correct payment status
+      return applications;
     } catch (error) {
       console.error("Error in getFilteredApplications:", error);
       return [];

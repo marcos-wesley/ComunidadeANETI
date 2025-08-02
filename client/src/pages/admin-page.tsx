@@ -589,7 +589,7 @@ export default function AdminPage() {
                               <p className="text-sm text-gray-600">{app.user?.area} • {app.user?.city}/{app.user?.state}</p>
                               <p className="text-sm text-gray-500">
                                 Plano: {app.plan?.name || 'Plano não informado'} - 
-                                R$ {app.plan?.price?.toFixed(2) || '0.00'}
+                                R$ {app.plan?.price ? (app.plan.price / 100).toFixed(2) : '0,00'}
                               </p>
                               <div className="flex items-center space-x-4 mt-3">
                                 <Badge 
@@ -607,8 +607,8 @@ export default function AdminPage() {
                                    app.status === 'documents_requested' ? 'Documentos Solicitados' :
                                    app.status}
                                 </Badge>
-                                <Badge variant={app.paymentStatus === 'completed' ? 'default' : 'secondary'}>
-                                  {app.paymentStatus === 'completed' ? 'Pago' : 'Pendente'}
+                                <Badge variant={app.paymentStatus === 'paid' || app.paymentStatus === 'completed' ? 'default' : 'secondary'}>
+                                  {app.paymentStatus === 'paid' || app.paymentStatus === 'completed' ? 'Pago' : 'Pendente'}
                                 </Badge>
                               </div>
                               {app.adminNotes && (
