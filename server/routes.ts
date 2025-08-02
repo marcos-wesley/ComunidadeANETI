@@ -35,18 +35,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup authentication
   setupAuth(app);
   
-  // Admin middleware
-  const requireAdminAuth = (req: any, res: any, next: any) => {
-    if (!req.session?.adminUser?.isAuthenticated) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Admin authentication required" 
-      });
-    }
-    req.adminUser = req.session.adminUser;
-    next();
-  };
-  
   // Serve uploaded images statically
   app.use('/images', express.static(path.join(process.cwd(), 'public/uploads')));
   
@@ -426,8 +414,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get pending applications (admin only) - DEPRECATED: Use /api/admin/applications
-  app.get("/api/admin/pending-applications", requireAdminAuth, async (req, res) => {
+  // Get pending applications (admin only)
+  app.get("/api/admin/pending-applications", isAuthenticated, async (req, res) => {
+    if (req.user?.role !== "admin") {
+      return res.sendStatus(403);
+    }
+
     try {
       const applications = await storage.getPendingApplications();
       res.json(applications);
@@ -437,14 +429,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update application status (admin only) - DEPRECATED: Use POST routes for approve/reject
-  app.patch("/api/admin/applications/:id", requireAdminAuth, async (req, res) => {
+  // Update application status (admin only)
+  app.patch("/api/admin/applications/:id", isAuthenticated, async (req, res) => {
+    if (req.user?.role !== "admin") {
+      return res.sendStatus(403);
+    }
+
     try {
       const { status, adminNotes } = req.body;
       const application = await storage.updateMemberApplication(req.params.id, {
         status,
         adminNotes,
-        reviewedBy: req.adminUser.adminUserId,
+        reviewedBy: req.user.id,
         reviewedAt: new Date(),
       });
 
@@ -1368,6 +1364,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ isAuthenticated: false });
     }
   });
+
+  // Admin middleware
+  const requireAdminAuth = (req: any, res: any, next: any) => {
+    if (!req.session?.adminUser?.isAuthenticated) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Admin authentication required" 
+      });
+    }
+    req.adminUser = req.session.adminUser;
+    next();
+  };
 
   // Admin dashboard stats
   app.get("/api/admin/stats", requireAdminAuth, async (req, res) => {
