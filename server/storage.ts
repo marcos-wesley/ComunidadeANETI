@@ -2115,6 +2115,19 @@ export class DatabaseStorage implements IStorage {
   // Groups methods
   async createGroup(groupData: InsertGroup): Promise<Group> {
     const [created] = await db.insert(groups).values(groupData).returning();
+    
+    // Automatically add the moderator as an approved member
+    const memberId = `${created.moderatorId}-${created.id}-member`;
+    await db.insert(groupMembers).values({
+      id: memberId,
+      groupId: created.id,
+      userId: created.moderatorId,
+      role: 'moderator',
+      isActive: true,
+      status: 'approved',
+      joinedAt: new Date()
+    });
+    
     return created;
   }
 

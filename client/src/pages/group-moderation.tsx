@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupPostEditor } from "@/components/GroupPostEditor";
-import { UserCheck, UserX, Calendar, Users, Shield } from "lucide-react";
+import { UserCheck, UserX, Send, Calendar, Users, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
