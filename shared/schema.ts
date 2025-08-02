@@ -303,6 +303,24 @@ export const groupPosts = pgTable("group_posts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const groupPostLikes = pgTable("group_post_likes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  postId: varchar("post_id").references(() => groupPosts.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const groupPostComments = pgTable("group_post_comments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  postId: varchar("post_id").references(() => groupPosts.id).notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  mentionedUsers: json("mentioned_users").$type<string[]>().default([]),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Forums system within groups
 export const forums = pgTable("forums", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -648,7 +666,11 @@ export type InsertGroup = z.infer<typeof insertGroupSchema>;
 export type GroupMember = typeof groupMembers.$inferSelect;
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
 export type GroupPost = typeof groupPosts.$inferSelect;
+export type GroupPostLike = typeof groupPostLikes.$inferSelect;
+export type GroupPostComment = typeof groupPostComments.$inferSelect;
 export type InsertGroupPost = z.infer<typeof insertGroupPostSchema>;
+export type InsertGroupPostLike = z.infer<typeof insertGroupPostLikeSchema>;
+export type InsertGroupPostComment = z.infer<typeof insertGroupPostCommentSchema>;
 
 // Forums Schema and Types
 export const insertForumSchema = createInsertSchema(forums).omit({ id: true, createdAt: true, updatedAt: true });
@@ -735,6 +757,18 @@ export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
 });
 
 export const insertGroupPostSchema = createInsertSchema(groupPosts).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isActive: true,
+});
+
+export const insertGroupPostLikeSchema = createInsertSchema(groupPostLikes).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertGroupPostCommentSchema = createInsertSchema(groupPostComments).omit({
   id: true,
   createdAt: true,
   updatedAt: true,

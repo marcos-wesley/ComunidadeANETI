@@ -22,6 +22,8 @@ import {
   groups,
   groupMembers,
   groupPosts,
+  groupPostLikes,
+  groupPostComments,
   forums,
   forumTopics,
   forumReplies,
@@ -81,6 +83,10 @@ import {
   type InsertGroupMember,
   type GroupPost,
   type InsertGroupPost,
+  type GroupPostLike,
+  type InsertGroupPostLike,
+  type GroupPostComment,
+  type InsertGroupPostComment,
   type GroupWithDetails,
   type SelectForum,
   type InsertForum,
@@ -2908,6 +2914,112 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error deleting forum:", error);
       return false;
+    }
+  }
+
+  // Group post likes and comments methods
+  async toggleGroupPostLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
+    try {
+      // Check if like exists
+      const existingLike = await db
+        .select()
+        .from(groupPostLikes)
+        .where(and(eq(groupPostLikes.postId, postId), eq(groupPostLikes.userId, userId)))
+        .limit(1);
+
+      if (existingLike.length > 0) {
+        // Unlike - remove like
+        await db
+          .delete(groupPostLikes)
+          .where(and(eq(groupPostLikes.postId, postId), eq(groupPostLikes.userId, userId)));
+      } else {
+        // Like - add like
+        await db
+          .insert(groupPostLikes)
+          .values({ postId, userId });
+      }
+
+      // Count total likes
+      const likesCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(groupPostLikes)
+        .where(eq(groupPostLikes.postId, postId));
+
+      return {
+        liked: existingLike.length === 0,
+        likesCount: Number(likesCount[0]?.count || 0)
+      };
+    } catch (error) {
+      console.error("Error toggling group post like:", error);
+      throw error;
+    }
+  }
+
+  async getGroupPostComments(postId: string): Promise<any[]> {
+    try {
+      const comments = await db
+        .select({
+          id: groupPostComments.id,
+          content: groupPostComments.content,
+          createdAt: groupPostComments.createdAt,
+          author: {
+            id: users.id,
+            fullName: users.fullName,
+            username: users.username,
+            profilePicture: users.profilePicture
+          }
+        })
+        .from(groupPostComments)
+        .innerJoin(users, eq(groupPostComments.authorId, users.id))
+        .where(and(
+          eq(groupPostComments.postId, postId),
+          eq(groupPostComments.isActive, true)
+        ))
+        .orderBy(asc(groupPostComments.createdAt));
+
+      return comments;
+    } catch (error) {
+      console.error("Error fetching group post comments:", error);
+      throw error;
+    }
+  }
+
+  async createGroupPostComment(commentData: InsertGroupPostComment): Promise<GroupPostComment> {
+    try {
+      const [comment] = await db
+        .insert(groupPostComments)
+        .values(commentData)
+        .returning();
+      
+      return comment;
+    } catch (error) {
+      console.error("Error creating group post comment:", error);
+      throw error;
+    }
+  }
+
+  async getGroupPostCommentWithAuthor(commentId: string): Promise<any> {
+    try {
+      const [comment] = await db
+        .select({
+          id: groupPostComments.id,
+          content: groupPostComments.content,
+          createdAt: groupPostComments.createdAt,
+          author: {
+            id: users.id,
+            fullName: users.fullName,
+            username: users.username,
+            profilePicture: users.profilePicture
+          }
+        })
+        .from(groupPostComments)
+        .innerJoin(users, eq(groupPostComments.authorId, users.id))
+        .where(eq(groupPostComments.id, commentId));
+
+      return comment;
+    } catch (error) {
+      console.error("Error fetching group post comment with author:", error);
+      throw error;
     }
   }
 }
