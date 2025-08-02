@@ -178,9 +178,9 @@ export default function AdminPage() {
 
   // Dashboard filters
   const [dashboardFilters, setDashboardFilters] = useState({
-    plan: '',
-    state: '',
-    area: '',
+    plan: 'all',
+    state: 'all',
+    area: 'all',
     timeRange: '30' // days
   });
 
@@ -1263,7 +1263,7 @@ export default function AdminPage() {
                           <SelectValue placeholder="Todos os planos" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos os planos</SelectItem>
+                          <SelectItem value="all">Todos os planos</SelectItem>
                           {stats?.filterData?.plans?.map((plan) => (
                             <SelectItem key={plan} value={plan}>{plan}</SelectItem>
                           ))}
@@ -1281,7 +1281,7 @@ export default function AdminPage() {
                           <SelectValue placeholder="Todos os estados" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todos os estados</SelectItem>
+                          <SelectItem value="all">Todos os estados</SelectItem>
                           {stats?.filterData?.states?.map((state) => (
                             <SelectItem key={state} value={state}>{state}</SelectItem>
                           ))}
@@ -1299,7 +1299,7 @@ export default function AdminPage() {
                           <SelectValue placeholder="Todas as áreas" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Todas as áreas</SelectItem>
+                          <SelectItem value="all">Todas as áreas</SelectItem>
                           {stats?.filterData?.areas?.map((area) => (
                             <SelectItem key={area} value={area}>{area}</SelectItem>
                           ))}
@@ -1331,7 +1331,7 @@ export default function AdminPage() {
                     <Button 
                       variant="outline" 
                       size="sm"
-                      onClick={() => setDashboardFilters({ plan: '', state: '', area: '', timeRange: '30' })}
+                      onClick={() => setDashboardFilters({ plan: 'all', state: 'all', area: 'all', timeRange: '30' })}
                       className="flex items-center gap-2"
                     >
                       <X className="h-4 w-4" />
@@ -1339,40 +1339,40 @@ export default function AdminPage() {
                     </Button>
                     
                     <div className="text-sm text-gray-600">
-                      {Object.values(dashboardFilters).filter(v => v && v !== '30').length > 0 
-                        ? `${Object.values(dashboardFilters).filter(v => v && v !== '30').length} filtro(s) ativo(s)`
+                      {Object.values(dashboardFilters).filter(v => v && v !== '30' && v !== 'all').length > 0 
+                        ? `${Object.values(dashboardFilters).filter(v => v && v !== '30' && v !== 'all').length} filtro(s) ativo(s)`
                         : 'Nenhum filtro ativo'
                       }
                     </div>
                   </div>
 
                   {/* Indicadores Visuais dos Filtros Ativos */}
-                  {Object.entries(dashboardFilters).some(([key, value]) => value && !(key === 'timeRange' && value === '30')) && (
+                  {Object.entries(dashboardFilters).some(([key, value]) => value && !(key === 'timeRange' && value === '30') && value !== 'all') && (
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {dashboardFilters.plan && (
+                      {dashboardFilters.plan && dashboardFilters.plan !== 'all' && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           Plano: {dashboardFilters.plan}
                           <X 
                             className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setDashboardFilters(prev => ({ ...prev, plan: '' }))}
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, plan: 'all' }))}
                           />
                         </Badge>
                       )}
-                      {dashboardFilters.state && (
+                      {dashboardFilters.state && dashboardFilters.state !== 'all' && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           Estado: {dashboardFilters.state}
                           <X 
                             className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setDashboardFilters(prev => ({ ...prev, state: '' }))}
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, state: 'all' }))}
                           />
                         </Badge>
                       )}
-                      {dashboardFilters.area && (
+                      {dashboardFilters.area && dashboardFilters.area !== 'all' && (
                         <Badge variant="secondary" className="flex items-center gap-1">
                           Área: {dashboardFilters.area}
                           <X 
                             className="h-3 w-3 cursor-pointer" 
-                            onClick={() => setDashboardFilters(prev => ({ ...prev, area: '' }))}
+                            onClick={() => setDashboardFilters(prev => ({ ...prev, area: 'all' }))}
                           />
                         </Badge>
                       )}
