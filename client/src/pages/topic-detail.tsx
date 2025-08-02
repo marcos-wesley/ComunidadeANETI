@@ -127,14 +127,24 @@ export default function TopicDetailPage(): JSX.Element {
     enabled: !!topicId,
   });
 
-  // Check if user can reply (must be group member with active membership)
-  const { data: membership } = useQuery({
-    queryKey: [`/api/groups/${topic?.forumId}/membership`],
+  // Fetch forum details to get groupId
+  const { data: forum } = useQuery({
+    queryKey: [`/api/forums/${forumId}`],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/groups/${topic?.forumId}/membership`);
+      const response = await apiRequest("GET", `/api/forums/${forumId}`);
       return response.json();
     },
-    enabled: !!topic?.forumId,
+    enabled: !!forumId,
+  });
+
+  // Check if user can reply (must be group member with active membership)
+  const { data: membership } = useQuery({
+    queryKey: [`/api/groups/${forum?.groupId}/membership`],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/groups/${forum?.groupId}/membership`);
+      return response.json();
+    },
+    enabled: !!forum?.groupId,
   });
 
   const canReply = user && membership?.status === 'approved' && membership?.isActive && !topic?.isLocked;
