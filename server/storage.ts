@@ -19,6 +19,8 @@ import {
   conversationParticipants,
   messages,
   notifications,
+  groups,
+  groupMembers,
   type User, 
   type InsertUser, 
   type MembershipPlan, 
@@ -69,6 +71,11 @@ import {
   type ApplicationAppeal,
   type InsertApplicationAppeal,
   applicationAppeals,
+  type Group,
+  type InsertGroup,
+  type GroupMember,
+  type InsertGroupMember,
+  type GroupWithDetails,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
@@ -186,6 +193,14 @@ export interface IStorage {
   banUser(userId: string, adminId: string): Promise<void>;
   unbanUser(userId: string, adminId: string): Promise<void>;
   deleteUser(userId: string): Promise<void>;
+
+  // Groups methods
+  getAllGroups(): Promise<GroupWithDetails[]>;
+  getGroupById(id: string): Promise<GroupWithDetails | undefined>;
+  createGroup(group: InsertGroup): Promise<Group>;
+  updateGroup(id: string, updates: Partial<Group>): Promise<Group | undefined>;
+  deleteGroup(id: string): Promise<void>;
+  getUsersForGroupModeration(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
 
   sessionStore: any;
 }
@@ -1966,6 +1981,160 @@ export class DatabaseStorage implements IStorage {
 
   async getAllAdminUsers(): Promise<AdminUser[]> {
     return await db.select().from(adminUsers).where(eq(adminUsers.isActive, true)).orderBy(asc(adminUsers.fullName));
+  }
+
+  // Groups methods
+  async createGroup(groupData: InsertGroup): Promise<Group> {
+    const [created] = await db.insert(groups).values(groupData).returning();
+    return created;
+  }
+
+  async getAllGroups(): Promise<GroupWithDetails[]> {
+    const groupsData = await db
+      .select({
+        id: groups.id,
+        title: groups.title,
+        description: groups.description,
+        profilePicture: groups.profilePicture,
+        coverPhoto: groups.coverPhoto,
+        moderatorId: groups.moderatorId,
+        isPublic: groups.isPublic,
+        isActive: groups.isActive,
+        createdBy: groups.createdBy,
+        createdAt: groups.createdAt,
+        updatedAt: groups.updatedAt,
+        moderator: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          planName: users.planName,
+        },
+        creator: {
+          id: sql<string>`creator.id`,
+          fullName: sql<string>`creator.full_name`,
+          username: sql<string>`creator.username`,
+        }
+      })
+      .from(groups)
+      .leftJoin(users, eq(groups.moderatorId, users.id))
+      .leftJoin(sql`users as creator`, sql`groups.created_by = creator.id`)
+      .where(eq(groups.isActive, true))
+      .orderBy(desc(groups.createdAt));
+
+    // Get member count for each group
+    const groupsWithCounts = await Promise.all(
+      groupsData.map(async (group) => {
+        const [memberCount] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(groupMembers)
+          .where(and(
+            eq(groupMembers.groupId, group.id),
+            eq(groupMembers.isActive, true)
+          ));
+
+        return {
+          ...group,
+          _count: {
+            members: memberCount?.count || 0,
+          },
+        };
+      })
+    );
+
+    return groupsWithCounts;
+  }
+
+  async getGroupById(id: string): Promise<GroupWithDetails | undefined> {
+    const [groupData] = await db
+      .select({
+        id: groups.id,
+        title: groups.title,
+        description: groups.description,
+        profilePicture: groups.profilePicture,
+        coverPhoto: groups.coverPhoto,
+        moderatorId: groups.moderatorId,
+        isPublic: groups.isPublic,
+        isActive: groups.isActive,
+        createdBy: groups.createdBy,
+        createdAt: groups.createdAt,
+        updatedAt: groups.updatedAt,
+        moderator: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          planName: users.planName,
+        },
+        creator: {
+          id: sql<string>`creator.id`,
+          fullName: sql<string>`creator.full_name`,
+          username: sql<string>`creator.username`,
+        }
+      })
+      .from(groups)
+      .leftJoin(users, eq(groups.moderatorId, users.id))
+      .leftJoin(sql`users as creator`, sql`groups.created_by = creator.id`)
+      .where(and(
+        eq(groups.id, id),
+        eq(groups.isActive, true)
+      ));
+
+    if (!groupData) {
+      return undefined;
+    }
+
+    // Get member count
+    const [memberCount] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(groupMembers)
+      .where(and(
+        eq(groupMembers.groupId, id),
+        eq(groupMembers.isActive, true)
+      ));
+
+    return {
+      ...groupData,
+      _count: {
+        members: memberCount?.count || 0,
+      },
+    };
+  }
+
+  async updateGroup(id: string, updates: Partial<Group>): Promise<Group | undefined> {
+    const [updated] = await db
+      .update(groups)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(groups.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteGroup(id: string): Promise<void> {
+    await db
+      .update(groups)
+      .set({ isActive: false, updatedAt: new Date() })
+      .where(eq(groups.id, id));
+  }
+
+  async getUsersForGroupModeration(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]> {
+    return await db
+      .select({
+        id: users.id,
+        fullName: users.fullName,
+        username: users.username,
+        planName: users.planName,
+      })
+      .from(users)
+      .where(and(
+        eq(users.isActive, true),
+        eq(users.isApproved, true),
+        or(
+          eq(users.planName, 'Pleno'),
+          eq(users.planName, 'Sênior'),
+          eq(users.planName, 'Honra'),
+          eq(users.planName, 'Diretivo')
+        )
+      ))
+      .orderBy(asc(users.fullName));
   }
 }
 

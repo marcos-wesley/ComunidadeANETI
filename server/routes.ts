@@ -12,6 +12,7 @@ import {
   insertConversationSchema,
   insertMessageSchema,
   insertNotificationSchema,
+  insertGroupSchema,
   membershipPlans 
 } from "@shared/schema";
 import { db } from "./db";
@@ -1755,6 +1756,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to update member password" 
+      });
+    }
+  });
+
+  // Groups management routes (Admin only)
+  
+  // Get all groups
+  app.get("/api/admin/groups", requireAdminAuth, async (req, res) => {
+    try {
+      const groups = await storage.getAllGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch groups" 
+      });
+    }
+  });
+
+  // Create new group
+  app.post("/api/admin/groups", requireAdminAuth, async (req, res) => {
+    try {
+      const groupData = insertGroupSchema.parse(req.body);
+      
+      // Validate moderator is pleno/senior level
+      const moderator = await storage.getUserById(groupData.moderatorId);
+      if (!moderator || !['Pleno', 'Sênior', 'Honra', 'Diretivo'].includes(moderator.planName || '')) {
+        return res.status(400).json({
+          success: false,
+          message: "Moderador deve ser do nível Pleno, Sênior, Honra ou Diretivo"
+        });
+      }
+
+      const newGroup = await storage.createGroup({
+        ...groupData,
+        createdBy: req.adminUser.adminUserId
+      });
+
+      res.json({
+        success: true,
+        message: "Grupo criado com sucesso",
+        group: newGroup
+      });
+    } catch (error) {
+      console.error("Error creating group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create group" 
+      });
+    }
+  });
+
+  // Get eligible users for group moderation
+  app.get("/api/admin/groups/eligible-moderators", requireAdminAuth, async (req, res) => {
+    try {
+      const users = await storage.getUsersForGroupModeration();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching eligible moderators:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch eligible moderators" 
+      });
+    }
+  });
+
+  // Get single group details
+  app.get("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const group = await storage.getGroupById(req.params.id);
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          message: "Grupo não encontrado"
+        });
+      }
+      res.json(group);
+    } catch (error) {
+      console.error("Error fetching group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch group" 
+      });
+    }
+  });
+
+  // Update group
+  app.put("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
+    try {
+      const groupId = req.params.id;
+      const updateData = req.body;
+      
+      // If moderator is being changed, validate they are pleno/senior level
+      if (updateData.moderatorId) {
+        const moderator = await storage.getUserById(updateData.moderatorId);
+        if (!moderator || !['Pleno', 'Sênior', 'Honra', 'Diretivo'].includes(moderator.planName || '')) {
+          return res.status(400).json({
+            success: false,
+            message: "Moderador deve ser do nível Pleno, Sênior, Honra ou Diretivo"
+          });
+        }
+      }
+
+      const updatedGroup = await storage.updateGroup(groupId, updateData);
+      
+      if (!updatedGroup) {
+        return res.status(404).json({
+          success: false,
+          message: "Grupo não encontrado"
+        });
+      }
+
+      res.json({
+        success: true,
+        message: "Grupo atualizado com sucesso",
+        group: updatedGroup
+      });
+    } catch (error) {
+      console.error("Error updating group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update group" 
+      });
+    }
+  });
+
+  // Delete group (soft delete)
+  app.delete("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
+    try {
+      await storage.deleteGroup(req.params.id);
+      res.json({
+        success: true,
+        message: "Grupo excluído com sucesso"
+      });
+    } catch (error) {
+      console.error("Error deleting group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete group" 
       });
     }
   });

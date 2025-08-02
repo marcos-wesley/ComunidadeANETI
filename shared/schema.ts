@@ -265,6 +265,30 @@ export const messages = pgTable("messages", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Groups system
+export const groups = pgTable("groups", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  profilePicture: text("profile_picture"),
+  coverPhoto: text("cover_photo"),
+  moderatorId: varchar("moderator_id").references(() => users.id).notNull(),
+  isPublic: boolean("is_public").default(true), // true = público, false = privado (só membros)
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const groupMembers = pgTable("group_members", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  groupId: varchar("group_id").references(() => groups.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  role: text("role").default("member"), // member, moderator, admin
+  joinedAt: timestamp("joined_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+});
+
 // Notifications system
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -450,6 +474,32 @@ export const notificationsRelations = relations(notifications, ({ one }) => ({
   }),
 }));
 
+// Groups relations
+export const groupsRelations = relations(groups, ({ one, many }) => ({
+  moderator: one(users, {
+    fields: [groups.moderatorId],
+    references: [users.id],
+    relationName: "moderator",
+  }),
+  creator: one(users, {
+    fields: [groups.createdBy],
+    references: [users.id],
+    relationName: "creator",
+  }),
+  members: many(groupMembers),
+}));
+
+export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupMembers.groupId],
+    references: [groups.id],
+  }),
+  user: one(users, {
+    fields: [groupMembers.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -525,6 +575,20 @@ export type PostWithDetails = Post & {
   };
 };
 
+// Groups types
+export type Group = typeof groups.$inferSelect;
+export type InsertGroup = z.infer<typeof insertGroupSchema>;
+export type GroupMember = typeof groupMembers.$inferSelect;
+export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
+
+export type GroupWithDetails = Group & {
+  moderator: Pick<User, 'id' | 'fullName' | 'username' | 'planName'>;
+  creator: Pick<User, 'id' | 'fullName' | 'username'>;
+  _count: {
+    members: number;
+  };
+};
+
 export const insertMembershipPlanSchema = createInsertSchema(membershipPlans).omit({
   id: true,
   createdAt: true,
@@ -571,6 +635,20 @@ export const insertLanguageSchema = createInsertSchema(languages).omit({
 export const insertHighlightSchema = createInsertSchema(highlights).omit({
   id: true,
   createdAt: true,
+});
+
+// Groups insert schemas
+export const insertGroupSchema = createInsertSchema(groups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isActive: true,
+});
+
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
+  id: true,
+  joinedAt: true,
+  isActive: true,
 });
 
 // Chat insert schemas

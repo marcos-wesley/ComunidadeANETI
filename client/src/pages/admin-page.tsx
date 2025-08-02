@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
+import { GroupsManagement } from "@/components/admin/GroupsManagement";
 
 interface AdminUser {
   id: string;
@@ -52,7 +53,7 @@ interface AdminStats {
 export default function AdminPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members' | 'groups'>('overview');
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -221,7 +222,7 @@ export default function AdminPage() {
           </div>
         </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -233,6 +234,10 @@ export default function AdminPage() {
             <TabsTrigger value="members" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Membros</span>
+            </TabsTrigger>
+            <TabsTrigger value="groups" className="flex items-center space-x-2">
+              <Users className="h-4 w-4" />
+              <span>Grupos</span>
             </TabsTrigger>
           </TabsList>
 
@@ -512,6 +517,10 @@ export default function AdminPage() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="groups" className="mt-6">
+            <GroupsManagement />
           </TabsContent>
         </Tabs>
       </div>
