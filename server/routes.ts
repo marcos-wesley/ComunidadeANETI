@@ -1900,6 +1900,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Groups routes for members (authenticated users)
+  
+  // Get all active groups for members
+  app.get("/api/groups", isAuthenticated, async (req, res) => {
+    try {
+      const groups = await storage.getAllActiveGroups();
+      res.json(groups);
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch groups" 
+      });
+    }
+  });
+
+  // Request to join a group
+  app.post("/api/groups/:groupId/join", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      
+      // Check if user is eligible to join groups (not Público level)
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "Usuário não encontrado"
+        });
+      }
+
+      // Only Junior, Pleno, Sênior, Honra, and Diretivo can join private groups
+      const eligiblePlans = ['Junior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'];
+      if (!eligiblePlans.includes(user.planName || '')) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas membros Junior, Pleno, Sênior, Honra e Diretivo podem solicitar acesso aos grupos"
+        });
+      }
+
+      // Check if group exists
+      const group = await storage.getGroupById(groupId);
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          message: "Grupo não encontrado"
+        });
+      }
+
+      // Check if user is already a member
+      const existingMembership = await storage.getGroupMembership(groupId, userId);
+      if (existingMembership) {
+        return res.status(400).json({
+          success: false,
+          message: "Você já é membro deste grupo"
+        });
+      }
+
+      // Add user to group
+      await storage.joinGroup(groupId, userId);
+
+      res.json({
+        success: true,
+        message: "Solicitação de acesso enviada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error joining group:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to join group" 
+      });
+    }
+  });
+
+  // Get user's group memberships
+  app.get("/api/groups/my-memberships", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const memberships = await storage.getUserGroupMemberships(userId);
+      res.json(memberships);
+    } catch (error) {
+      console.error("Error fetching user memberships:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch memberships" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

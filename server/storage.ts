@@ -2136,6 +2136,94 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(asc(users.fullName));
   }
+
+  // Groups methods for members
+  async getAllActiveGroups(): Promise<GroupWithDetails[]> {
+    const groupsData = await db
+      .select({
+        id: groups.id,
+        title: groups.title,
+        description: groups.description,
+        profilePicture: groups.profilePicture,
+        coverPhoto: groups.coverPhoto,
+        moderatorId: groups.moderatorId,
+        isPublic: groups.isPublic,
+        isActive: groups.isActive,
+        createdBy: groups.createdBy,
+        createdAt: groups.createdAt,
+        updatedAt: groups.updatedAt,
+        moderator: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          planName: users.planName,
+        }
+      })
+      .from(groups)
+      .leftJoin(users, eq(groups.moderatorId, users.id))
+      .where(eq(groups.isActive, true))
+      .orderBy(asc(groups.title));
+
+    // Add member count for each group
+    const groupsWithDetails = await Promise.all(
+      groupsData.map(async (group) => {
+        const [memberCount] = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(groupMembers)
+          .where(and(
+            eq(groupMembers.groupId, group.id),
+            eq(groupMembers.isActive, true)
+          ));
+
+        return {
+          ...group,
+          _count: {
+            members: memberCount?.count || 0,
+          },
+        };
+      })
+    );
+
+    return groupsWithDetails;
+  }
+
+  async joinGroup(groupId: string, userId: string): Promise<GroupMember> {
+    const [membership] = await db
+      .insert(groupMembers)
+      .values({
+        groupId,
+        userId,
+        role: 'member',
+        isActive: true,
+        joinedAt: new Date()
+      })
+      .returning();
+
+    return membership;
+  }
+
+  async getGroupMembership(groupId: string, userId: string): Promise<GroupMember | undefined> {
+    const [membership] = await db
+      .select()
+      .from(groupMembers)
+      .where(and(
+        eq(groupMembers.groupId, groupId),
+        eq(groupMembers.userId, userId)
+      ));
+
+    return membership || undefined;
+  }
+
+  async getUserGroupMemberships(userId: string): Promise<GroupMember[]> {
+    return await db
+      .select()
+      .from(groupMembers)
+      .where(and(
+        eq(groupMembers.userId, userId),
+        eq(groupMembers.isActive, true)
+      ))
+      .orderBy(desc(groupMembers.joinedAt));
+  }
 }
 
 export const storage = new DatabaseStorage();
