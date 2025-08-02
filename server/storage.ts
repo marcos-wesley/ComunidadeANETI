@@ -2853,6 +2853,103 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Group post likes and comments
+  async toggleGroupPostLike(postId: string, userId: string): Promise<{ liked: boolean; likesCount: number }> {
+    // Check if user already liked this post
+    const [existingLike] = await db
+      .select()
+      .from(likes)
+      .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+
+    if (existingLike) {
+      // Remove like
+      await db
+        .delete(likes)
+        .where(and(eq(likes.postId, postId), eq(likes.userId, userId)));
+    } else {
+      // Add like
+      await db
+        .insert(likes)
+        .values({
+          id: `like-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          postId,
+          userId,
+        });
+    }
+
+    // Get total likes count
+    const likesCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(likes)
+      .where(eq(likes.postId, postId))
+      .then(result => result[0]?.count || 0);
+
+    return {
+      liked: !existingLike,
+      likesCount
+    };
+  }
+
+  async getGroupPostComments(postId: string): Promise<any[]> {
+    return await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          fullName: users.fullName,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.authorId, users.id))
+      .where(eq(comments.postId, postId))
+      .orderBy(asc(comments.createdAt));
+  }
+
+  async createGroupPostComment(commentData: {
+    postId: string;
+    authorId: string;
+    content: string;
+    mentionedUsers: string[];
+  }): Promise<any> {
+    const commentId = `comment-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const [comment] = await db
+      .insert(comments)
+      .values({
+        id: commentId,
+        postId: commentData.postId,
+        authorId: commentData.authorId,
+        content: commentData.content,
+        mentionedUsers: commentData.mentionedUsers,
+      })
+      .returning();
+    
+    return comment;
+  }
+
+  async getGroupPostCommentWithAuthor(commentId: string): Promise<any> {
+    const [comment] = await db
+      .select({
+        id: comments.id,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        author: {
+          id: users.id,
+          username: users.username,
+          fullName: users.fullName,
+          profilePicture: users.profilePicture,
+        }
+      })
+      .from(comments)
+      .leftJoin(users, eq(comments.authorId, users.id))
+      .where(eq(comments.id, commentId));
+    
+    return comment;
+  }
+
   // Forums methods
   async createForum(forumData: InsertForum): Promise<SelectForum> {
     const [forum] = await db

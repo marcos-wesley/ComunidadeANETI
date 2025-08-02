@@ -39,8 +39,6 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MarkdownRenderer } from "./MarkdownRenderer";
-import { ReactionSelector } from "./ReactionSelector";
-import { CommentSection } from "./CommentSection";
 
 export interface GroupPost {
   id: string;
@@ -77,7 +75,7 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
   const [isLiked, setIsLiked] = useState(false);
   const [likesCount, setLikesCount] = useState(0);
   const [commentsCount, setCommentsCount] = useState(0);
-  const [userReaction, setUserReaction] = useState<string | undefined>();
+
 
   // Check if current user can edit/delete this post (author or group moderator)
   const canModifyPost = user?.id === post.authorId || isGroupModerator;
@@ -174,18 +172,7 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
     deletePostMutation.mutate();
   };
 
-  const handleReaction = (reactionType: string) => {
-    if (!user) {
-      toast({
-        title: "Login necessário",
-        description: "Você precisa estar logado para reagir a posts.",
-        variant: "destructive",
-      });
-      return;
-    }
-    setUserReaction(prev => prev === reactionType ? undefined : reactionType);
-    likeMutation.mutate();
-  };
+
 
   const handleShare = () => {
     // TODO: Implement sharing functionality
@@ -323,11 +310,18 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
         {!isEditing && (
           <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
             <div className="flex items-center gap-4">
-              <ReactionSelector
-                currentReaction={userReaction}
-                onReact={handleReaction}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => likeMutation.mutate()}
                 disabled={likeMutation.isPending}
-              />
+                className={`gap-2 ${isLiked ? 'text-red-500 hover:text-red-600' : 'text-muted-foreground hover:text-red-500'}`}
+              >
+                <Heart className={`h-4 w-4 ${isLiked ? 'fill-current' : ''}`} />
+                <span className="text-xs">
+                  {likesCount > 0 ? `${likesCount} curtida${likesCount !== 1 ? 's' : ''}` : 'Curtir'}
+                </span>
+              </Button>
               
               <Button
                 variant="ghost"
@@ -352,25 +346,17 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
               </Button>
             </div>
 
-            {likesCount > 0 && (
-              <div className="text-xs text-muted-foreground">
-                {likesCount} curtida{likesCount !== 1 ? 's' : ''}
-              </div>
-            )}
+
           </div>
         )}
       </CardContent>
 
       {/* Comments Section */}
       {showComments && !isEditing && (
-        <div className="border-t border-gray-100 dark:border-gray-800">
-          <CommentSection
-            postId={post.id}
-            onUpdate={() => {
-              queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
-              onUpdate();
-            }}
-          />
+        <div className="border-t border-gray-100 dark:border-gray-800 p-4">
+          <div className="text-sm text-muted-foreground">
+            Seção de comentários em desenvolvimento
+          </div>
         </div>
       )}
 

@@ -2714,6 +2714,94 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Like/Unlike group post
+  app.post("/api/groups/:groupId/posts/:postId/like", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, postId } = req.params;
+      const userId = req.user!.id;
+
+      // Check if user is a member of the group
+      const membership = await storage.getGroupMembership(groupId, userId);
+      if (!membership || membership.status !== 'accepted') {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Você precisa ser membro do grupo para curtir posts" 
+        });
+      }
+
+      const result = await storage.toggleGroupPostLike(postId, userId);
+      res.json({
+        success: true,
+        liked: result.liked,
+        likes: result.likesCount
+      });
+    } catch (error) {
+      console.error("Error toggling group post like:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to toggle like" 
+      });
+    }
+  });
+
+  // Get comments for group post
+  app.get("/api/groups/:groupId/posts/:postId/comments", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, postId } = req.params;
+      const userId = req.user!.id;
+
+      // Check if user is a member of the group
+      const membership = await storage.getGroupMembership(groupId, userId);
+      if (!membership || membership.status !== 'accepted') {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Você precisa ser membro do grupo para ver comentários" 
+        });
+      }
+
+      const comments = await storage.getGroupPostComments(postId);
+      res.json(comments);
+    } catch (error) {
+      console.error("Error fetching group post comments:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Add comment to group post
+  app.post("/api/groups/:groupId/posts/:postId/comments", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, postId } = req.params;
+      const userId = req.user!.id;
+      const { content, mentionedUsers } = req.body;
+
+      // Check if user is a member of the group
+      const membership = await storage.getGroupMembership(groupId, userId);
+      if (!membership || membership.status !== 'accepted') {
+        return res.status(403).json({ 
+          success: false, 
+          message: "Você precisa ser membro do grupo para comentar" 
+        });
+      }
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: "Comment content is required" });
+      }
+
+      const comment = await storage.createGroupPostComment({
+        postId,
+        authorId: userId,
+        content,
+        mentionedUsers: mentionedUsers || [],
+      });
+
+      const commentWithAuthor = await storage.getGroupPostCommentWithAuthor(comment.id);
+      res.status(201).json(commentWithAuthor);
+    } catch (error) {
+      console.error("Error creating group post comment:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Forums routes
   // Get forums for a group
   app.get("/api/groups/:groupId/forums", isAuthenticated, async (req, res) => {
