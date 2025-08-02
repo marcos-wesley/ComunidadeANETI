@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield, MessageSquare, UserCheck, Settings } from "lucide-react";
-import { GroupFeed } from "@/components/groups/GroupFeed";
+import { ArrowLeft, Globe, Lock, Users, User, CheckCircle, Clock, Shield } from "lucide-react";
 
 interface Group {
   id: string;
@@ -40,25 +38,8 @@ interface GroupMembership {
   groupId: string;
   userId: string;
   role: string;
-  status: string;
   isActive: boolean;
   joinedAt: string;
-}
-
-interface GroupMember {
-  id: string;
-  userId: string;
-  role: string;
-  status: string;
-  isActive: boolean;
-  joinedAt: string;
-  user: {
-    id: string;
-    fullName: string;
-    username: string;
-    profilePicture: string | null;
-    planName: string | null;
-  };
 }
 
 export default function GroupDetail() {
@@ -68,47 +49,50 @@ export default function GroupDetail() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [joiningGroup, setJoiningGroup] = useState(false);
-  const [activeTab, setActiveTab] = useState("feed");
 
   const groupId = params.id;
 
   // Fetch group details
-  const { data: group, isLoading: groupLoading } = useQuery({
-    queryKey: [`/api/groups/${groupId}`],
-    enabled: !!groupId,
-  });
-
-  // Fetch user membership status
-  const { data: membership } = useQuery({
-    queryKey: [`/api/groups/${groupId}/membership`],
+  const { data: group, isLoading: groupLoading } = useQuery<Group>({
+    queryKey: ["/api/groups", groupId],
     enabled: !!groupId && !!user,
   });
 
-  // Fetch group members
-  const { data: members = [], isLoading: membersLoading } = useQuery({
-    queryKey: [`/api/groups/${groupId}/members`],
-    enabled: !!groupId && activeTab === "members",
+  // Fetch user's memberships
+  const { data: memberships = [] } = useQuery<GroupMembership[]>({
+    queryKey: ["/api/groups/my-memberships"],
+    enabled: !!user,
   });
 
   // Join group mutation
   const joinGroupMutation = useMutation({
-    mutationFn: () => apiRequest("POST", `/api/groups/${groupId}/join`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/membership`] });
-      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}`] });
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/groups/${groupId}/join`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data.success) {
+        toast({
+          title: "Sucesso",
+          description: data.message,
+        });
+        queryClient.invalidateQueries({ queryKey: ["/api/groups/my-memberships"] });
+      } else {
+        toast({
+          title: "Erro",
+          description: data.message,
+          variant: "destructive",
+        });
+      }
       setJoiningGroup(false);
-      toast({
-        title: "Sucesso",
-        description: "Solicitação enviada com sucesso!",
-      });
     },
     onError: (error: any) => {
-      setJoiningGroup(false);
       toast({
         title: "Erro",
         description: error.message || "Erro ao solicitar acesso ao grupo",
         variant: "destructive",
       });
+      setJoiningGroup(false);
     },
   });
 
@@ -117,26 +101,34 @@ export default function GroupDetail() {
     joinGroupMutation.mutate();
   };
 
-  const handleGoBack = () => {
-    setLocation("/groups");
+  // Check if user is member of the group
+  const isMemberOfGroup = () => {
+    return memberships.some(m => m.groupId === groupId && m.isActive);
   };
 
-  const isUserMember = membership && membership.isActive;
-  const isUserModerator = membership && (membership.role === 'moderator' || group?.moderatorId === user?.id);
-  const isUserAdmin = user?.role === 'admin';
-  const canPost = isUserModerator || isUserAdmin;
-  const canManage = isUserModerator || isUserAdmin;
+  // Check if user can join private groups
+  const canJoinPrivateGroups = () => {
+    const eligiblePlans = ['Junior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'];
+    return eligiblePlans.includes(user?.planName || '');
+  };
 
   if (groupLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="animate-pulse space-y-6">
-          <div className="h-6 w-24 bg-gray-200 rounded" />
-          <div className="h-48 bg-gray-200 rounded-lg" />
-          <div className="space-y-4">
-            <div className="h-4 w-full bg-gray-200 rounded" />
-            <div className="h-4 w-3/4 bg-gray-200 rounded" />
-            <div className="h-4 w-1/2 bg-gray-200 rounded" />
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Header Skeleton */}
+        <div className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600 animate-pulse"></div>
+        
+        <div className="max-w-4xl mx-auto px-6 -mt-20">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div className="flex items-start gap-6">
+              <div className="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse"></div>
+              <div className="flex-1">
+                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded mb-4 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 animate-pulse"></div>
+              </div>
+              <div className="w-32 h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -145,266 +137,230 @@ export default function GroupDetail() {
 
   if (!group) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Button
-          variant="ghost"
-          onClick={handleGoBack}
-          className="mb-6"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Voltar aos Grupos
-        </Button>
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-gray-500">Grupo não encontrado.</p>
-          </CardContent>
-        </Card>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Grupo não encontrado</h2>
+          <Button onClick={() => setLocation("/groups")}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar aos grupos
+          </Button>
+        </div>
       </div>
     );
   }
 
-  return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header */}
-      <Button
-        variant="ghost"
-        onClick={handleGoBack}
-        className="mb-6"
-      >
-        <ArrowLeft className="h-4 w-4 mr-2" />
-        Voltar aos Grupos
-      </Button>
+  const isMember = isMemberOfGroup();
+  const canJoin = group.isPublic || canJoinPrivateGroups();
 
-      {/* Group Header */}
-      <Card className="mb-6">
-        <div className="relative">
-          {group.coverPhoto && (
-            <div 
-              className="h-48 bg-cover bg-center rounded-t-lg"
-              style={{ backgroundImage: `url(${group.coverPhoto})` }}
-            />
-          )}
-          <CardContent className={`p-6 ${group.coverPhoto ? '-mt-16 relative z-10' : ''}`}>
-            <div className="flex flex-col md:flex-row md:items-start gap-6">
-              <Avatar className="h-24 w-24 border-4 border-white shadow-lg">
-                <AvatarImage src={group.profilePicture || undefined} />
-                <AvatarFallback className="text-2xl">
-                  {group.title.split(' ').map(word => word[0]).join('').toUpperCase()}
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Cover Photo Header */}
+      <div 
+        className="relative h-48 bg-gradient-to-r from-blue-500 to-purple-600"
+        style={{
+          backgroundImage: group.coverPhoto ? `url(${group.coverPhoto})` : undefined,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-black bg-opacity-30"></div>
+        
+        {/* Back Button */}
+        <div className="absolute top-6 left-6">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setLocation("/groups")}
+            className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Voltar
+          </Button>
+        </div>
+      </div>
+
+      {/* Group Info Card */}
+      <div className="max-w-4xl mx-auto px-6 -mt-20 relative z-10">
+        <Card className="bg-white dark:bg-gray-800 shadow-lg">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-6">
+              {/* Profile Picture */}
+              <Avatar className="w-24 h-24 border-4 border-white dark:border-gray-800 shadow-lg">
+                <AvatarImage 
+                  src={group.profilePicture || undefined} 
+                  alt={group.title}
+                />
+                <AvatarFallback className="bg-primary text-primary-foreground text-lg font-bold">
+                  {group.title.split(' ').map(word => word[0]).join('').substring(0, 2)}
                 </AvatarFallback>
               </Avatar>
-              
-              <div className="flex-1 space-y-4">
-                <div>
-                  <h1 className="text-3xl font-bold">{group.title}</h1>
-                  <p className="text-gray-600 mt-2">{group.description}</p>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                  <div className="flex items-center gap-1">
+              {/* Group Info */}
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-start gap-3 mb-3">
+                  <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {group.title}
+                  </h1>
+                  <Badge variant={group.isPublic ? "default" : "secondary"}>
                     {group.isPublic ? (
                       <>
-                        <Globe className="h-4 w-4" />
-                        <span>Grupo Público</span>
+                        <Globe className="w-3 h-3 mr-1" />
+                        Grupo
                       </>
                     ) : (
                       <>
-                        <Lock className="h-4 w-4" />
-                        <span>Grupo Privado</span>
+                        <Lock className="w-3 h-3 mr-1" />
+                        Privado
                       </>
                     )}
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="h-4 w-4" />
-                    <span>{group._count.members} membros</span>
-                  </div>
-                  {group.moderator && (
-                    <div className="flex items-center gap-1">
-                      <Shield className="h-4 w-4" />
-                      <span>Moderado por {group.moderator.fullName}</span>
-                    </div>
-                  )}
+                  </Badge>
                 </div>
 
-                {/* Membership Status and Actions */}
-                <div className="flex items-center gap-3">
-                  {!isUserMember ? (
-                    <Button
-                      onClick={handleJoinGroup}
-                      disabled={joiningGroup}
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      {joiningGroup ? "Enviando..." : "Solicitar Acesso"}
-                    </Button>
-                  ) : (
-                    <Badge variant="outline" className="text-green-600 border-green-600">
-                      <CheckCircle className="h-4 w-4 mr-1" />
-                      Membro
-                    </Badge>
-                  )}
+                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <div className="flex items-center gap-1">
+                    {group.isPublic ? (
+                      <Globe className="w-4 h-4" />
+                    ) : (
+                      <Lock className="w-4 h-4" />
+                    )}
+                    <span>{group.isPublic ? "Público" : "Privado"}</span>
+                  </div>
                   
-                  {membership && membership.status === 'pending' && (
-                    <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-                      <Clock className="h-4 w-4 mr-1" />
-                      Aguardando Aprovação
-                    </Badge>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <Users className="w-4 h-4" />
+                    <span>Grupo</span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <span>uma semana atrás ativo</span>
+                  </div>
                 </div>
+
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                  {group.description}
+                  <button className="text-primary hover:underline ml-2">
+                    Ver mais
+                  </button>
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <div className="flex-shrink-0">
+                {isMember ? (
+                  <Button size="lg" disabled className="bg-gray-100 text-gray-600">
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Membro
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    onClick={handleJoinGroup}
+                    disabled={!canJoin || joiningGroup}
+                    className={canJoin ? "bg-green-600 hover:bg-green-700 text-white" : ""}
+                  >
+                    {joiningGroup ? (
+                      <>
+                        <Clock className="w-4 h-4 mr-2 animate-spin" />
+                        Solicitando...
+                      </>
+                    ) : canJoin ? (
+                      <>
+                        <Users className="w-4 h-4 mr-2" />
+                        Solicitar Acesso
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 mr-2" />
+                        Acesso Restrito
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </div>
           </CardContent>
-        </div>
-      </Card>
+        </Card>
 
-      {/* Group Content Tabs */}
-      {isUserMember && (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="feed" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              Feed
-            </TabsTrigger>
-            <TabsTrigger value="members" className="flex items-center gap-2">
-              <UserCheck className="h-4 w-4" />
-              Membros
-            </TabsTrigger>
-            {canManage && (
-              <TabsTrigger value="management" className="flex items-center gap-2">
-                <Settings className="h-4 w-4" />
-                Gerenciamento
-              </TabsTrigger>
-            )}
-          </TabsList>
-
-          {/* Feed Tab */}
-          <TabsContent value="feed" className="space-y-6">
-            <GroupFeed
-              groupId={groupId!}
-              canPost={canPost}
-              currentUserId={user?.id || ""}
-            />
-          </TabsContent>
-
-          {/* Members Tab */}
-          <TabsContent value="members" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Membros do Grupo ({group._count.members})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {membersLoading ? (
-                  <div className="space-y-4">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="flex items-center space-x-3 animate-pulse">
-                        <div className="h-10 w-10 bg-gray-200 rounded-full" />
-                        <div className="space-y-2 flex-1">
-                          <div className="h-4 w-32 bg-gray-200 rounded" />
-                          <div className="h-3 w-24 bg-gray-200 rounded" />
-                        </div>
-                      </div>
-                    ))}
+        {/* Request Access Section */}
+        {!isMember && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Solicitar acesso
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                Você está solicitando se tornar um membro do grupo "{group.title}".
+              </p>
+              
+              {!canJoin && !group.isPublic && (
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-4">
+                  <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-200">
+                    <Shield className="w-4 h-4" />
+                    <span className="font-medium">Acesso Restrito</span>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {members.map((member: GroupMember) => (
-                      <div key={member.id} className="flex items-center justify-between p-3 rounded-lg border">
-                        <div className="flex items-center space-x-3">
-                          <Avatar>
-                            <AvatarImage src={member.user.profilePicture || undefined} />
-                            <AvatarFallback>
-                              {member.user.fullName.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-medium">{member.user.fullName}</p>
-                            <p className="text-sm text-gray-500">@{member.user.username}</p>
-                            {member.user.planName && (
-                              <Badge variant="outline" className="mt-1 text-xs">
-                                {member.user.planName}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {member.role === 'moderator' && (
-                            <Badge variant="outline" className="text-blue-600 border-blue-600">
-                              <Shield className="h-3 w-3 mr-1" />
-                              Moderador
-                            </Badge>
-                          )}
-                          <Badge variant={member.status === 'approved' ? 'default' : 'secondary'}>
-                            {member.status === 'approved' ? 'Aprovado' : 
-                             member.status === 'pending' ? 'Pendente' : 'Rejeitado'}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    Este é um grupo privado. Apenas membros Junior, Pleno, Sênior, Honra e Diretivo podem solicitar acesso.
+                  </p>
+                </div>
+              )}
 
-          {/* Management Tab */}
-          {canManage && (
-            <TabsContent value="management" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Settings className="h-5 w-5" />
-                    Gerenciamento do Grupo
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="text-center py-8 text-gray-500">
-                      <Settings className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                      <p>Funcionalidades de gerenciamento em desenvolvimento</p>
-                      <p className="text-sm mt-2">
-                        Em breve: aprovação de membros, configurações do grupo, moderação
-                      </p>
+              {group.moderator && (
+                <div className="flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Avatar className="w-10 h-10">
+                    <AvatarFallback>
+                      <User className="w-5 h-5" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <p className="font-medium text-sm">{group.moderator.fullName}</p>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="text-xs">
+                        Moderador
+                      </Badge>
+                      {group.moderator.planName && (
+                        <Badge variant="outline" className="text-xs">
+                          {group.moderator.planName}
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
-        </Tabs>
-      )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
-      {/* Non-member view */}
-      {!isUserMember && (
-        <Card>
-          <CardContent className="text-center py-12">
-            <Users className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-            <h3 className="text-xl font-semibold mb-2">Acesso Restrito</h3>
-            <p className="text-gray-600 mb-4">
-              Você precisa ser membro deste grupo para ver seu conteúdo.
-            </p>
-            {membership && membership.status === 'pending' ? (
-              <div className="text-center">
-                <Badge variant="outline" className="text-yellow-600 border-yellow-600">
-                  <Clock className="h-4 w-4 mr-1" />
-                  Aguardando Aprovação
-                </Badge>
-                <p className="text-sm text-gray-500 mt-2">
-                  Sua solicitação está sendo analisada pelos moderadores.
-                </p>
+        {/* Group Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-8">
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-primary">{group._count.members}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                Membro{group._count.members !== 1 ? 's' : ''}
               </div>
-            ) : (
-              <Button
-                onClick={handleJoinGroup}
-                disabled={joiningGroup}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {joiningGroup ? "Enviando..." : "Solicitar Acesso ao Grupo"}
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-primary">0</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-primary">
+                {group.isPublic ? "Público" : "Privado"}
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Visibilidade</div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

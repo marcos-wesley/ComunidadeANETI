@@ -285,47 +285,8 @@ export const groupMembers = pgTable("group_members", {
   groupId: varchar("group_id").references(() => groups.id).notNull(),
   userId: varchar("user_id").references(() => users.id).notNull(),
   role: text("role").default("member"), // member, moderator, admin
-  status: text("status").default("pending"), // pending, approved, rejected
   joinedAt: timestamp("joined_at").defaultNow(),
-  approvedAt: timestamp("approved_at"),
-  approvedBy: varchar("approved_by").references(() => users.id),
   isActive: boolean("is_active").default(true),
-});
-
-// Group posts/feed system
-export const groupPosts = pgTable("group_posts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  groupId: varchar("group_id").references(() => groups.id).notNull(),
-  authorId: varchar("author_id").references(() => users.id).notNull(),
-  content: text("content").notNull(),
-  imageUrl: text("image_url"),
-  attachmentUrl: text("attachment_url"),
-  attachmentName: text("attachment_name"),
-  postType: text("post_type").default("text"), // text, image, document, announcement
-  isPinned: boolean("is_pinned").default(false),
-  isDeleted: boolean("is_deleted").default(false),
-  deletedAt: timestamp("deleted_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
-export const groupPostLikes = pgTable("group_post_likes", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  postId: varchar("post_id").references(() => groupPosts.id).notNull(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
-
-export const groupPostComments = pgTable("group_post_comments", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  postId: varchar("post_id").references(() => groupPosts.id).notNull(),
-  authorId: varchar("author_id").references(() => users.id).notNull(),
-  content: text("content").notNull(),
-  replyToId: varchar("reply_to_id"),
-  isDeleted: boolean("is_deleted").default(false),
-  deletedAt: timestamp("deleted_at"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // Notifications system
@@ -537,52 +498,6 @@ export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
     fields: [groupMembers.userId],
     references: [users.id],
   }),
-  approver: one(users, {
-    fields: [groupMembers.approvedBy],
-    references: [users.id],
-    relationName: "approver",
-  }),
-}));
-
-export const groupPostsRelations = relations(groupPosts, ({ one, many }) => ({
-  group: one(groups, {
-    fields: [groupPosts.groupId],
-    references: [groups.id],
-  }),
-  author: one(users, {
-    fields: [groupPosts.authorId],
-    references: [users.id],
-  }),
-  likes: many(groupPostLikes),
-  comments: many(groupPostComments),
-}));
-
-export const groupPostLikesRelations = relations(groupPostLikes, ({ one }) => ({
-  post: one(groupPosts, {
-    fields: [groupPostLikes.postId],
-    references: [groupPosts.id],
-  }),
-  user: one(users, {
-    fields: [groupPostLikes.userId],
-    references: [users.id],
-  }),
-}));
-
-export const groupPostCommentsRelations = relations(groupPostComments, ({ one, many }) => ({
-  post: one(groupPosts, {
-    fields: [groupPostComments.postId],
-    references: [groupPosts.id],
-  }),
-  author: one(users, {
-    fields: [groupPostComments.authorId],
-    references: [users.id],
-  }),
-  replyTo: one(groupPostComments, {
-    fields: [groupPostComments.replyToId],
-    references: [groupPostComments.id],
-    relationName: "reply",
-  }),
-  replies: many(groupPostComments, { relationName: "reply" }),
 }));
 
 // Insert schemas
@@ -660,68 +575,17 @@ export type PostWithDetails = Post & {
   };
 };
 
-// Groups schemas
-export const insertGroupSchema = createInsertSchema(groups).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-
-export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
-  id: true,
-  joinedAt: true,
-  approvedAt: true,
-  status: true,
-});
-
-export const insertGroupPostSchema = createInsertSchema(groupPosts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  isDeleted: true,
-  deletedAt: true,
-});
-
-export const insertGroupPostLikeSchema = createInsertSchema(groupPostLikes).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertGroupPostCommentSchema = createInsertSchema(groupPostComments).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  isDeleted: true,
-  deletedAt: true,
-});
-
 // Groups types
 export type Group = typeof groups.$inferSelect;
 export type InsertGroup = z.infer<typeof insertGroupSchema>;
 export type GroupMember = typeof groupMembers.$inferSelect;
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
-export type GroupPost = typeof groupPosts.$inferSelect;
-export type InsertGroupPost = z.infer<typeof insertGroupPostSchema>;
-export type GroupPostLike = typeof groupPostLikes.$inferSelect;
-export type InsertGroupPostLike = z.infer<typeof insertGroupPostLikeSchema>;
-export type GroupPostComment = typeof groupPostComments.$inferSelect;
-export type InsertGroupPostComment = z.infer<typeof insertGroupPostCommentSchema>;
 
 export type GroupWithDetails = Group & {
   moderator: Pick<User, 'id' | 'fullName' | 'username' | 'planName'>;
   creator: Pick<User, 'id' | 'fullName' | 'username'>;
   _count: {
     members: number;
-  };
-};
-
-export type GroupPostWithDetails = GroupPost & {
-  author: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'>;
-  likes: (GroupPostLike & { user: Pick<User, 'id' | 'fullName' | 'username'> })[];
-  comments: (GroupPostComment & { author: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'> })[];
-  _count: {
-    likes: number;
-    comments: number;
   };
 };
 
@@ -773,7 +637,19 @@ export const insertHighlightSchema = createInsertSchema(highlights).omit({
   createdAt: true,
 });
 
+// Groups insert schemas
+export const insertGroupSchema = createInsertSchema(groups).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  isActive: true,
+});
 
+export const insertGroupMemberSchema = createInsertSchema(groupMembers).omit({
+  id: true,
+  joinedAt: true,
+  isActive: true,
+});
 
 // Chat insert schemas
 export const insertConversationSchema = createInsertSchema(conversations).omit({
