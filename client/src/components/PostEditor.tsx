@@ -282,7 +282,11 @@ export function PostEditor({ onPostCreated }: PostEditorProps): JSX.Element {
           const formData = new FormData();
           formData.append('image', file);
           
-          const uploadResponse = await apiRequest("POST", "/api/posts/upload-image", formData);
+          const uploadResponse = await fetch("/api/posts/upload-image", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
           const uploadData = await uploadResponse.json();
           
           if (uploadData.success) {

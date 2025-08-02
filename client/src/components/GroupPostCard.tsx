@@ -35,6 +35,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { MarkdownRenderer } from "./MarkdownRenderer";
 
 export interface GroupPost {
   id: string;
@@ -66,8 +67,8 @@ export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): 
   const [editContent, setEditContent] = useState(post.content);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  // Check if current user is moderator
-  const isModerator = user?.id && user.planName === "Diretivo"; // Simplified check
+  // Check if current user is moderator or author of the post
+  const isModerator = user?.id === post.authorId || user?.planName === "Diretivo";
 
   // Edit post mutation
   const editPostMutation = useMutation({
@@ -247,9 +248,7 @@ export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): 
           </div>
         ) : (
           <div className="space-y-3">
-            <p className="text-sm leading-relaxed whitespace-pre-wrap">
-              {post.content}
-            </p>
+            <MarkdownRenderer content={post.content} />
             
             {/* Media Display */}
             {post.mediaType === 'image' && post.mediaUrl && (

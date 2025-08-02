@@ -149,7 +149,11 @@ export function GroupPostEditor({ groupId, onPostCreated }: GroupPostEditorProps
           const formData = new FormData();
           formData.append('image', firstFile);
           
-          const uploadResponse = await apiRequest("POST", "/api/posts/upload-image", formData);
+          const uploadResponse = await fetch("/api/posts/upload-image", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+          });
           const uploadData = await uploadResponse.json();
           
           if (uploadData.success) {
@@ -158,10 +162,11 @@ export function GroupPostEditor({ groupId, onPostCreated }: GroupPostEditorProps
           } else {
             throw new Error(uploadData.error || 'Falha no upload da imagem');
           }
-        } catch (error) {
+        } catch (error: any) {
+          console.error("Upload error:", error);
           toast({
             title: "Erro no upload",
-            description: "Não foi possível fazer upload da imagem.",
+            description: error.message || "Não foi possível fazer upload da imagem.",
             variant: "destructive",
           });
           return;
