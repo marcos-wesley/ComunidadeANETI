@@ -2753,6 +2753,68 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async removeFromGroup(groupId: string, userId: string): Promise<boolean> {
+    try {
+      const [result] = await db
+        .update(groupMembers)
+        .set({ 
+          isActive: false,
+          status: 'removed',
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.userId, userId)
+        ))
+        .returning();
+
+      return !!result;
+    } catch (error) {
+      console.error("Error removing member from group:", error);
+      return false;
+    }
+  }
+
+  async banFromGroup(groupId: string, userId: string): Promise<boolean> {
+    try {
+      const [result] = await db
+        .update(groupMembers)
+        .set({ 
+          isActive: false,
+          status: 'banned',
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.userId, userId)
+        ))
+        .returning();
+
+      return !!result;
+    } catch (error) {
+      console.error("Error banning member from group:", error);
+      return false;
+    }
+  }
+
+  async isUserBannedFromGroup(groupId: string, userId: string): Promise<boolean> {
+    try {
+      const [membership] = await db
+        .select()
+        .from(groupMembers)
+        .where(and(
+          eq(groupMembers.groupId, groupId),
+          eq(groupMembers.userId, userId),
+          eq(groupMembers.status, 'banned')
+        ));
+
+      return !!membership;
+    } catch (error) {
+      console.error("Error checking group ban status:", error);
+      return false;
+    }
+  }
+
   // Remove member from group (for group moderation)
   async removeFromGroup(groupId: string, memberId: string): Promise<boolean> {
     try {

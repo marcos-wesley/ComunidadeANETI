@@ -2342,6 +2342,130 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Remove member from group (moderator action)
+  app.post("/api/groups/:groupId/members/:memberId/remove", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, memberId } = req.params;
+      const userId = req.user!.id;
+      
+      // Check if user is moderator of this group or has admin privileges
+      const isGroupModerator = await storage.isGroupModerator(groupId, userId);
+      const isAdmin = req.user?.planName === "Diretivo";
+      
+      if (!isGroupModerator && !isAdmin) {
+        return res.status(403).json({ success: false, message: "Acesso negado" });
+      }
+      
+      // Remove member from group (allows re-joining)
+      const success = await storage.removeFromGroup(groupId, memberId);
+      
+      if (success) {
+        return res.json({ 
+          success: true, 
+          message: "Membro expulso do grupo com sucesso" 
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Não foi possível expulsar o membro do grupo" 
+        });
+      }
+    } catch (error) {
+      console.error("Error removing member from group:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
+  // Ban member from group (moderator action)
+  app.post("/api/groups/:groupId/members/:memberId/ban", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, memberId } = req.params;
+      const userId = req.user!.id;
+      
+      // Check if user is moderator of this group or has admin privileges
+      const isGroupModerator = await storage.isGroupModerator(groupId, userId);
+      const isAdmin = req.user?.planName === "Diretivo";
+      
+      if (!isGroupModerator && !isAdmin) {
+        return res.status(403).json({ success: false, message: "Acesso negado" });
+      }
+      
+      // Ban member from group (blocks re-joining)
+      const success = await storage.banFromGroup(groupId, memberId);
+      
+      if (success) {
+        return res.json({ 
+          success: true, 
+          message: "Membro banido do grupo com sucesso" 
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Não foi possível banir o membro do grupo" 
+        });
+      }
+    } catch (error) {
+      console.error("Error banning member from group:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
+  // Send notification to group member (moderator action)
+  app.post("/api/groups/:groupId/members/:memberId/notify", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, memberId } = req.params;
+      const { message } = req.body;
+      const userId = req.user!.id;
+      
+      // Check if user is moderator of this group or has admin privileges
+      const isGroupModerator = await storage.isGroupModerator(groupId, userId);
+      const isAdmin = req.user?.planName === "Diretivo";
+      
+      if (!isGroupModerator && !isAdmin) {
+        return res.status(403).json({ success: false, message: "Acesso negado" });
+      }
+      
+      if (!message || !message.trim()) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Mensagem é obrigatória" 
+        });
+      }
+      
+      // Send notification to member
+      const notificationId = await storage.createNotification({
+        userId: memberId,
+        title: "Notificação da Moderação do Grupo",
+        message: message.trim(),
+        type: "group_moderation"
+      });
+      
+      if (notificationId) {
+        return res.json({ 
+          success: true, 
+          message: "Notificação enviada com sucesso" 
+        });
+      } else {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Não foi possível enviar a notificação" 
+        });
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Erro interno do servidor" 
+      });
+    }
+  });
+
   // Group moderation routes (for moderators)
   
   // Get pending group requests (moderator only)

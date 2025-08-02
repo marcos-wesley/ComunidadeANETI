@@ -80,44 +80,32 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
   // Check if current user is admin/moderator
   const hasAdminPrivileges = user?.planName === "Diretivo";
 
-  // Ban member mutation
-  const banMemberMutation = useMutation({
+  // Remove from group mutation (expulsar - allows re-joining)
+  const removeFromGroupMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
-      return response.json();
-    },
-    onSuccess: () => {
-      setShowBanDialog(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
-      onUpdate();
-      toast({
-        title: "Membro banido",
-        description: `${member.fullName} foi banido com sucesso.`,
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Não foi possível banir o membro.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Kick member mutation
-  const kickMemberMutation = useMutation({
-    mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/admin/members/${member.id}/kick`);
-      return response.json();
+      if (isGroupContext && groupId) {
+        const response = await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/remove`);
+        return response.json();
+      } else {
+        const response = await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
+        return response.json();
+      }
     },
     onSuccess: () => {
       setShowKickDialog(false);
-      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
-      onUpdate();
-      toast({
-        title: "Membro expulso",
-        description: `${member.fullName} foi expulso com sucesso.`,
-      });
+      if (isGroupContext && groupId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId, "members"] });
+        toast({
+          title: "Membro expulso",
+          description: `${member.fullName} foi expulso do grupo e pode solicitar participação novamente.`,
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+        toast({
+          title: "Membro banido",
+          description: `${member.fullName} foi banido da plataforma.`,
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -128,13 +116,56 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
     },
   });
 
+  // Ban from group mutation (banir - blocks re-joining)
+  const banFromGroupMutation = useMutation({
+    mutationFn: async () => {
+      if (isGroupContext && groupId) {
+        const response = await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/ban`);
+        return response.json();
+      } else {
+        const response = await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
+        return response.json();
+      }
+    },
+    onSuccess: () => {
+      setShowBanDialog(false);
+      if (isGroupContext && groupId) {
+        queryClient.invalidateQueries({ queryKey: ["/api/groups", groupId, "members"] });
+        toast({
+          title: "Membro banido",
+          description: `${member.fullName} foi banido do grupo e não poderá participar novamente.`,
+        });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+        toast({
+          title: "Membro banido",
+          description: `${member.fullName} foi banido da plataforma.`,
+        });
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Não foi possível banir o membro.",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Send notification mutation
   const notifyMemberMutation = useMutation({
     mutationFn: async (message: string) => {
-      const response = await apiRequest("POST", `/api/admin/members/${member.id}/notify`, {
-        message: message.trim()
-      });
-      return response.json();
+      if (isGroupContext && groupId) {
+        const response = await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/notify`, {
+          message: message.trim()
+        });
+        return response.json();
+      } else {
+        const response = await apiRequest("POST", `/api/admin/members/${member.id}/notify`, {
+          message: message.trim()
+        });
+        return response.json();
+      }
     },
     onSuccess: () => {
       setShowNotifyDialog(false);
@@ -154,11 +185,11 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
   });
 
   const handleBan = () => {
-    banMemberMutation.mutate();
+    banFromGroupMutation.mutate();
   };
 
   const handleKick = () => {
-    kickMemberMutation.mutate();
+    removeFromGroupMutation.mutate();
   };
 
   const handleNotify = () => {
@@ -320,7 +351,10 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
             <AlertDialogTitle>Banir membro</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza de que deseja banir {member.fullName}? 
-              Esta ação impedirá permanentemente o acesso do usuário à plataforma.
+              {isGroupContext 
+                ? "Esta ação impedirá permanentemente a participação no grupo." 
+                : "Esta ação impedirá permanentemente o acesso do usuário à plataforma."
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -328,9 +362,9 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
             <AlertDialogAction 
               onClick={handleBan}
               className="bg-red-600 hover:bg-red-700"
-              disabled={banMemberMutation.isPending}
+              disabled={banFromGroupMutation.isPending}
             >
-              {banMemberMutation.isPending ? "Banindo..." : "Banir"}
+              {banFromGroupMutation.isPending ? "Banindo..." : "Banir"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -343,7 +377,10 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
             <AlertDialogTitle>Expulsar membro</AlertDialogTitle>
             <AlertDialogDescription>
               Tem certeza de que deseja expulsar {member.fullName}? 
-              O usuário poderá se candidatar novamente no futuro.
+              {isGroupContext 
+                ? "O usuário poderá solicitar participação novamente." 
+                : "O usuário poderá se candidatar novamente no futuro."
+              }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -351,9 +388,9 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
             <AlertDialogAction 
               onClick={handleKick}
               className="bg-orange-600 hover:bg-orange-700"
-              disabled={kickMemberMutation.isPending}
+              disabled={removeFromGroupMutation.isPending}
             >
-              {kickMemberMutation.isPending ? "Expulsando..." : "Expulsar"}
+              {removeFromGroupMutation.isPending ? "Expulsando..." : "Expulsar"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
