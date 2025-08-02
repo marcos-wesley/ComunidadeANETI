@@ -158,16 +158,49 @@ export default function PendingApprovalDashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <div className={`rounded-lg p-4 ${
+              application.status === 'rejected' 
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                : application.status === 'documents_requested'
+                ? 'bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800'
+                : 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800'
+            }`}>
               <div className="flex items-start space-x-3">
-                <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                {application.status === 'rejected' ? (
+                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5" />
+                ) : application.status === 'documents_requested' ? (
+                  <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
+                ) : (
+                  <Clock className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
+                )}
                 <div>
-                  <h3 className="font-medium text-yellow-800 dark:text-yellow-200">
-                    Análise em Andamento
+                  <h3 className={`font-medium ${
+                    application.status === 'rejected' 
+                      ? 'text-red-800 dark:text-red-200'
+                      : application.status === 'documents_requested'
+                      ? 'text-blue-800 dark:text-blue-200'
+                      : 'text-yellow-800 dark:text-yellow-200'
+                  }`}>
+                    {application.status === 'rejected' 
+                      ? 'Aplicação Rejeitada'
+                      : application.status === 'documents_requested'
+                      ? 'Documentos Solicitados'
+                      : 'Análise em Andamento'
+                    }
                   </h3>
-                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                    Nossa equipe está revisando sua documentação e dados. Este processo pode levar até 5 dias úteis. 
-                    Você receberá uma notificação por email assim que sua aplicação for aprovada.
+                  <p className={`text-sm mt-1 ${
+                    application.status === 'rejected' 
+                      ? 'text-red-700 dark:text-red-300'
+                      : application.status === 'documents_requested'
+                      ? 'text-blue-700 dark:text-blue-300'
+                      : 'text-yellow-700 dark:text-yellow-300'
+                  }`}>
+                    {application.status === 'rejected' 
+                      ? 'Sua aplicação foi rejeitada. Você pode questionar esta decisão fornecendo informações adicionais.'
+                      : application.status === 'documents_requested'
+                      ? 'O administrador solicitou documentos adicionais. Envie-os através do botão abaixo.'
+                      : 'Nossa equipe está revisando sua documentação e dados. Este processo pode levar até 5 dias úteis. Você receberá uma notificação por email assim que sua aplicação for aprovada.'
+                    }
                   </p>
                 </div>
               </div>
