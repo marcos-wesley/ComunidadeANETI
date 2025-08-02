@@ -2497,36 +2497,14 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(groupPosts.createdAt));
   }
 
-  async deleteGroupPost(postId: string, moderatorId?: string): Promise<boolean> {
-    // If moderatorId is provided, allow moderator to delete any post in their group
-    if (moderatorId) {
-      // First check if the post exists and get the group ID
-      const [post] = await db
-        .select({ groupId: groupPosts.groupId })
-        .from(groupPosts)
-        .where(eq(groupPosts.id, postId));
-      
-      if (!post) return false;
-      
-      // Check if the user is moderator of this group
-      const isModerator = await this.isGroupModerator(post.groupId, moderatorId);
-      if (!isModerator) return false;
-      
-      // Moderator can delete any post in their group
-      const [updated] = await db
-        .update(groupPosts)
-        .set({ isActive: false })
-        .where(eq(groupPosts.id, postId))
-        .returning();
-      
-      return !!updated;
-    }
-    
-    // Original logic for regular users (delete only their own posts) - kept for compatibility
+  async deleteGroupPost(postId: string, authorId: string): Promise<boolean> {
     const [updated] = await db
       .update(groupPosts)
       .set({ isActive: false })
-      .where(eq(groupPosts.id, postId))
+      .where(and(
+        eq(groupPosts.id, postId),
+        eq(groupPosts.authorId, authorId)
+      ))
       .returning();
     
     return !!updated;

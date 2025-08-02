@@ -9,9 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { GroupPostEditor } from "@/components/GroupPostEditor";
-import { UserCheck, UserX, Send, Calendar, Users, Shield, Edit2, Trash2, MoreHorizontal } from "lucide-react";
+import { UserCheck, UserX, Send, Calendar, Users, Shield } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -157,36 +156,6 @@ export default function GroupModeration() {
 
   const handleRejectRequest = (requestId: string) => {
     rejectRequestMutation.mutate(requestId);
-  };
-
-  // Delete post mutation
-  const deletePostMutation = useMutation({
-    mutationFn: async (postId: string) => {
-      const response = await apiRequest("DELETE", `/api/groups/${groupId}/posts/${postId}`);
-      return response.json();
-    },
-    onSuccess: (data) => {
-      if (data.success) {
-        toast({
-          title: "Sucesso",
-          description: data.message,
-        });
-        queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
-      }
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Erro",
-        description: error.message || "Erro ao excluir publicação",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleDeletePost = (postId: string) => {
-    if (window.confirm("Tem certeza que deseja excluir esta publicação?")) {
-      deletePostMutation.mutate(postId);
-    }
   };
 
 
@@ -426,84 +395,26 @@ export default function GroupModeration() {
                       </Avatar>
                       
                       <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900 dark:text-white">
-                              {post.author.fullName}
-                            </h4>
-                            <span className="text-sm text-gray-500">
-                              @{post.author.username}
-                            </span>
-                            <span className="text-sm text-gray-400">•</span>
-                            <span className="text-sm text-gray-500">
-                              {formatDistanceToNow(new Date(post.createdAt), { 
-                                addSuffix: true, 
-                                locale: ptBR 
-                              })}
-                            </span>
-                          </div>
-                          
-                          {/* Post Actions Menu */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-8 w-8 p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
-                              >
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  // TODO: Implement edit functionality
-                                  toast({
-                                    title: "Em desenvolvimento",
-                                    description: "Funcionalidade de edição será implementada em breve.",
-                                  });
-                                }}
-                                className="flex items-center gap-2"
-                              >
-                                <Edit2 className="h-4 w-4" />
-                                Editar
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleDeletePost(post.id)}
-                                className="flex items-center gap-2 text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                                Excluir
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                        <div className="flex items-center gap-2 mb-2">
+                          <h4 className="font-semibold text-gray-900 dark:text-white">
+                            {post.author.fullName}
+                          </h4>
+                          <span className="text-sm text-gray-500">
+                            @{post.author.username}
+                          </span>
+                          <span className="text-sm text-gray-400">•</span>
+                          <span className="text-sm text-gray-500">
+                            {formatDistanceToNow(new Date(post.createdAt), { 
+                              addSuffix: true, 
+                              locale: ptBR 
+                            })}
+                          </span>
                         </div>
                         
                         <div className="prose prose-sm max-w-none">
                           <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
                             {post.content}
                           </p>
-                          
-                          {/* Media Display */}
-                          {post.mediaType === 'image' && post.mediaUrl && (
-                            <div className="mt-3">
-                              <img 
-                                src={post.mediaUrl} 
-                                alt="Post media" 
-                                className="max-w-full h-auto rounded-lg border"
-                              />
-                            </div>
-                          )}
-                          
-                          {post.mediaType === 'video' && post.mediaUrl && (
-                            <div className="mt-3">
-                              <video 
-                                src={post.mediaUrl} 
-                                controls 
-                                className="max-w-full h-auto rounded-lg border"
-                              />
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
