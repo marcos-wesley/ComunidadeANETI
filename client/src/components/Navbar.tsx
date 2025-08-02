@@ -38,7 +38,7 @@ import {
   Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import logoUrl from "@assets/logo-branca_1754061080203.png";
+import anetiLogo from "@/assets/aneti-logo.png";
 import { FloatingChat } from "./FloatingChat";
 import { NotificationBell } from "./NotificationBell";
 import { MessageNotificationBell } from "./MessageNotificationBell";
@@ -99,7 +99,7 @@ export function Navbar(): JSX.Element {
           <div className="flex items-center">
             <Link href="/feed">
               <div className="flex items-center cursor-pointer">
-                <img src="/aneti-logo.png" alt="ANETI Comunidade" className="h-10 w-auto" />
+                <img src={anetiLogo} alt="ANETI Comunidade" className="h-10 w-auto" />
               </div>
             </Link>
           </div>
