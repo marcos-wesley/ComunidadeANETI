@@ -64,6 +64,18 @@ export default function GroupDetail() {
     enabled: !!user && !!groupId,
   });
 
+  // Fetch group posts count
+  const { data: groupPosts = [] } = useQuery<any[]>({
+    queryKey: [`/api/groups/${groupId}/posts`],
+    enabled: !!groupId && !!user,
+  });
+
+  // Fetch group forums count
+  const { data: groupForums = [] } = useQuery<any[]>({
+    queryKey: [`/api/groups/${groupId}/forums`],
+    enabled: !!groupId && !!user,
+  });
+
   // Join group mutation
   const joinGroupMutation = useMutation({
     mutationFn: async () => {
@@ -398,6 +410,13 @@ export default function GroupDetail() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 mb-8">
           <Card>
             <CardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-primary">{groupPosts.length}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardContent className="p-4 text-center">
               <div className="text-2xl font-bold text-primary">{group._count.members}</div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
                 Membro{group._count.members !== 1 ? 's' : ''}
@@ -407,17 +426,8 @@ export default function GroupDetail() {
           
           <Card>
             <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">0</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Posts</div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-primary">
-                {group.isPublic ? "Público" : "Privado"}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">Visibilidade</div>
+              <div className="text-2xl font-bold text-primary">{groupForums.length}</div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">Fóruns</div>
             </CardContent>
           </Card>
         </div>
