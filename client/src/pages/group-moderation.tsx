@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupPostEditor } from "@/components/GroupPostEditor";
 import { GroupPostCard } from "@/components/GroupPostCard";
 import { MemberModerationCard, Member } from "@/components/MemberModerationCard";
-import { UserCheck, UserX, Send, Calendar, Users, Shield } from "lucide-react";
+import { UserCheck, UserX, Send, Calendar, Users, Shield, MessageSquare, Plus } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -248,7 +248,7 @@ export default function GroupModeration() {
       </div>
 
       <Tabs defaultValue="requests" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="requests" className="flex items-center gap-2">
             <UserCheck className="h-4 w-4" />
             Solicitações
@@ -265,6 +265,10 @@ export default function GroupModeration() {
           <TabsTrigger value="posts" className="flex items-center gap-2">
             <Send className="h-4 w-4" />
             Feed do Grupo
+          </TabsTrigger>
+          <TabsTrigger value="forums" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Fóruns
           </TabsTrigger>
         </TabsList>
 
@@ -466,7 +470,235 @@ export default function GroupModeration() {
             )}
           </div>
         </TabsContent>
+
+        <TabsContent value="forums" className="space-y-4">
+          <ForumManagement groupId={groupId!} isModerator={isModerator} />
+        </TabsContent>
       </Tabs>
+    </div>
+  );
+}
+
+// Forum Management Component
+interface ForumManagementProps {
+  groupId: string;
+  isModerator: boolean;
+}
+
+function ForumManagement({ groupId, isModerator }: ForumManagementProps) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isCreating, setIsCreating] = useState(false);
+  const [newForum, setNewForum] = useState({
+    title: "",
+    description: "",
+    color: "#3B82F6"
+  });
+
+  // Fetch forums for this group
+  const { data: forums = [], isLoading: forumsLoading } = useQuery({
+    queryKey: [`/api/groups/${groupId}/forums`],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/groups/${groupId}/forums`);
+      return response.json();
+    }
+  });
+
+  // Create forum mutation
+  const createForumMutation = useMutation({
+    mutationFn: async (forumData: typeof newForum) => {
+      const response = await apiRequest("POST", `/api/groups/${groupId}/forums`, forumData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/forums`] });
+      setNewForum({ title: "", description: "", color: "#3B82F6" });
+      setIsCreating(false);
+      toast({
+        title: "Fórum criado",
+        description: "O fórum foi criado com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao criar fórum",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete forum mutation
+  const deleteForumMutation = useMutation({
+    mutationFn: async (forumId: string) => {
+      const response = await apiRequest("DELETE", `/api/forums/${forumId}`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/forums`] });
+      toast({
+        title: "Fórum excluído",
+        description: "O fórum foi excluído com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao excluir fórum",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleCreateForum = () => {
+    if (!newForum.title.trim() || !newForum.description.trim()) {
+      toast({
+        title: "Erro",
+        description: "Título e descrição são obrigatórios",
+        variant: "destructive",
+      });
+      return;
+    }
+    createForumMutation.mutate(newForum);
+  };
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Fóruns do Grupo
+            </CardTitle>
+            {isModerator && (
+              <Button
+                onClick={() => setIsCreating(!isCreating)}
+                disabled={createForumMutation.isPending}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Criar Fórum
+              </Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {/* Create forum form */}
+          {isCreating && isModerator && (
+            <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+              <h3 className="font-semibold mb-4">Criar Novo Fórum</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Título</label>
+                  <input
+                    type="text"
+                    value={newForum.title}
+                    onChange={(e) => setNewForum({ ...newForum, title: e.target.value })}
+                    className="w-full p-2 border rounded-md"
+                    placeholder="Ex: Discussões Gerais"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Descrição</label>
+                  <textarea
+                    value={newForum.description}
+                    onChange={(e) => setNewForum({ ...newForum, description: e.target.value })}
+                    className="w-full p-2 border rounded-md h-20"
+                    placeholder="Descrição do fórum..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Cor</label>
+                  <input
+                    type="color"
+                    value={newForum.color}
+                    onChange={(e) => setNewForum({ ...newForum, color: e.target.value })}
+                    className="w-16 h-8 rounded border"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleCreateForum}
+                    disabled={createForumMutation.isPending}
+                  >
+                    {createForumMutation.isPending ? "Criando..." : "Criar Fórum"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsCreating(false)}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Forums list */}
+          {forumsLoading ? (
+            <div className="space-y-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div className="h-4 w-4 bg-gray-200 rounded"></div>
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : forums.length === 0 ? (
+            <div className="text-center py-8">
+              <MessageSquare className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Nenhum fórum criado
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                {isModerator 
+                  ? "Crie o primeiro fórum para organizar as discussões do grupo!"
+                  : "Ainda não há fóruns neste grupo."
+                }
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {forums.map((forum: any) => (
+                <div
+                  key={forum.id}
+                  className="flex items-center gap-4 p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <div
+                    className="w-4 h-4 rounded"
+                    style={{ backgroundColor: forum.color }}
+                  />
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">
+                      {forum.title}
+                    </h4>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {forum.description}
+                    </p>
+                  </div>
+                  {isModerator && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteForumMutation.mutate(forum.id)}
+                      disabled={deleteForumMutation.isPending}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      Excluir
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

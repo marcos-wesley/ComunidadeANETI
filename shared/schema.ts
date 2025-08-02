@@ -303,6 +303,48 @@ export const groupPosts = pgTable("group_posts", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Forums system within groups
+export const forums = pgTable("forums", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  groupId: varchar("group_id").references(() => groups.id).notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  iconUrl: text("icon_url"),
+  color: text("color").default("#3B82F6"), // Default blue color
+  position: integer("position").default(0), // For ordering forums
+  isActive: boolean("is_active").default(true),
+  isPublic: boolean("is_public").default(true), // If false, only group members can see
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const forumTopics = pgTable("forum_topics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  forumId: varchar("forum_id").references(() => forums.id).notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  isPinned: boolean("is_pinned").default(false),
+  isLocked: boolean("is_locked").default(false),
+  viewCount: integer("view_count").default(0),
+  lastReplyAt: timestamp("last_reply_at").defaultNow(),
+  lastReplyById: varchar("last_reply_by_id").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const forumReplies = pgTable("forum_replies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  topicId: varchar("topic_id").references(() => forumTopics.id).notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  content: text("content").notNull(),
+  replyToId: varchar("reply_to_id"), // For nested replies
+  isVisible: boolean("is_visible").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Notifications system
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -607,6 +649,21 @@ export type GroupMember = typeof groupMembers.$inferSelect;
 export type InsertGroupMember = z.infer<typeof insertGroupMemberSchema>;
 export type GroupPost = typeof groupPosts.$inferSelect;
 export type InsertGroupPost = z.infer<typeof insertGroupPostSchema>;
+
+// Forums Schema and Types
+export const insertForumSchema = createInsertSchema(forums).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertForum = z.infer<typeof insertForumSchema>;
+export type SelectForum = typeof forums.$inferSelect;
+
+// Forum Topics Schema and Types
+export const insertForumTopicSchema = createInsertSchema(forumTopics).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertForumTopic = z.infer<typeof insertForumTopicSchema>;
+export type SelectForumTopic = typeof forumTopics.$inferSelect;
+
+// Forum Replies Schema and Types
+export const insertForumReplySchema = createInsertSchema(forumReplies).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertForumReply = z.infer<typeof insertForumReplySchema>;
+export type SelectForumReply = typeof forumReplies.$inferSelect;
 
 export type GroupWithDetails = Group & {
   moderator: Pick<User, 'id' | 'fullName' | 'username' | 'planName'>;

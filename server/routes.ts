@@ -2714,6 +2714,142 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Forums routes
+  // Get forums for a group
+  app.get("/api/groups/:groupId/forums", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId } = req.params;
+      const forums = await storage.getGroupForums(groupId);
+      res.json(forums);
+    } catch (error) {
+      console.error("Error fetching forums:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch forums" 
+      });
+    }
+  });
+
+  // Create forum (moderator only)
+  app.post("/api/groups/:groupId/forums", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId } = req.params;
+      const userId = req.user.id;
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem criar fóruns"
+        });
+      }
+      
+      const forumData = {
+        ...req.body,
+        groupId,
+        createdBy: userId
+      };
+      
+      const forum = await storage.createForum(forumData);
+      res.json({
+        success: true,
+        forum,
+        message: "Fórum criado com sucesso"
+      });
+    } catch (error) {
+      console.error("Error creating forum:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create forum" 
+      });
+    }
+  });
+
+  // Update forum (moderator only)
+  app.put("/api/forums/:forumId", isAuthenticated, async (req, res) => {
+    try {
+      const { forumId } = req.params;
+      const userId = req.user.id;
+      
+      // Get forum to check group
+      const forum = await storage.getForum(forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(forum.groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem editar fóruns"
+        });
+      }
+      
+      const updatedForum = await storage.updateForum(forumId, req.body);
+      res.json({
+        success: true,
+        forum: updatedForum,
+        message: "Fórum atualizado com sucesso"
+      });
+    } catch (error) {
+      console.error("Error updating forum:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update forum" 
+      });
+    }
+  });
+
+  // Delete forum (moderator only)
+  app.delete("/api/forums/:forumId", isAuthenticated, async (req, res) => {
+    try {
+      const { forumId } = req.params;
+      const userId = req.user.id;
+      
+      // Get forum to check group
+      const forum = await storage.getForum(forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is moderator of this group
+      const isModerator = await storage.isGroupModerator(forum.groupId, userId);
+      if (!isModerator) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas moderadores podem excluir fóruns"
+        });
+      }
+      
+      const deleted = await storage.deleteForum(forumId);
+      if (!deleted) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: "Fórum excluído com sucesso"
+      });
+    } catch (error) {
+      console.error("Error deleting forum:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to delete forum" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

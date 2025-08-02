@@ -22,6 +22,9 @@ import {
   groups,
   groupMembers,
   groupPosts,
+  forums,
+  forumTopics,
+  forumReplies,
   type User, 
   type InsertUser, 
   type MembershipPlan, 
@@ -79,6 +82,12 @@ import {
   type GroupPost,
   type InsertGroupPost,
   type GroupWithDetails,
+  type SelectForum,
+  type InsertForum,
+  type SelectForumTopic,
+  type InsertForumTopic,
+  type SelectForumReply,
+  type InsertForumReply,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
@@ -220,6 +229,13 @@ export interface IStorage {
   getGroupPosts(groupId: string): Promise<(GroupPost & { author: { id: string; fullName: string; username: string; profilePicture?: string } })[]>;
   deleteGroupPost(postId: string, authorId: string): Promise<boolean>;
   leaveGroup(groupId: string, userId: string): Promise<boolean>;
+
+  // Forums methods
+  createForum(forumData: InsertForum): Promise<SelectForum>;
+  getGroupForums(groupId: string): Promise<SelectForum[]>;
+  getForum(forumId: string): Promise<SelectForum | undefined>;
+  updateForum(forumId: string, updates: Partial<SelectForum>): Promise<SelectForum | undefined>;
+  deleteForum(forumId: string): Promise<boolean>;
 
   sessionStore: any;
 }
@@ -2833,6 +2849,64 @@ export class DatabaseStorage implements IStorage {
       return !!updated;
     } catch (error) {
       console.error("Error removing member from group:", error);
+      return false;
+    }
+  }
+
+  // Forums methods
+  async createForum(forumData: InsertForum): Promise<SelectForum> {
+    const [forum] = await db
+      .insert(forums)
+      .values(forumData)
+      .returning();
+    
+    return forum;
+  }
+
+  async getGroupForums(groupId: string): Promise<SelectForum[]> {
+    return await db
+      .select()
+      .from(forums)
+      .where(and(
+        eq(forums.groupId, groupId),
+        eq(forums.isActive, true)
+      ))
+      .orderBy(asc(forums.position), asc(forums.createdAt));
+  }
+
+  async getForum(forumId: string): Promise<SelectForum | undefined> {
+    const [forum] = await db
+      .select()
+      .from(forums)
+      .where(eq(forums.id, forumId));
+    
+    return forum || undefined;
+  }
+
+  async updateForum(forumId: string, updates: Partial<SelectForum>): Promise<SelectForum | undefined> {
+    const [forum] = await db
+      .update(forums)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(forums.id, forumId))
+      .returning();
+    
+    return forum || undefined;
+  }
+
+  async deleteForum(forumId: string): Promise<boolean> {
+    try {
+      const [updated] = await db
+        .update(forums)
+        .set({ 
+          isActive: false,
+          updatedAt: new Date()
+        })
+        .where(eq(forums.id, forumId))
+        .returning();
+      
+      return !!updated;
+    } catch (error) {
+      console.error("Error deleting forum:", error);
       return false;
     }
   }
