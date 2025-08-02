@@ -3584,6 +3584,134 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete Dashboard API
+  app.get("/api/admin/dashboard/complete", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { period = '30', region = 'all' } = req.query;
+      
+      // Overview stats
+      const totalActiveMembers = await storage.getTotalActiveMembers();
+      const newMembersThisMonth = await storage.getNewMembersThisMonth();
+      const yearlyRevenue = await storage.getYearlyRevenue();
+      const pendingApprovals = await storage.getPendingApprovalsCount();
+      const pendingRenewals = await storage.getPendingRenewalsCount();
+      const incompleteDocuments = await storage.getIncompleteDocumentsCount();
+
+      // Temporal data
+      const monthlySignups = await storage.getMonthlySignups(12);
+      const monthlyPayments = await storage.getMonthlyPayments(12);
+      const renewalRates = await storage.getRenewalRates(12);
+      const churnRate = await storage.getChurnRate(12);
+      const rejectedMembers = await storage.getRejectedMembersMonthly(12);
+
+      // Geographic data
+      const membersByState = await storage.getMembersByState();
+      const membersByCity = await storage.getMembersByCity();
+      const topStates = await storage.getTopStates(10);
+      const newSignupsByRegion = await storage.getNewSignupsByRegion();
+
+      // Member profiles
+      const membersByLevel = await storage.getMembersByLevel();
+      const levelComparison = await storage.getLevelComparison();
+
+      // Revenue data
+      const revenueByPlan = await storage.getRevenueByPlan();
+      const monthlyRevenue = await storage.getMonthlyRevenue(12);
+      const averageMonthlyRevenue = await storage.getAverageMonthlyRevenue();
+      const paymentMethods = await storage.getPaymentMethodsStats();
+
+      // Approvals data
+      const approvedLast30Days = await storage.getApprovedLast30Days();
+      const rejectedLast30Days = await storage.getRejectedLast30Days();
+      const recentPending = await storage.getRecentPendingApplications(10);
+
+      // Engagement data
+      const activeMembersLast30Days = await storage.getActiveMembersLast30Days();
+      const membersWithCompleteProfile = await storage.getMembersWithCompleteProfile();
+      const completeProfilePercentage = await storage.getCompleteProfilePercentage();
+      const averagePostsPerMember = await storage.getAveragePostsPerMember();
+      const averageConnectionsPerMember = await storage.getAverageConnectionsPerMember();
+      const membersWithArticles = await storage.getMembersWithArticles();
+
+      // Forums data
+      const topicsCreatedThisMonth = await storage.getTopicsCreatedThisMonth();
+      const mostActiveGroups = await storage.getMostActiveGroups();
+      const membersByGroup = await storage.getMembersByGroup();
+      const topTopics = await storage.getTopTopics();
+
+      // Demographics
+      const membersByArea = await storage.getMembersByArea();
+      const membersByGender = await storage.getMembersByGender();
+      const averageExperience = await storage.getAverageExperience();
+      const experienceDistribution = await storage.getExperienceDistribution();
+
+      const dashboardData = {
+        overview: {
+          totalActiveMembers,
+          newMembersThisMonth,
+          yearlyRevenue,
+          pendingApprovals,
+          pendingRenewals,
+          incompleteDocuments,
+        },
+        temporal: {
+          monthlySignups,
+          monthlyPayments,
+          renewalRates,
+          churnRate,
+          rejectedMembers,
+        },
+        geographic: {
+          membersByState,
+          membersByCity,
+          topStates,
+          newSignupsByRegion,
+        },
+        memberProfiles: {
+          byLevel: membersByLevel,
+          levelComparison,
+        },
+        revenue: {
+          revenueByPlan,
+          monthlyRevenue,
+          averageMonthlyRevenue,
+          paymentMethods,
+        },
+        approvals: {
+          pendingCount: pendingApprovals,
+          approvedLast30Days,
+          rejectedLast30Days,
+          recentPending,
+        },
+        engagement: {
+          activeMembersLast30Days,
+          membersWithCompleteProfile,
+          completeProfilePercentage,
+          averagePostsPerMember,
+          averageConnectionsPerMember,
+          membersWithArticles,
+        },
+        forums: {
+          topicsCreatedThisMonth,
+          mostActiveGroups,
+          membersByGroup,
+          topTopics,
+        },
+        demographics: {
+          membersByArea,
+          membersByGender,
+          averageExperience,
+          experienceDistribution,
+        },
+      };
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Error fetching complete dashboard data:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard data" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

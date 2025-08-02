@@ -1,0 +1,121 @@
+📊 1. Visão Geral (Resumo de Destaques)
+Cards principais no topo:
+
+👥 Total de Membros Ativos
+
+📈 Novos Membros no Mês
+
+💸 Valor Arrecadado no Ano (Anuidade)
+
+🧾 Membros Aguardando Aprovação
+
+🔁 Renovações Pendentes
+
+⚠️ Documentações Incompletas
+
+📅 2. Evolução Temporal (Gráficos por Período)
+Gráficos de linha ou área com filtro de tempo:
+
+📆 Inscrições por Mês
+
+🪪 Anuidades pagas por mês
+
+🔄 Taxa de Renovação por mês
+
+📉 Churn (cancelamentos ou inativos)
+
+📥 Membros reprovados por mês
+
+🌎 3. Distribuição Geográfica
+Mapa interativo + gráficos:
+
+🗺️ Membros por Estado (UF)
+
+🏙️ Membros por Cidade
+
+📊 Top 5 Estados com mais membros
+
+📌 Novas inscrições por região no mês
+
+🧑‍💼 4. Membros por Perfil / Nível
+Gráfico de pizza ou barra:
+
+Público, Júnior, Pleno, Sênior, Honra, Diretivo
+
+Comparativo mês atual vs mês anterior
+
+💰 5. Anuidades e Receita
+💳 Receita total por plano
+
+💸 Evolução de arrecadação
+
+📆 Média de valor mensal arrecadado
+
+📊 Gráfico de barras por tipo de plano
+
+🔍 Anuidades por método de pagamento (ex: cartão, pix)
+
+🧾 6. Fluxo de Aprovações
+👤 Número de cadastros aguardando aprovação
+
+✅ Aprovados (últimos 30 dias)
+
+❌ Reprovados (últimos 30 dias)
+
+🔍 Lista dos últimos perfis pendentes com botão de ação
+
+🔍 7. Participação e Engajamento
+📌 Membros ativos na plataforma (últimos 30 dias)
+
+🧠 Membros com perfil completo (%)
+
+🗣️ Média de posts por membro
+
+👥 Número médio de conexões por membro
+
+🎓 Média de cursos concluídos
+
+📝 Membros que publicaram artigos
+
+🧑‍🏫 8. Dados de Treinamentos
+📚 Total de cursos disponíveis
+
+👨‍🎓 Membros matriculados por curso
+
+✅ Cursos concluídos por mês
+
+📜 Certificados emitidos por período
+
+🧵 9. Fóruns e Grupos
+💬 Tópicos criados por período
+
+🧩 Grupos mais ativos
+
+👨‍👨‍👧‍👦 Membros por grupo
+
+🔝 Tópicos mais visualizados
+
+🧰 10. Outros Indicadores Úteis
+🧭 Membros por área de atuação (Infra, Segurança, Dados, etc.)
+
+🆕 Novos membros por origem (ex: campanha, indicação, evento)
+
+🛑 Usuários bloqueados ou denunciados
+
+📤 Emails enviados / notificações no mês
+
+📁 11. Exportações e Relatórios
+Exportar tudo em Excel, PDF ou CSV:
+
+Relatório de membros
+
+Relatório financeiro (anuidades)
+
+Relatório de presença e cursos
+
+💡 Extras recomendados:
+📅 Calendário de vencimento de anuidades
+
+🔔 Alertas administrativos (ex: muitos cadastros sem aprovação)
+
+🧭 Dashboard personalizável por filtros (ex: por plano, região, tempo)
