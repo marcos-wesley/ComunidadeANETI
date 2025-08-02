@@ -2986,6 +2986,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all forums (accessible based on user membership and plan)
+  app.get("/api/forums", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUserById(userId);
+      
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "Usuário não encontrado"
+        });
+      }
+      
+      // Check if user has access to forums (Junior, Pleno, Senior, Honra, Diretivo)
+      const allowedPlans = ['Junior', 'Pleno', 'Senior', 'Honra', 'Diretivo'];
+      if (!user.planName || !allowedPlans.includes(user.planName)) {
+        return res.status(403).json({
+          success: false,
+          message: "Apenas membros Junior, Pleno, Senior, Honra e Diretivo podem acessar os fóruns"
+        });
+      }
+      
+      const forums = await storage.getAllForums();
+      
+      // For each forum, get additional data
+      const forumsWithData = await Promise.all(forums.map(async (forum) => {
+        const [group, topics, members] = await Promise.all([
+          storage.getGroup(forum.groupId),
+          storage.getForumTopics(forum.id),
+          storage.getGroupMembers(forum.groupId)
+        ]);
+        
+        // Check if user is member of this group
+        const membership = await storage.getGroupMembership(forum.groupId, userId);
+        const canAccess = membership && membership.status === 'approved' && membership.isActive;
+        
+        // Get last activity from topics
+        const lastActivity = topics.length > 0 
+          ? Math.max(...topics.map(t => new Date(t.lastReplyAt || t.createdAt).getTime()))
+          : new Date(forum.createdAt).getTime();
+        
+        return {
+          ...forum,
+          group: group ? { id: group.id, title: group.title } : null,
+          topicCount: topics.length,
+          memberCount: members.filter(m => m.status === 'approved' && m.isActive).length,
+          lastActivity: new Date(lastActivity),
+          canAccess
+        };
+      }));
+      
+      res.json(forumsWithData);
+    } catch (error) {
+      console.error("Error fetching forums:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch forums" 
+      });
+    }
+  });
+
   // Get forum topics
   app.get("/api/forums/:forumId/topics", isAuthenticated, async (req, res) => {
     try {

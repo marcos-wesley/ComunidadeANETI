@@ -242,6 +242,7 @@ export interface IStorage {
   // Forums methods
   createForum(forumData: InsertForum): Promise<SelectForum>;
   getGroupForums(groupId: string): Promise<SelectForum[]>;
+  getAllForums(): Promise<SelectForum[]>;
   getForum(forumId: string): Promise<SelectForum | undefined>;
   updateForum(forumId: string, updates: Partial<SelectForum>): Promise<SelectForum | undefined>;
   deleteForum(forumId: string): Promise<boolean>;
@@ -2925,6 +2926,14 @@ export class DatabaseStorage implements IStorage {
         eq(forums.groupId, groupId),
         eq(forums.isActive, true)
       ))
+      .orderBy(asc(forums.position), asc(forums.createdAt));
+  }
+
+  async getAllForums(): Promise<SelectForum[]> {
+    return await db
+      .select()
+      .from(forums)
+      .where(eq(forums.isActive, true))
       .orderBy(asc(forums.position), asc(forums.createdAt));
   }
 

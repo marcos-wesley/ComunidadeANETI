@@ -26,6 +26,7 @@ import GroupDetailPage from "./pages/group-detail";
 import GroupModerationPage from "./pages/group-moderation";
 import ForumDetailPage from "./pages/forum-detail";
 import TopicDetailPage from "./pages/topic-detail";
+import ForumsListPage from "./pages/forums-list";
 import { ProtectedRoute } from "./lib/protected-route";
 
 function MainLayout(): JSX.Element {
@@ -49,7 +50,7 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/groups/:id" component={GroupDetailPage} />
         <ProtectedRoute path="/forums/:forumId/topics/:topicId" component={TopicDetailPage} />
         <ProtectedRoute path="/forums/:forumId" component={ForumDetailPage} />
-        <ProtectedRoute path="/forums" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Fóruns - Em desenvolvimento</h1></div>} />
+        <ProtectedRoute path="/forums" component={ForumsListPage} />
         <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
         <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
 
