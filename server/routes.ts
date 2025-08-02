@@ -377,16 +377,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Registration application (public endpoint)
   app.post("/api/register-application", async (req, res) => {
     try {
-      // Create a temporary user first for the registration
+      // Hash the user's password for the registration
+      const { hashPassword } = await import("./auth");
+      const hashedPassword = await hashPassword(req.body.password || "temp-password");
+      
+      // Create a user with the actual registration data
       const tempUser = await storage.createUser({
-        fullName: req.body.fullName || "Usuário Temporário",
-        email: req.body.email || `temp-${Date.now()}@aneti.org`,
-        username: req.body.username || `temp-user-${Date.now()}`,
+        fullName: req.body.fullName,
+        email: req.body.email,
+        username: req.body.username,
         city: req.body.city || "",
         state: req.body.state || "",
         area: req.body.area || "",
         phone: req.body.phone || "",
-        password: "temp-password", // This will be set later
+        password: hashedPassword,
       });
 
       const validatedData = insertMemberApplicationSchema.parse({
