@@ -3143,7 +3143,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const replies = await storage.getTopicReplies(topicId);
+      const replies = await storage.getTopicReplies(topicId, userId);
       res.json(replies);
     } catch (error) {
       console.error("Error fetching topic replies:", error);
@@ -3313,6 +3313,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to fetch topic participants" 
+      });
+    }
+  });
+
+  // Like/unlike forum reply
+  app.post("/api/topics/replies/:replyId/like", isAuthenticated, async (req, res) => {
+    try {
+      const { replyId } = req.params;
+      const userId = req.user.id;
+      
+      // Get reply to check topic and forum access
+      const reply = await storage.getForumReply(replyId);
+      if (!reply) {
+        return res.status(404).json({
+          success: false,
+          message: "Resposta não encontrada"
+        });
+      }
+
+      const topic = await storage.getForumTopic(reply.topicId);
+      if (!topic) {
+        return res.status(404).json({
+          success: false,
+          message: "Tópico não encontrado"
+        });
+      }
+
+      const forum = await storage.getForum(topic.forumId);
+      if (!forum) {
+        return res.status(404).json({
+          success: false,
+          message: "Fórum não encontrado"
+        });
+      }
+      
+      // Check if user is member of the group
+      const membership = await storage.getGroupMembership(forum.groupId, userId);
+      if (!membership || membership.status !== 'approved' || !membership.isActive) {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro ativo para curtir respostas"
+        });
+      }
+      
+      const likeResult = await storage.likeForumReply(replyId, userId);
+      const isLiked = await storage.isReplyLikedByUser(replyId, userId);
+      
+      res.json({
+        success: true,
+        liked: isLiked,
+        message: isLiked ? "Resposta curtida" : "Curtida removida"
+      });
+    } catch (error) {
+      console.error("Error toggling reply like:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to toggle reply like" 
       });
     }
   });

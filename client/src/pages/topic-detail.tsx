@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 
 // Form schema for creating replies
 const createReplySchema = z.object({
@@ -58,6 +59,10 @@ interface TopicReply {
     username: string;
     profilePicture?: string;
   };
+  _count?: {
+    likes: number;
+  };
+  isLiked?: boolean;
 }
 
 interface TopicDetails {
@@ -197,6 +202,24 @@ export default function TopicDetailPage(): JSX.Element {
     },
   });
 
+  // Like reply mutation
+  const likeReplyMutation = useMutation({
+    mutationFn: async (replyId: string) => {
+      const response = await apiRequest("POST", `/api/topics/replies/${replyId}/like`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/topics/${topicId}/replies`] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao curtir resposta",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleCreateReply = (data: CreateReplyForm) => {
     createReplyMutation.mutate({
       ...data,
@@ -212,23 +235,73 @@ export default function TopicDetailPage(): JSX.Element {
     replyForm?.scrollIntoView({ behavior: "smooth" });
   };
 
-  const extractHashtags = (text: string): string[] => {
-    const hashtagRegex = /#[a-zA-Z0-9_]+/g;
-    return text.match(hashtagRegex) || [];
-  };
-
-  const renderContentWithHashtags = (content: string) => {
-    const hashtags = extractHashtags(content);
-    let renderedContent = content;
+  // Render nested replies with indentation
+  const renderReplies = (replies: TopicReply[], depth = 0) => {
+    const parentReplies = replies.filter(reply => !reply.replyToId || depth === 0);
     
-    hashtags.forEach(hashtag => {
-      renderedContent = renderedContent.replace(
-        hashtag,
-        `<span class="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400 font-medium"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path></svg>${hashtag.slice(1)}</span>`
+    return parentReplies.map((reply, index) => {
+      const childReplies = replies.filter(r => r.replyToId === reply.id);
+      
+      return (
+        <div key={reply.id} className={`${depth > 0 ? 'ml-8 mt-4 border-l-2 border-gray-200 dark:border-gray-700 pl-4' : ''}`}>
+          {index > 0 && depth === 0 && <Separator className="my-4" />}
+          <div className="flex gap-3">
+            <Avatar className="w-8 h-8">
+              <AvatarFallback className="text-xs">
+                {reply.author.fullName.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {reply.author.fullName}
+                </span>
+                <span className="text-xs text-gray-500">
+                  @{reply.author.username}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {formatDistanceToNow(new Date(reply.createdAt), { 
+                    addSuffix: true, 
+                    locale: ptBR 
+                  })}
+                </span>
+              </div>
+              <div className="prose dark:prose-invert prose-sm max-w-none mb-2">
+                <MarkdownRenderer content={reply.content} />
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleReplyTo(reply.id, reply.author.username)}
+                  disabled={!canReply}
+                >
+                  <Reply className="h-3 w-3 mr-1" />
+                  Responder
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => likeReplyMutation.mutate(reply.id)}
+                  disabled={!canReply || likeReplyMutation.isPending}
+                  className={reply.isLiked ? "text-red-500" : ""}
+                >
+                  <Heart className={`h-3 w-3 mr-1 ${reply.isLiked ? 'fill-current' : ''}`} />
+                  {reply._count?.likes || 0}
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          {/* Render child replies recursively */}
+          {childReplies.length > 0 && (
+            <div className="mt-3">
+              {renderReplies(childReplies, depth + 1)}
+            </div>
+          )}
+        </div>
       );
     });
-    
-    return { __html: renderedContent };
   };
 
   if (topicLoading) {
@@ -352,10 +425,9 @@ export default function TopicDetailPage(): JSX.Element {
           </div>
         </CardHeader>
         <CardContent>
-          <div 
-            className="prose dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={renderContentWithHashtags(topic.content)}
-          />
+          <div className="prose dark:prose-invert max-w-none">
+            <MarkdownRenderer content={topic.content} />
+          </div>
         </CardContent>
       </Card>
 
@@ -388,59 +460,9 @@ export default function TopicDetailPage(): JSX.Element {
               </p>
             </div>
           ) : (
-            <>
-              {replies.map((reply, index) => (
-                <div key={reply.id}>
-                  {index > 0 && <Separator className="my-4" />}
-                  <div className="flex gap-3">
-                    <Avatar className="w-8 h-8">
-                      <AvatarFallback className="text-xs">
-                        {reply.author.fullName.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-medium text-gray-900 dark:text-white">
-                          {reply.author.fullName}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          @{reply.author.username}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatDistanceToNow(new Date(reply.createdAt), { 
-                            addSuffix: true, 
-                            locale: ptBR 
-                          })}
-                        </span>
-                      </div>
-                      <div 
-                        className="prose dark:prose-invert prose-sm max-w-none mb-2"
-                        dangerouslySetInnerHTML={renderContentWithHashtags(reply.content)}
-                      />
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleReplyTo(reply.id, reply.author.username)}
-                          disabled={!canReply}
-                        >
-                          <Reply className="h-3 w-3 mr-1" />
-                          Responder
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          disabled={!canReply}
-                        >
-                          <Heart className="h-3 w-3 mr-1" />
-                          Curtir
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </>
+            <div className="space-y-4">
+              {renderReplies(replies)}
+            </div>
           )}
         </CardContent>
       </Card>
@@ -479,10 +501,12 @@ export default function TopicDetailPage(): JSX.Element {
                     <FormItem>
                       <FormLabel>Sua resposta</FormLabel>
                       <FormControl>
-                        <Textarea 
-                          placeholder="Escreva sua resposta... (Suporta Markdown e #hashtags)"
-                          rows={6}
-                          {...field}
+                        <MarkdownEditor
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Escreva sua resposta... (Suporta Markdown, imagens, links, código e hashtags)"
+                          rows={8}
+                          disabled={createReplyMutation.isPending}
                         />
                       </FormControl>
                       <FormMessage />

@@ -363,6 +363,13 @@ export const forumReplies = pgTable("forum_replies", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const forumReplyLikes = pgTable("forum_reply_likes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  replyId: varchar("reply_id").references(() => forumReplies.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Notifications system
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -686,6 +693,10 @@ export type SelectForumTopic = typeof forumTopics.$inferSelect;
 export const insertForumReplySchema = createInsertSchema(forumReplies).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertForumReply = z.infer<typeof insertForumReplySchema>;
 export type SelectForumReply = typeof forumReplies.$inferSelect;
+
+export const insertForumReplyLikeSchema = createInsertSchema(forumReplyLikes).omit({ id: true, createdAt: true });
+export type InsertForumReplyLike = z.infer<typeof insertForumReplyLikeSchema>;
+export type SelectForumReplyLike = typeof forumReplyLikes.$inferSelect;
 
 export type GroupWithDetails = Group & {
   moderator: Pick<User, 'id' | 'fullName' | 'username' | 'planName'>;

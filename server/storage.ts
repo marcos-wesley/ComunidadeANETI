@@ -27,6 +27,7 @@ import {
   forums,
   forumTopics,
   forumReplies,
+  forumReplyLikes,
   type User, 
   type InsertUser, 
   type MembershipPlan, 
@@ -94,6 +95,8 @@ import {
   type InsertForumTopic,
   type SelectForumReply,
   type InsertForumReply,
+  type InsertForumReplyLike,
+  type SelectForumReplyLike,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
@@ -242,6 +245,12 @@ export interface IStorage {
   getForum(forumId: string): Promise<SelectForum | undefined>;
   updateForum(forumId: string, updates: Partial<SelectForum>): Promise<SelectForum | undefined>;
   deleteForum(forumId: string): Promise<boolean>;
+
+  // Forum replies likes methods
+  getForumReply(replyId: string): Promise<SelectForumReply | undefined>;
+  likeForumReply(replyId: string, userId: string): Promise<SelectForumReplyLike>;
+  unlikeForumReply(replyId: string, userId: string): Promise<boolean>;
+  isReplyLikedByUser(replyId: string, userId: string): Promise<boolean>;
 
   sessionStore: any;
 }
@@ -3135,8 +3144,8 @@ export class DatabaseStorage implements IStorage {
     return reply;
   }
 
-  async getTopicReplies(topicId: string): Promise<any[]> {
-    return await db
+  async getTopicReplies(topicId: string, userId?: string): Promise<any[]> {
+    const replies = await db
       .select({
         id: forumReplies.id,
         topicId: forumReplies.topicId,
@@ -3160,6 +3169,40 @@ export class DatabaseStorage implements IStorage {
         eq(forumReplies.isVisible, true)
       ))
       .orderBy(asc(forumReplies.createdAt));
+
+    // Add like counts and user like status
+    const repliesWithLikes = await Promise.all(
+      replies.map(async (reply) => {
+        // Count likes for this reply
+        const likesCount = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(forumReplyLikes)
+          .where(eq(forumReplyLikes.replyId, reply.id));
+
+        // Check if current user liked this reply
+        let isLiked = false;
+        if (userId) {
+          const userLike = await db
+            .select()
+            .from(forumReplyLikes)
+            .where(and(
+              eq(forumReplyLikes.replyId, reply.id),
+              eq(forumReplyLikes.userId, userId)
+            ));
+          isLiked = userLike.length > 0;
+        }
+
+        return {
+          ...reply,
+          isLiked,
+          _count: {
+            likes: Number(likesCount[0]?.count || 0)
+          }
+        };
+      })
+    );
+
+    return repliesWithLikes;
   }
 
   async getTopicParticipantsCount(topicId: string): Promise<number> {
@@ -3285,6 +3328,73 @@ export class DatabaseStorage implements IStorage {
       console.error("Error fetching group post comment with author:", error);
       throw error;
     }
+  }
+
+  // Forum reply likes methods
+  async getForumReply(replyId: string): Promise<SelectForumReply | undefined> {
+    const [reply] = await db
+      .select()
+      .from(forumReplies)
+      .where(eq(forumReplies.id, replyId));
+    
+    return reply || undefined;
+  }
+
+  async likeForumReply(replyId: string, userId: string): Promise<SelectForumReplyLike> {
+    // Check if already liked
+    const existingLike = await db
+      .select()
+      .from(forumReplyLikes)
+      .where(and(
+        eq(forumReplyLikes.replyId, replyId),
+        eq(forumReplyLikes.userId, userId)
+      ));
+
+    if (existingLike.length > 0) {
+      // Remove like (unlike)
+      await db
+        .delete(forumReplyLikes)
+        .where(and(
+          eq(forumReplyLikes.replyId, replyId),
+          eq(forumReplyLikes.userId, userId)
+        ));
+      
+      return existingLike[0];
+    } else {
+      // Add like
+      const [like] = await db
+        .insert(forumReplyLikes)
+        .values({
+          replyId,
+          userId
+        })
+        .returning();
+      
+      return like;
+    }
+  }
+
+  async unlikeForumReply(replyId: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(forumReplyLikes)
+      .where(and(
+        eq(forumReplyLikes.replyId, replyId),
+        eq(forumReplyLikes.userId, userId)
+      ));
+    
+    return result.rowCount > 0;
+  }
+
+  async isReplyLikedByUser(replyId: string, userId: string): Promise<boolean> {
+    const [like] = await db
+      .select()
+      .from(forumReplyLikes)
+      .where(and(
+        eq(forumReplyLikes.replyId, replyId),
+        eq(forumReplyLikes.userId, userId)
+      ));
+    
+    return !!like;
   }
 }
 
