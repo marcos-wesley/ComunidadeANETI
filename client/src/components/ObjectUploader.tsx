@@ -5,9 +5,9 @@ import { Upload, Loader2, FileText } from "lucide-react";
 interface ObjectUploaderProps {
   getUploadParameters: () => Promise<{ method: string; url: string; }>;
   onUploadComplete: (result: any) => void;
-  allowedFileTypes: string[];
-  maxFiles: number;
-  restrictions: {
+  allowedFileTypes?: string[];
+  maxFiles?: number;
+  restrictions?: {
     maxFileSize: number;
   };
 }
@@ -18,9 +18,9 @@ interface ObjectUploaderProps {
 export function ObjectUploader({
   getUploadParameters,
   onUploadComplete,
-  allowedFileTypes,
-  maxFiles,
-  restrictions
+  allowedFileTypes = ['image/*'],
+  maxFiles = 1,
+  restrictions = { maxFileSize: 5 * 1024 * 1024 }
 }: ObjectUploaderProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
@@ -45,8 +45,9 @@ export function ObjectUploader({
     try {
       for (const file of files) {
         // Check file size
-        if (file.size > restrictions.maxFileSize) {
-          alert(`Arquivo ${file.name} é muito grande. Máximo: ${(restrictions.maxFileSize / (1024 * 1024)).toFixed(1)}MB`);
+        const maxSize = restrictions?.maxFileSize || (5 * 1024 * 1024); // Default 5MB
+        if (file.size > maxSize) {
+          alert(`Arquivo ${file.name} é muito grande. Máximo: ${(maxSize / (1024 * 1024)).toFixed(1)}MB`);
           continue;
         }
 
@@ -127,7 +128,7 @@ export function ObjectUploader({
             </span>
             <span className="text-xs text-muted-foreground">
               {allowedFileTypes?.includes('application/pdf') ? 'PDF ou imagem' : 'Imagem'} • 
-              Máx. {(restrictions.maxFileSize / (1024 * 1024)).toFixed(0)}MB •
+              Máx. {((restrictions?.maxFileSize || (5 * 1024 * 1024)) / (1024 * 1024)).toFixed(0)}MB •
               {maxFiles > 1 ? ` Até ${maxFiles} arquivos` : ' 1 arquivo'}
             </span>
           </div>
