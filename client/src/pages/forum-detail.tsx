@@ -39,11 +39,14 @@ import {
   ArrowLeft,
   Pin,
   Lock,
-  Eye
+  Eye,
+  Search,
+  Filter
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 // import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 // Form schema for creating topics
@@ -95,6 +98,38 @@ export default function ForumDetailPage(): JSX.Element {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
+
+  // Filter topics based on search term and tab
+  const filteredTopics = topics.filter((topic: ForumTopic) => {
+    const matchesSearch = topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         topic.author.fullName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    if (activeTab === "open") {
+      return matchesSearch && !topic.isLocked;
+    }
+    if (activeTab === "closed") {
+      return matchesSearch && topic.isLocked;
+    }
+    return matchesSearch; // "all" tab
+  });
+
+  // Sort topics: pinned first, then by last reply date
+  const sortedTopics = [...filteredTopics].sort((a, b) => {
+    if (a.isPinned !== b.isPinned) {
+      return a.isPinned ? -1 : 1;
+    }
+    return new Date(b.lastReplyAt || b.createdAt).getTime() - new Date(a.lastReplyAt || a.createdAt).getTime();
+  });
+
+  // Count topics by status
+  const topicCounts = {
+    all: topics.length,
+    open: topics.filter((t: ForumTopic) => !t.isLocked).length,
+    closed: topics.filter((t: ForumTopic) => t.isLocked).length,
+  };
 
   // Form setup
   const form = useForm<CreateTopicForm>({
@@ -321,10 +356,41 @@ export default function ForumDetailPage(): JSX.Element {
       {/* Topics List */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MessageSquare className="h-5 w-5" />
-            Tópicos
-          </CardTitle>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Tópicos
+            </CardTitle>
+            
+            {/* Search Bar */}
+            <div className="relative w-full sm:max-w-sm">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Buscar tópicos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+          
+          {/* Tabs for filtering */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="all" className="flex items-center gap-2">
+                <Filter className="h-4 w-4" />
+                Todos ({topicCounts.all})
+              </TabsTrigger>
+              <TabsTrigger value="open" className="flex items-center gap-2">
+                <MessageSquare className="h-4 w-4" />
+                Abertos ({topicCounts.open})
+              </TabsTrigger>
+              <TabsTrigger value="closed" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Fechados ({topicCounts.closed})
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent>
           {topicsLoading ? (
@@ -352,9 +418,40 @@ export default function ForumDetailPage(): JSX.Element {
                 </Button>
               )}
             </div>
+          ) : sortedTopics.length === 0 ? (
+            <div className="text-center py-8">
+              <Search className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Nenhum tópico encontrado
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {searchTerm 
+                  ? `Nenhum tópico corresponde à busca "${searchTerm}".`
+                  : `Nenhum tópico ${activeTab === 'open' ? 'aberto' : 'fechado'} encontrado.`
+                }
+              </p>
+              {searchTerm && (
+                <Button 
+                  onClick={() => setSearchTerm("")}
+                  variant="outline"
+                >
+                  Limpar busca
+                </Button>
+              )}
+            </div>
           ) : (
             <div className="space-y-3">
-              {topics.map((topic) => (
+              {/* Show results count */}
+              {(searchTerm || activeTab !== 'all') && (
+                <div className="text-sm text-gray-600 dark:text-gray-400 border-b pb-2">
+                  {sortedTopics.length} tópico{sortedTopics.length !== 1 ? 's' : ''} 
+                  {searchTerm && ` encontrado${sortedTopics.length !== 1 ? 's' : ''} para "${searchTerm}"`}
+                  {activeTab === 'open' && ' aberto' + (sortedTopics.length !== 1 ? 's' : '')}
+                  {activeTab === 'closed' && ' fechado' + (sortedTopics.length !== 1 ? 's' : '')}
+                </div>
+              )}
+              
+              {sortedTopics.map((topic: ForumTopic) => (
                 <div
                   key={topic.id}
                   className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
