@@ -398,23 +398,6 @@ export const notifications = pgTable("notifications", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// Admin notification broadcasts table
-export const adminNotificationBroadcasts = pgTable("admin_notification_broadcasts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  adminId: varchar("admin_id").references(() => users.id).notNull(), // who sent the notification
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  actionUrl: text("action_url"), // optional link
-  targetType: text("target_type").notNull(), // 'all_members', 'group_members', 'plan_members', 'specific_users'
-  targetValue: text("target_value"), // group ID, plan ID, or comma-separated user IDs
-  sentToCount: integer("sent_to_count").default(0), // how many users received this
-  priority: text("priority").default("normal"), // low, normal, high
-  scheduledFor: timestamp("scheduled_for"), // for future scheduling
-  status: text("status").default("sent"), // draft, scheduled, sent, failed
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
-
 // Application appeals/responses table
 export const applicationAppeals = pgTable("application_appeals", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -444,7 +427,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   createdConversations: many(conversations),
   receivedNotifications: many(notifications, { relationName: "user" }),
   triggeredNotifications: many(notifications, { relationName: "actor" }),
-  sentBroadcasts: many(adminNotificationBroadcasts),
 }));
 
 export const memberApplicationsRelations = relations(memberApplications, ({ one, many }) => ({
@@ -530,13 +512,6 @@ export const commentsRelations = relations(comments, ({ one }) => ({
   }),
   author: one(users, {
     fields: [comments.authorId],
-    references: [users.id],
-  }),
-}));
-
-export const adminNotificationBroadcastsRelations = relations(adminNotificationBroadcasts, ({ one }) => ({
-  admin: one(users, {
-    fields: [adminNotificationBroadcasts.adminId],
     references: [users.id],
   }),
 }));
@@ -730,20 +705,6 @@ export type InsertForumReply = z.infer<typeof insertForumReplySchema>;
 export type SelectForumReply = typeof forumReplies.$inferSelect;
 
 export const insertForumReplyLikeSchema = createInsertSchema(forumReplyLikes).omit({ id: true, createdAt: true });
-
-// Admin notification broadcast schema
-export const insertAdminNotificationBroadcastSchema = createInsertSchema(adminNotificationBroadcasts).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-  sentToCount: true,
-  status: true,
-});
-
-// Admin notification broadcast types
-export type AdminNotificationBroadcast = typeof adminNotificationBroadcasts.$inferSelect;
-export type InsertAdminNotificationBroadcast = z.infer<typeof insertAdminNotificationBroadcastSchema>;
-
 export type InsertForumReplyLike = z.infer<typeof insertForumReplyLikeSchema>;
 export type SelectForumReplyLike = typeof forumReplyLikes.$inferSelect;
 
