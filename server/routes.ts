@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, isAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, isAdminAuthenticated } from "./auth";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -387,7 +387,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         area: req.body.area || "",
         phone: req.body.phone || "",
         password: "temp-password", // This will be set later
-        isApproved: false,
       });
 
       const validatedData = insertMemberApplicationSchema.parse({
@@ -430,11 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update application status (admin only)
-  app.patch("/api/admin/applications/:id", isAuthenticated, async (req, res) => {
-    if (req.user?.role !== "admin") {
-      return res.sendStatus(403);
-    }
-
+  app.patch("/api/admin/applications/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const { status, adminNotes } = req.body;
       const application = await storage.updateMemberApplication(req.params.id, {
@@ -448,7 +443,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Application not found" });
       }
 
-      // If approved, update user status
+      // If approved, update user status and create a proper member
       if (status === "approved") {
         await storage.updateUser(application.userId, { isApproved: true });
       }
@@ -456,6 +451,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(application);
     } catch (error) {
       console.error("Error updating application:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Approve application (admin only)
+  app.post("/api/admin/applications/:id/approve", isAdminAuthenticated, async (req, res) => {
+    try {
+      const application = await storage.updateMemberApplication(req.params.id, {
+        status: 'approved',
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+      });
+
+      if (!application) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      // Update user status to approved
+      await storage.updateUser(application.userId, { isApproved: true });
+
+      res.json({ message: "Application approved successfully", application });
+    } catch (error) {
+      console.error("Error approving application:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Reject application with notes (admin only)
+  app.post("/api/admin/applications/:id/reject", isAdminAuthenticated, async (req, res) => {
+    try {
+      const { reason, requestDocuments } = req.body;
+      const status = requestDocuments ? 'documents_requested' : 'rejected';
+      
+      const application = await storage.updateMemberApplication(req.params.id, {
+        status,
+        adminNotes: reason,
+        reviewedBy: req.user.id,
+        reviewedAt: new Date(),
+      });
+
+      if (!application) {
+        return res.status(404).json({ error: "Application not found" });
+      }
+
+      const message = requestDocuments 
+        ? "Documents requested successfully" 
+        : "Application rejected successfully";
+
+      res.json({ message, application });
+    } catch (error) {
+      console.error("Error processing application:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

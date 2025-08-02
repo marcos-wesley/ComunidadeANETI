@@ -143,9 +143,19 @@ export function setupAuth(app: Express) {
 }
 
 // Middleware to check if user is authenticated
-export function isAuthenticated(req: any, res: any, next: any) {
+export const isAuthenticated = (req: any, res: any, next: any) => {
   if (req.isAuthenticated()) {
     return next();
   }
   res.sendStatus(401);
-}
+};
+
+// Middleware to check if user is admin
+export const isAdminAuthenticated = (req: any, res: any, next: any) => {
+  if (req.session?.adminUser) {
+    req.user = req.session.adminUser;
+    return next();
+  }
+  res.sendStatus(401);
+};
+
