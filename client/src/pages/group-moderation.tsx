@@ -402,7 +402,7 @@ export default function GroupModeration() {
                     <MemberModerationCard
                       key={member.id}
                       member={member}
-                      canModerate={user?.planName === "Diretivo"}
+                      canModerate={isModerator || user?.planName === "Diretivo"}
                       isGroupContext={true}
                       groupId={groupId}
                     />
