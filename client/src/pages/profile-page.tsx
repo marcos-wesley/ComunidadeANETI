@@ -294,14 +294,15 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             src={`http://localhost:5000${profile.coverPhoto}?v=${Date.now()}`} 
             alt="Foto de capa" 
             className="w-full h-full object-cover"
+            style={{ position: 'absolute', top: 0, left: 0, zIndex: 5 }}
+            onLoad={() => console.log('Foto de capa carregada com sucesso')}
             onError={(e) => {
               console.error('Erro ao carregar imagem de capa:', profile.coverPhoto);
-              e.currentTarget.style.display = 'none';
             }}
           />
         )}
         {isOwnProfile && (
-          <div className="absolute top-4 right-4 flex gap-2">
+          <div className="absolute top-4 right-4 flex gap-2 z-20">
             <CoverPhotoUploader />
             <Button 
               variant="secondary" 
@@ -318,22 +319,23 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
       <CardContent className="relative px-6 pt-20 pb-6">
         {/* Profile Picture */}
         <div className="absolute -top-20 left-6">
-          <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg">
+          <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg z-30">
             {profile.profilePicture ? (
               <img 
                 src={`http://localhost:5000${profile.profilePicture}?v=${Date.now()}`} 
                 alt={profile.fullName}
                 className="w-full h-full rounded-full object-cover"
+                style={{ position: 'absolute', top: 0, left: 0, zIndex: 10 }}
+                onLoad={() => console.log('Foto de perfil carregada com sucesso')}
                 onError={(e) => {
                   console.error('Erro ao carregar foto de perfil:', profile.profilePicture);
-                  e.currentTarget.style.display = 'none';
                 }}
               />
             ) : (
-              getInitials(profile.fullName)
+              <span className="relative z-20">{getInitials(profile.fullName)}</span>
             )}
             {isOwnProfile && (
-              <div className="absolute bottom-2 right-2">
+              <div className="absolute bottom-2 right-2 z-40">
                 <ProfilePictureUploader />
               </div>
             )}
