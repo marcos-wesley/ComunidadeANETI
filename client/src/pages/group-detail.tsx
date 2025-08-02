@@ -477,6 +477,8 @@ export default function GroupDetail() {
                         key={post.id} 
                         post={post} 
                         groupId={groupId!}
+                        isGroupModerator={user?.id === group?.moderatorId}
+                        groupModeratorId={group?.moderatorId}
                         onUpdate={() => {
                           queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
                         }}

@@ -30,12 +30,17 @@ import {
   Trash2, 
   Calendar,
   Save,
-  X 
+  X,
+  Heart,
+  MessageCircle,
+  Share2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { MarkdownRenderer } from "./MarkdownRenderer";
+import { ReactionSelector } from "./ReactionSelector";
+import { CommentSection } from "./CommentSection";
 
 export interface GroupPost {
   id: string;
@@ -56,19 +61,46 @@ export interface GroupPost {
 interface GroupPostCardProps {
   post: GroupPost;
   groupId: string;
+  isGroupModerator?: boolean;
+  groupModeratorId?: string;
   onUpdate: () => void;
 }
 
-export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): JSX.Element {
+export function GroupPostCard({ post, groupId, isGroupModerator = false, groupModeratorId, onUpdate }: GroupPostCardProps): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [commentsCount, setCommentsCount] = useState(0);
+  const [userReaction, setUserReaction] = useState<string | undefined>();
 
-  // Check if current user is moderator or author of the post
-  const isModerator = user?.id === post.authorId || user?.planName === "Diretivo";
+  // Check if current user can edit/delete this post (author or group moderator)
+  const canModifyPost = user?.id === post.authorId || isGroupModerator;
+
+  // Like/Unlike mutation
+  const likeMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest("POST", `/api/groups/${groupId}/posts/${post.id}/like`);
+      return response.json();
+    },
+    onSuccess: (data) => {
+      setIsLiked(data.liked);
+      setLikesCount(data.likes);
+      queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível curtir o post.",
+        variant: "destructive",
+      });
+    },
+  });
 
   // Edit post mutation
   const editPostMutation = useMutation({
@@ -142,6 +174,27 @@ export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): 
     deletePostMutation.mutate();
   };
 
+  const handleReaction = (reactionType: string) => {
+    if (!user) {
+      toast({
+        title: "Login necessário",
+        description: "Você precisa estar logado para reagir a posts.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setUserReaction(prev => prev === reactionType ? undefined : reactionType);
+    likeMutation.mutate();
+  };
+
+  const handleShare = () => {
+    // TODO: Implement sharing functionality
+    toast({
+      title: "Compartilhar",
+      description: "Funcionalidade de compartilhamento em desenvolvimento.",
+    });
+  };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -166,9 +219,11 @@ export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): 
                 <h4 className="font-semibold text-sm">
                   {post.author.fullName || post.author.username}
                 </h4>
-                <Badge variant="secondary" className="text-xs">
-                  Moderador
-                </Badge>
+                {post.author.id === groupModeratorId && (
+                  <Badge variant="secondary" className="text-xs">
+                    Moderador
+                  </Badge>
+                )}
               </div>
               <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
                 <Calendar className="h-3 w-3" />
@@ -182,8 +237,8 @@ export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): 
             </div>
           </div>
 
-          {/* Moderator Actions */}
-          {isModerator && (
+          {/* Post Actions (Edit/Delete) */}
+          {canModifyPost && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -263,7 +318,61 @@ export function GroupPostCard({ post, groupId, onUpdate }: GroupPostCardProps): 
             )}
           </div>
         )}
+
+        {/* Post Actions */}
+        {!isEditing && (
+          <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-4">
+              <ReactionSelector
+                currentReaction={userReaction}
+                onReact={handleReaction}
+                disabled={likeMutation.isPending}
+              />
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowComments(!showComments)}
+                className="gap-2 text-muted-foreground hover:text-blue-500"
+              >
+                <MessageCircle className="h-4 w-4" />
+                <span className="text-xs">
+                  {commentsCount > 0 ? `${commentsCount} comentário${commentsCount !== 1 ? 's' : ''}` : 'Comentar'}
+                </span>
+              </Button>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleShare}
+                className="gap-2 text-muted-foreground hover:text-blue-500"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="text-xs">Compartilhar</span>
+              </Button>
+            </div>
+
+            {likesCount > 0 && (
+              <div className="text-xs text-muted-foreground">
+                {likesCount} curtida{likesCount !== 1 ? 's' : ''}
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
+
+      {/* Comments Section */}
+      {showComments && !isEditing && (
+        <div className="border-t border-gray-100 dark:border-gray-800">
+          <CommentSection
+            postId={post.id}
+            onUpdate={() => {
+              queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/posts`] });
+              onUpdate();
+            }}
+          />
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
