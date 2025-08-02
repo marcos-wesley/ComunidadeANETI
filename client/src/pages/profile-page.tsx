@@ -288,16 +288,17 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
   return (
     <Card className="relative overflow-hidden border-0 shadow-sm">
       {/* Cover Photo */}
-      <div className="h-56 bg-gradient-to-r from-blue-600 to-blue-800 relative group">
+      <div className="h-56 relative group overflow-hidden">
+        <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-800"></div>
         {profile.coverPhoto && (
           <img 
-            src={`http://localhost:5000${profile.coverPhoto}?v=${Date.now()}`} 
+            src={`http://localhost:5000${profile.coverPhoto}?t=${new Date().getTime()}`} 
             alt="Foto de capa" 
-            className="w-full h-full object-cover"
-            style={{ position: 'absolute', top: 0, left: 0, zIndex: 5 }}
-            onLoad={() => console.log('Foto de capa carregada com sucesso')}
+            className="absolute inset-0 w-full h-full object-cover"
+            onLoad={() => console.log('✓ Foto de capa carregada:', profile.coverPhoto)}
             onError={(e) => {
-              console.error('Erro ao carregar imagem de capa:', profile.coverPhoto);
+              console.error('✗ Erro ao carregar capa:', profile.coverPhoto);
+              e.currentTarget.style.display = 'none';
             }}
           />
         )}
@@ -319,20 +320,19 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
       <CardContent className="relative px-6 pt-20 pb-6">
         {/* Profile Picture */}
         <div className="absolute -top-20 left-6">
-          <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg z-30">
-            {profile.profilePicture ? (
+          <div className="relative w-40 h-40 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center text-gray-600 text-3xl font-bold group shadow-lg overflow-hidden">
+            <span className="absolute inset-0 flex items-center justify-center">{getInitials(profile.fullName)}</span>
+            {profile.profilePicture && (
               <img 
-                src={`http://localhost:5000${profile.profilePicture}?v=${Date.now()}`} 
+                src={`http://localhost:5000${profile.profilePicture}?t=${new Date().getTime()}`} 
                 alt={profile.fullName}
-                className="w-full h-full rounded-full object-cover"
-                style={{ position: 'absolute', top: 0, left: 0, zIndex: 10 }}
-                onLoad={() => console.log('Foto de perfil carregada com sucesso')}
+                className="absolute inset-0 w-full h-full rounded-full object-cover"
+                onLoad={() => console.log('✓ Foto de perfil carregada:', profile.profilePicture)}
                 onError={(e) => {
-                  console.error('Erro ao carregar foto de perfil:', profile.profilePicture);
+                  console.error('✗ Erro ao carregar perfil:', profile.profilePicture);
+                  e.currentTarget.style.display = 'none';
                 }}
               />
-            ) : (
-              <span className="relative z-20">{getInitials(profile.fullName)}</span>
             )}
             {isOwnProfile && (
               <div className="absolute bottom-2 right-2 z-40">
