@@ -254,318 +254,336 @@ export default function MembersPage(): JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Loader2 className="h-8 w-8 animate-spin text-border" />
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p>Carregando membros...</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Users className="h-8 w-8" />
-            Membros da Comunidade
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Conecte-se com outros profissionais de TI
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-600 dark:text-gray-400">
-            {members.length} membros
-          </span>
-        </div>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-            <Input
-              placeholder="Buscar por nome, cargo ou área de atuação..."
-              value={searchInput}
-              onChange={(e) => {
-                setSearchInput(e.target.value);
-              }}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="flex flex-wrap gap-3">
-            <Select value={sortBy} onValueChange={(value: 'recent' | 'newest' | 'alphabetical') => setSortBy(value)}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Ativo recentemente</SelectItem>
-                <SelectItem value="newest">Membros mais novos</SelectItem>
-                <SelectItem value="alphabetical">Alfabético</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={stateFilter || "all"} onValueChange={(value) => { setStateFilter(value === "all" ? "" : value); handleFilterChange(); }}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os estados</SelectItem>
-                {states.map(state => (
-                  <SelectItem key={state} value={state}>{state}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={planFilter || "all"} onValueChange={(value) => { setPlanFilter(value === "all" ? "" : value); handleFilterChange(); }}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Plano" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os planos</SelectItem>
-                {plans.map(plan => (
-                  <SelectItem key={plan} value={plan}>{plan}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={genderFilter || "all"} onValueChange={(value) => { setGenderFilter(value === "all" ? "" : value); handleFilterChange(); }}>
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Gênero" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos</SelectItem>
-                <SelectItem value="masculino">Masculino</SelectItem>
-                <SelectItem value="feminino">Feminino</SelectItem>
-                <SelectItem value="outro">Outro</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <Select value={areaFilter || "all"} onValueChange={(value) => { setAreaFilter(value === "all" ? "" : value); handleFilterChange(); }}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Área de atuação" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas as áreas</SelectItem>
-                {areas.map(area => (
-                  <SelectItem key={area} value={area}>{area}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {(stateFilter || planFilter || genderFilter || areaFilter || searchQuery) && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setStateFilter("");
-                  setPlanFilter("");
-                  setGenderFilter("");
-                  setAreaFilter("");
-                  setSearchInput(""); // Limpa o input também
-                  setSearchQuery("");
-                  handleFilterChange();
-                }}
-              >
-                Limpar filtros
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Members Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {filteredMembers.map((member) => (
-          <Card key={member.id} className="hover:shadow-lg transition-all duration-200 group">
-            <CardHeader className="relative pb-4">
-              <div className="absolute top-4 right-4">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                      <Link href={`/profile/${member.id}`} className="flex items-center cursor-pointer">
-                        <Eye className="h-4 w-4 mr-2" />
-                        Ver Detalhes
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Mail className="h-4 w-4 mr-2" />
-                      Enviar mensagem
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <Avatar className="h-20 w-20 mx-auto border-4 border-background shadow-lg">
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
-                  {getInitials(member.fullName)}
-                </AvatarFallback>
-              </Avatar>
-              
-              <div className="text-center mt-3">
-                <Link href={`/profile/${member.id}`}>
-                  <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
-                </Link>
-                <p className="text-sm text-muted-foreground">@{member.username}</p>
-                
-                {member.planName && (
-                  <Badge 
-                    variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
-                    className="mt-2"
-                  >
-                    {member.planName}
-                  </Badge>
-                )}
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-3 pt-0">
-              {member.position && (
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Briefcase className="h-4 w-4 flex-shrink-0" />
-                  <span className="truncate">{member.position}</span>
-                </div>
-              )}
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{member.area}</span>
-              </div>
-              
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 flex-shrink-0" />
-                <span className="truncate">{member.city}, {member.state}</span>
-              </div>
-
-              {(member.connectionsCount || member.followersCount) && (
-                <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                  {member.connectionsCount && (
-                    <div className="flex items-center gap-1">
-                      <UserCheck className="h-3 w-3" />
-                      <span>{member.connectionsCount} conexões</span>
-                    </div>
-                  )}
-                  {member.followersCount && (
-                    <div className="flex items-center gap-1">
-                      <Star className="h-3 w-3" />
-                      <span>{member.followersCount} seguidores</span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-3">
-                {member.connectionStatus === "connected" ? (
-                  <Button size="sm" variant="outline" className="flex-1" disabled>
-                    <UserCheck className="h-4 w-4 mr-1" />
-                    Conectado
-                  </Button>
-                ) : member.connectionStatus === "pending" ? (
-                  <Button size="sm" variant="outline" className="flex-1" disabled>
-                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                    Pendente
-                  </Button>
-                ) : (
-                  <Button 
-                    size="sm" 
-                    className="flex-1"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      console.log('Button clicked!', member.id, canConnect);
-                      handleConnect(member.id);
-                    }}
-                    disabled={!canConnect || connectMutation.isPending}
-                    style={{ pointerEvents: 'auto' }}
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    Conectar
-                  </Button>
-                )}
-
-                <Button
-                  size="sm"
-                  variant={member.isFollowing ? "default" : "outline"}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    console.log('Follow button clicked!', member.id, canConnect, member.isFollowing);
-                    handleFollow(member.id, member.isFollowing || false);
-                  }}
-                  disabled={!canConnect || followMutation.isPending || unfollowMutation.isPending}
-                  style={{ pointerEvents: 'auto' }}
-                  className={member.isFollowing ? "bg-blue-600 text-white hover:bg-blue-700" : ""}
-                >
-                  {followMutation.isPending || unfollowMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : member.isFollowing ? (
-                    <>
-                      <UserCheck className="h-4 w-4 mr-1" />
-                      Seguindo
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="h-4 w-4 mr-1" />
-                      Seguir
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {!canConnect && (
-                <p className="text-xs text-muted-foreground text-center pt-2 border-t">
-                  Recursos de conexão disponíveis para membros Júnior, Pleno e Sênior
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {filteredMembers.length === 0 && !isLoading && (
-        <Card>
-          <CardContent className="p-8 text-center">
-            <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-              Nenhum membro encontrado
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400">
-              Tente ajustar os filtros de busca
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600 text-white">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Membros da Comunidade
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 opacity-90">
+              Conecte-se com profissionais de TI de todo o Brasil e expanda sua rede de contatos.
             </p>
+            
+            {/* Search Bar */}
+            <div className="relative max-w-2xl mx-auto">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/70" />
+              <Input
+                placeholder="Buscar por nome, cargo ou área de atuação..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-12 py-4 text-lg bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/30"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Filters and Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Profissionais Disponíveis
+              </h2>
+              <Badge variant="secondary" className="text-sm">
+                {filteredMembers.length} {filteredMembers.length === 1 ? 'membro' : 'membros'}
+              </Badge>
+            </div>
+          </div>
+        </div>
+
+        {/* Advanced Filters */}
+        <Card className="mb-8">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold text-lg">Filtros Avançados</h3>
+            </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <Select value={sortBy} onValueChange={(value: 'recent' | 'newest' | 'alphabetical') => setSortBy(value)}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Ordenar por" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="recent">Ativo recentemente</SelectItem>
+                  <SelectItem value="newest">Membros mais novos</SelectItem>
+                  <SelectItem value="alphabetical">Alfabético</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={stateFilter || "all"} onValueChange={(value) => { setStateFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os estados</SelectItem>
+                  {states.map(state => (
+                    <SelectItem key={state} value={state}>{state}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={planFilter || "all"} onValueChange={(value) => { setPlanFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Plano" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os planos</SelectItem>
+                  {plans.map(plan => (
+                    <SelectItem key={plan} value={plan}>{plan}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={genderFilter || "all"} onValueChange={(value) => { setGenderFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Gênero" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="masculino">Masculino</SelectItem>
+                  <SelectItem value="feminino">Feminino</SelectItem>
+                  <SelectItem value="outro">Outro</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select value={areaFilter || "all"} onValueChange={(value) => { setAreaFilter(value === "all" ? "" : value); handleFilterChange(); }}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Área de atuação" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as áreas</SelectItem>
+                  {areas.map(area => (
+                    <SelectItem key={area} value={area}>{area}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {(stateFilter || planFilter || genderFilter || areaFilter || searchQuery) && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setStateFilter("");
+                    setPlanFilter("");
+                    setGenderFilter("");
+                    setAreaFilter("");
+                    setSearchInput(""); // Limpa o input também
+                    setSearchQuery("");
+                    handleFilterChange();
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* Pagination */}
-      {filteredMembers.length > 0 && (
-        <div className="flex justify-center items-center gap-4 mt-8">
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-            disabled={currentPage === 1}
-          >
-            Anterior
-          </Button>
-          
-          <span className="text-sm text-muted-foreground">
-            Página {currentPage} • {filteredMembers.length} membros
-          </span>
-          
-          <Button
-            variant="outline"
-            onClick={() => setCurrentPage(currentPage + 1)}
-            disabled={filteredMembers.length < limit}
-          >
-            Próxima
-          </Button>
-        </div>
-      )}
+        {/* Members Grid */}
+        {filteredMembers.length === 0 && !isLoading ? (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Nenhum membro encontrado</h3>
+            <p className="text-muted-foreground">
+              Tente ajustar os filtros de busca para encontrar membros.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredMembers.map((member) => (
+              <Card key={member.id} className="hover:shadow-lg transition-all duration-200 group">
+                <CardHeader className="relative pb-4">
+                  <div className="absolute top-4 right-4">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/profile/${member.id}`} className="flex items-center cursor-pointer">
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver Detalhes
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Mail className="h-4 w-4 mr-2" />
+                          Enviar mensagem
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <Avatar className="h-20 w-20 mx-auto border-4 border-background shadow-lg">
+                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
+                      {getInitials(member.fullName)}
+                    </AvatarFallback>
+                  </Avatar>
+                  
+                  <div className="text-center mt-3">
+                    <Link href={`/profile/${member.id}`}>
+                      <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
+                    </Link>
+                    <p className="text-sm text-muted-foreground">@{member.username}</p>
+                    
+                    {member.planName && (
+                      <Badge 
+                        variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
+                        className="mt-2"
+                      >
+                        {member.planName}
+                      </Badge>
+                    )}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-3 pt-0">
+                  {member.position && (
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Briefcase className="h-4 w-4 flex-shrink-0" />
+                      <span className="truncate">{member.position}</span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Users className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{member.area}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <MapPin className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{member.city}, {member.state}</span>
+                  </div>
+
+                  {(member.connectionsCount || member.followersCount) && (
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
+                      {member.connectionsCount && (
+                        <div className="flex items-center gap-1">
+                          <UserCheck className="h-3 w-3" />
+                          <span>{member.connectionsCount} conexões</span>
+                        </div>
+                      )}
+                      {member.followersCount && (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3" />
+                          <span>{member.followersCount} seguidores</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-3">
+                    {member.connectionStatus === "connected" ? (
+                      <Button size="sm" variant="outline" className="flex-1" disabled>
+                        <UserCheck className="h-4 w-4 mr-1" />
+                        Conectado
+                      </Button>
+                    ) : member.connectionStatus === "pending" ? (
+                      <Button size="sm" variant="outline" className="flex-1" disabled>
+                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        Pendente
+                      </Button>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        className="flex-1"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          console.log('Button clicked!', member.id, canConnect);
+                          handleConnect(member.id);
+                        }}
+                        disabled={!canConnect || connectMutation.isPending}
+                        style={{ pointerEvents: 'auto' }}
+                      >
+                        <UserPlus className="h-4 w-4 mr-1" />
+                        Conectar
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant={member.isFollowing ? "default" : "outline"}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('Follow button clicked!', member.id, canConnect, member.isFollowing);
+                        handleFollow(member.id, member.isFollowing || false);
+                      }}
+                      disabled={!canConnect || followMutation.isPending || unfollowMutation.isPending}
+                      style={{ pointerEvents: 'auto' }}
+                      className={member.isFollowing ? "bg-blue-600 text-white hover:bg-blue-700" : ""}
+                    >
+                      {followMutation.isPending || unfollowMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : member.isFollowing ? (
+                        <>
+                          <UserCheck className="h-4 w-4 mr-1" />
+                          Seguindo
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="h-4 w-4 mr-1" />
+                          Seguir
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {!canConnect && (
+                    <p className="text-xs text-muted-foreground text-center pt-2 border-t">
+                      Recursos de conexão disponíveis para membros Júnior, Pleno e Sênior
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filteredMembers.length > 0 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              Anterior
+            </Button>
+            
+            <span className="text-sm text-muted-foreground">
+              Página {currentPage} • {filteredMembers.length} membros
+            </span>
+            
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(currentPage + 1)}
+              disabled={filteredMembers.length < limit}
+            >
+              Próxima
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
