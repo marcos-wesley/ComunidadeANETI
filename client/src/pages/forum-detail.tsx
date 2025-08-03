@@ -34,6 +34,7 @@ import {
   MessageSquare, 
   Calendar, 
   User, 
+  Users,
   MessageCircle, 
   Clock,
   ArrowLeft,
@@ -248,39 +249,54 @@ export default function ForumDetailPage(): JSX.Element {
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-4 space-y-6">
-      {/* Forum Header */}
-      <Card>
-        <CardHeader>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Forum Hero Header */}
+      <div 
+        className="relative bg-gradient-to-r from-slate-800 to-slate-900 text-white overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${forum.color || '#3B82F6'}CC, ${forum.color || '#3B82F6'}99)`,
+        }}
+      >
+        <div className="absolute inset-0 bg-black/20"></div>
+        <div className="relative max-w-6xl mx-auto px-4 py-12">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex items-center gap-3 mb-4">
                 <div
-                  className="w-4 h-4 rounded"
-                  style={{ backgroundColor: forum.color || '#3B82F6' }}
+                  className="w-6 h-6 rounded-lg bg-white/20 border border-white/30"
+                  style={{ backgroundColor: `${forum.color || '#3B82F6'}40` }}
                 />
-                <CardTitle className="text-2xl">{forum.title}</CardTitle>
+                <h1 className="text-4xl font-bold">{forum.title}</h1>
               </div>
-              <p className="text-gray-600 dark:text-gray-400 text-lg">
+              <p className="text-xl text-white/90 mb-6 max-w-3xl leading-relaxed">
                 {forum.description}
               </p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-4 w-4" />
-                  Criado em {new Date(forum.createdAt).toLocaleDateString('pt-BR')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <MessageSquare className="h-4 w-4" />
-                  {(topics || []).length} tópicos
-                </span>
+              
+              {/* Stats */}
+              <div className="flex items-center gap-6 text-white/80">
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm">
+                  <Calendar className="h-5 w-5" />
+                  <span>Criado em {new Date(forum.createdAt).toLocaleDateString('pt-BR')}</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm">
+                  <MessageSquare className="h-5 w-5" />
+                  <span>{(topics || []).length} tópicos</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm">
+                  <Users className="h-5 w-5" />
+                  <span>Grupo: {forum.group?.title || 'Geral'}</span>
+                </div>
               </div>
             </div>
             
             {canCreateTopic && (
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogTrigger asChild>
-                  <Button className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
+                  <Button 
+                    size="lg" 
+                    className="flex items-center gap-2 bg-white text-gray-900 hover:bg-gray-100 font-semibold px-6 py-3 shadow-lg"
+                  >
+                    <Plus className="h-5 w-5" />
                     Criar Tópico
                   </Button>
                 </DialogTrigger>
@@ -350,16 +366,21 @@ export default function ForumDetailPage(): JSX.Element {
               </Dialog>
             )}
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
-      {/* Topics List */}
-      <Card>
-        <CardHeader>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+
+      {/* Topics Section */}
+      <Card className="shadow-sm border-0 bg-white dark:bg-gray-800">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 border-b">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5" />
-              Tópicos
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              Discussões
             </CardTitle>
             
             {/* Search Bar */}
@@ -369,23 +390,23 @@ export default function ForumDetailPage(): JSX.Element {
                 placeholder="Buscar tópicos..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-600"
               />
             </div>
           </div>
           
-          {/* Tabs for filtering */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all" className="flex items-center gap-2">
+          {/* Enhanced Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
+            <TabsList className="grid w-full grid-cols-3 bg-white dark:bg-gray-800 shadow-sm border">
+              <TabsTrigger value="all" className="flex items-center gap-2 data-[state=active]:bg-blue-100 data-[state=active]:text-blue-700 dark:data-[state=active]:bg-blue-900 dark:data-[state=active]:text-blue-400">
                 <Filter className="h-4 w-4" />
                 Todos ({topicCounts.all})
               </TabsTrigger>
-              <TabsTrigger value="open" className="flex items-center gap-2">
+              <TabsTrigger value="open" className="flex items-center gap-2 data-[state=active]:bg-green-100 data-[state=active]:text-green-700 dark:data-[state=active]:bg-green-900 dark:data-[state=active]:text-green-400">
                 <MessageSquare className="h-4 w-4" />
                 Abertos ({topicCounts.open})
               </TabsTrigger>
-              <TabsTrigger value="closed" className="flex items-center gap-2">
+              <TabsTrigger value="closed" className="flex items-center gap-2 data-[state=active]:bg-gray-100 data-[state=active]:text-gray-700 dark:data-[state=active]:bg-gray-700 dark:data-[state=active]:text-gray-300">
                 <Lock className="h-4 w-4" />
                 Fechados ({topicCounts.closed})
               </TabsTrigger>
@@ -452,70 +473,85 @@ export default function ForumDetailPage(): JSX.Element {
               )}
               
               {sortedTopics.map((topic: ForumTopic) => (
-                <div
+                <Card 
                   key={topic.id}
-                  className="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                  className="hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500 hover:border-l-blue-600"
                   onClick={() => handleTopicClick(topic.id)}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        {topic.isPinned && (
-                          <Pin className="h-4 w-4 text-blue-500" />
-                        )}
-                        {topic.isLocked && (
-                          <Lock className="h-4 w-4 text-gray-500" />
-                        )}
-                        <h4 className="font-semibold text-gray-900 dark:text-white truncate">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 mb-3">
+                          {topic.isPinned && (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                              <Pin className="h-3 w-3 mr-1" />
+                              Fixado
+                            </Badge>
+                          )}
+                          {topic.isLocked && (
+                            <Badge variant="outline" className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                              <Lock className="h-3 w-3 mr-1" />
+                              Fechado
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <h4 className="font-semibold text-lg text-gray-900 dark:text-white mb-2 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">
                           {topic.title}
                         </h4>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {topic.author.fullName}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {formatDistanceToNow(new Date(topic.createdAt), { 
-                            addSuffix: true, 
-                            locale: ptBR 
-                          })}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" />
-                          {topic.viewCount} visualizações
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-4 text-sm text-gray-500 ml-4">
-                      <div className="text-center">
-                        <div className="flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3" />
-                          <span className="font-medium">{topic._count.replies}</span>
+                        
+                        <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
+                          <span className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs">
+                                {topic.author.fullName.split(' ').map(n => n[0]).join('')}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{topic.author.fullName}</span>
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {formatDistanceToNow(new Date(topic.createdAt), { 
+                              addSuffix: true, 
+                              locale: ptBR 
+                            })}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Eye className="h-4 w-4" />
+                            {topic.viewCount} visualizações
+                          </span>
                         </div>
-                        <span className="text-xs">respostas</span>
                       </div>
                       
-                      {topic.lastReplyBy && (
-                        <div className="text-center">
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span className="text-xs">
-                              {formatDistanceToNow(new Date(topic.lastReplyAt), { 
-                                addSuffix: true, 
-                                locale: ptBR 
-                              })}
+                      <div className="flex flex-col items-end gap-3 ml-6">
+                        <div className="text-center bg-gray-50 dark:bg-gray-800 p-3 rounded-lg min-w-[80px]">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <MessageCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                            <span className="font-bold text-lg text-gray-900 dark:text-white">{topic._count.replies}</span>
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">respostas</span>
+                        </div>
+                        
+                        {topic.lastReplyBy && (
+                          <div className="text-right">
+                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-1">
+                              <Clock className="h-3 w-3" />
+                              <span>
+                                {formatDistanceToNow(new Date(topic.lastReplyAt), { 
+                                  addSuffix: true, 
+                                  locale: ptBR 
+                                })}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                              por {topic.lastReplyBy.fullName}
                             </span>
                           </div>
-                          <span className="text-xs">por {topic.lastReplyBy.fullName}</span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           )}
@@ -524,22 +560,30 @@ export default function ForumDetailPage(): JSX.Element {
       
       {/* Access Warning */}
       {!canCreateTopic && user && (
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <MessageSquare className="h-4 w-4" />
-              <span className="text-sm">
-                {!membership ? 
-                  "Você precisa ser membro do grupo para participar das discussões." :
-                  membership.status !== 'approved' ?
-                  "Sua solicitação de entrada no grupo está pendente de aprovação." :
-                  "Você precisa ter uma anuidade ativa para criar tópicos."
-                }
-              </span>
+        <Card className="border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 dark:border-amber-700 dark:bg-gradient-to-r dark:from-amber-900/20 dark:to-yellow-900/20">
+          <CardContent className="p-6">
+            <div className="flex items-start gap-4">
+              <div className="p-2 bg-amber-100 dark:bg-amber-800 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                  Acesso Limitado
+                </h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300">
+                  {!membership ? 
+                    "Você precisa ser membro do grupo para participar das discussões." :
+                    membership.status !== 'approved' ?
+                    "Sua solicitação de entrada no grupo está pendente de aprovação." :
+                    "Você precisa ter uma anuidade ativa para criar tópicos."
+                  }
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }
