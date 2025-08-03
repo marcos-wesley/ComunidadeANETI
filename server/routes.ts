@@ -1841,6 +1841,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .slice(0, 5)
         .map(([state, count]) => ({ state, count }));
 
+      // Calcular membros por área de atuação
+      const membersByArea: Record<string, number> = {};
+      for (const member of activeMembers) {
+        const area = member.area || 'Não informado';
+        membersByArea[area] = (membersByArea[area] || 0) + 1;
+      }
+
+      // Calcular membros por cargo/posição
+      const membersByPosition: Record<string, number> = {};
+      for (const member of activeMembers) {
+        const position = member.position || 'Não informado';
+        membersByPosition[position] = (membersByPosition[position] || 0) + 1;
+      }
+
       // Calcular estatísticas de fóruns e grupos
       const allForumTopics = await storage.getAllForumTopics();
       const allGroups = await storage.getAllGroups();
@@ -1988,6 +2002,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastMonthMembersByProfile,
         membersByState,
         membersByCity,
+        membersByArea,
+        membersByPosition,
         newMembersByRegion,
         top5States,
         forumStats: {

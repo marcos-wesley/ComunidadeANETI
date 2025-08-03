@@ -133,6 +133,8 @@ interface AdminStats {
     action: string;
     priority: 'high' | 'medium' | 'low';
   }>;
+  membersByArea: Record<string, number>;
+  membersByPosition: Record<string, number>;
   filterData: {
     plans: string[];
     states: string[];
@@ -526,6 +528,110 @@ export default function AdminPage() {
                   </p>
                 </CardContent>
               </Card>
+            </div>
+
+            {/* Indicadores de Membros por Área e Cargo */}
+            <div className="mt-8">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Membros por Área de Atuação */}
+                <Card className="bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-cyan-700">
+                      <BarChart3 className="h-5 w-5" />
+                      👩‍💻 Membros por Área de Atuação
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {loadingStats ? (
+                        <div className="text-center py-4 text-cyan-600">Carregando...</div>
+                      ) : (
+                        Object.entries(stats?.membersByArea || {})
+                          .sort(([, a], [, b]) => b - a)
+                          .slice(0, 8)
+                          .map(([area, count]) => (
+                            <div key={area} className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-cyan-800">
+                                {area === 'Não informado' ? '❓ Não informado' : 
+                                 area === 'Infraestrutura' ? '🖥️ Infraestrutura' :
+                                 area === 'Segurança' ? '🔒 Segurança' :
+                                 area === 'Dados' ? '📊 Dados' :
+                                 area === 'DevOps' ? '⚙️ DevOps' :
+                                 area === 'Desenvolvimento' ? '💻 Desenvolvimento' :
+                                 area === 'Quality Assurance' ? '🧪 Quality Assurance' :
+                                 area === 'UX/UI' ? '🎨 UX/UI' :
+                                 area === 'Mobile' ? '📱 Mobile' :
+                                 area === 'IA/ML' ? '🤖 IA/ML' :
+                                 `💼 ${area}`}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 bg-cyan-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-cyan-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ 
+                                      width: `${Math.max(10, (count / Math.max(...Object.values(stats?.membersByArea || {}))) * 100)}%` 
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-sm font-bold text-cyan-700 min-w-[24px]">{count}</span>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Membros por Cargo/Posição */}
+                <Card className="bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-200">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-indigo-700">
+                      <Users2 className="h-5 w-5" />
+                      🏢 Membros por Cargo
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {loadingStats ? (
+                        <div className="text-center py-4 text-indigo-600">Carregando...</div>
+                      ) : (
+                        Object.entries(stats?.membersByPosition || {})
+                          .sort(([, a], [, b]) => b - a)
+                          .slice(0, 8)
+                          .map(([position, count]) => (
+                            <div key={position} className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-indigo-800">
+                                {position === 'Não informado' ? '❓ Não informado' : 
+                                 position.toLowerCase().includes('senior') || position.toLowerCase().includes('sênior') ? '👴 Sênior' :
+                                 position.toLowerCase().includes('junior') || position.toLowerCase().includes('júnior') ? '👶 Júnior' :
+                                 position.toLowerCase().includes('pleno') ? '👤 Pleno' :
+                                 position.toLowerCase().includes('tech lead') || position.toLowerCase().includes('líder') ? '👑 Tech Lead' :
+                                 position.toLowerCase().includes('gerente') || position.toLowerCase().includes('manager') ? '📋 Gerente' :
+                                 position.toLowerCase().includes('diretor') || position.toLowerCase().includes('director') ? '🎯 Diretor' :
+                                 position.toLowerCase().includes('analista') ? '🔍 Analista' :
+                                 position.toLowerCase().includes('coordenador') ? '🎪 Coordenador' :
+                                 position.toLowerCase().includes('arquiteto') ? '🏗️ Arquiteto' :
+                                 position.toLowerCase().includes('especialista') ? '🎓 Especialista' :
+                                 `💼 ${position}`}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <div className="w-20 bg-indigo-200 rounded-full h-2">
+                                  <div 
+                                    className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                                    style={{ 
+                                      width: `${Math.max(10, (count / Math.max(...Object.values(stats?.membersByPosition || {}))) * 100)}%` 
+                                    }}
+                                  />
+                                </div>
+                                <span className="text-sm font-bold text-indigo-700 min-w-[24px]">{count}</span>
+                              </div>
+                            </div>
+                          ))
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
 
             {/* Alertas Administrativos - Primeira seção */}
