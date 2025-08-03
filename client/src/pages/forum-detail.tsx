@@ -42,18 +42,21 @@ import {
   Lock,
   Eye,
   Search,
-  Filter
+  Filter,
+  Hash,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// import { MarkdownRenderer } from "@/components/MarkdownRenderer";
+import { MarkdownEditor } from "@/components/MarkdownEditor";
 
 // Form schema for creating topics
 const createTopicSchema = z.object({
   title: z.string().min(3, "Título deve ter pelo menos 3 caracteres"),
   content: z.string().min(10, "Conteúdo deve ter pelo menos 10 caracteres"),
+  hashtags: z.array(z.string()).optional(),
 });
 
 type CreateTopicForm = z.infer<typeof createTopicSchema>;
@@ -103,11 +106,16 @@ export default function ForumDetailPage(): JSX.Element {
   const [activeTab, setActiveTab] = useState("all");
 
   // Form setup
+  // State for hashtags input
+  const [hashtagInput, setHashtagInput] = useState("");
+  const [hashtags, setHashtags] = useState<string[]>([]);
+
   const form = useForm<CreateTopicForm>({
     resolver: zodResolver(createTopicSchema),
     defaultValues: {
       title: "",
       content: "",
+      hashtags: [],
     },
   });
 
@@ -198,8 +206,37 @@ export default function ForumDetailPage(): JSX.Element {
     },
   });
 
+  // Hashtag management functions
+  const addHashtag = (tag: string) => {
+    const cleanTag = tag.trim().replace(/^#/, "");
+    if (cleanTag && !hashtags.includes(cleanTag)) {
+      const newHashtags = [...hashtags, cleanTag];
+      setHashtags(newHashtags);
+      form.setValue("hashtags", newHashtags);
+    }
+    setHashtagInput("");
+  };
+
+  const removeHashtag = (tagToRemove: string) => {
+    const newHashtags = hashtags.filter(tag => tag !== tagToRemove);
+    setHashtags(newHashtags);
+    form.setValue("hashtags", newHashtags);
+  };
+
+  const handleHashtagKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "," || e.key === " ") {
+      e.preventDefault();
+      if (hashtagInput.trim()) {
+        addHashtag(hashtagInput);
+      }
+    }
+  };
+
   const handleCreateTopic = (data: CreateTopicForm) => {
-    createTopicMutation.mutate(data);
+    createTopicMutation.mutate({
+      ...data,
+      hashtags,
+    });
   };
 
   const handleTopicClick = (topicId: string) => {
@@ -334,16 +371,71 @@ export default function ForumDetailPage(): JSX.Element {
                           <FormItem>
                             <FormLabel>Conteúdo</FormLabel>
                             <FormControl>
-                              <Textarea 
-                                placeholder="Escreva o conteúdo do seu tópico... (Suporta Markdown)"
+                              <MarkdownEditor
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="Escreva o conteúdo do seu tópico... (Suporta Markdown, imagens e links)"
                                 rows={8}
-                                {...field}
                               />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
+
+                      {/* Hashtags Section */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Hash className="h-4 w-4 text-gray-500" />
+                          <label className="text-sm font-medium">Hashtags</label>
+                        </div>
+                        
+                        {/* Hashtag Input */}
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={hashtagInput}
+                            onChange={(e) => setHashtagInput(e.target.value)}
+                            onKeyDown={handleHashtagKeyPress}
+                            placeholder="Digite uma hashtag e pressione Enter"
+                            className="flex-1"
+                          />
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => hashtagInput.trim() && addHashtag(hashtagInput)}
+                            disabled={!hashtagInput.trim()}
+                          >
+                            Adicionar
+                          </Button>
+                        </div>
+                        
+                        {/* Display Hashtags */}
+                        {hashtags.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {hashtags.map((tag, index) => (
+                              <Badge 
+                                key={index} 
+                                variant="secondary" 
+                                className="flex items-center gap-1 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300"
+                              >
+                                #{tag}
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant="ghost"
+                                  className="h-4 w-4 p-0 hover:bg-blue-200 dark:hover:bg-blue-800"
+                                  onClick={() => removeHashtag(tag)}
+                                >
+                                  <X className="h-3 w-3" />
+                                </Button>
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-gray-500">
+                          Use hashtags para categorizar seu tópico. Pressione Enter, vírgula ou espaço para adicionar.
+                        </p>
+                      </div>
                       
                       <DialogFooter>
                         <Button

@@ -353,6 +353,7 @@ export const forumTopics = pgTable("forum_topics", {
   authorId: varchar("author_id").references(() => users.id).notNull(),
   title: text("title").notNull(),
   content: text("content").notNull(),
+  hashtags: json("hashtags").$type<string[]>().default([]),
   isPinned: boolean("is_pinned").default(false),
   isLocked: boolean("is_locked").default(false),
   viewCount: integer("view_count").default(0),
