@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "@/hooks/use-toast";
-import { Globe, Lock, Users, User, CheckCircle, Clock } from "lucide-react";
+import { Globe, Lock, Users, User, CheckCircle, Clock, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface Group {
   id: string;
@@ -300,6 +302,8 @@ function GroupCard({ group }: { group: Group }) {
 
 export default function Groups() {
   const { user } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedType, setSelectedType] = useState("all");
 
   // Fetch all groups
   const { data: groups = [], isLoading: groupsLoading } = useQuery<Group[]>({
@@ -307,63 +311,120 @@ export default function Groups() {
     enabled: !!user,
   });
 
+  // Filter groups based on search and type
+  const filteredGroups = groups.filter((group) => {
+    const matchesSearch = 
+      group.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      group.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesType = selectedType === "all" || 
+      (selectedType === "public" && group.isPublic) ||
+      (selectedType === "private" && !group.isPublic);
+    
+    return matchesSearch && matchesType;
+  });
+
   if (groupsLoading) {
     return (
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold">Grupos</h1>
-          <p className="text-muted-foreground">
-            Participe de grupos e comitês especializados da ANETI
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <div className="relative h-24 bg-gray-200 rounded-t-lg"></div>
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gray-200 rounded-lg"></div>
-                  <div className="flex-1">
-                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-3 bg-gray-200 rounded mb-4"></div>
-                <div className="h-8 bg-gray-200 rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="min-h-screen bg-gradient-to-br from-blue-500 via-cyan-500 to-green-500">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center text-white">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+            <p>Carregando grupos...</p>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Grupos</h1>
-        <p className="text-muted-foreground">
-          Participe de grupos e comitês especializados da ANETI
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {groups.map((group) => (
-          <GroupCard key={group.id} group={group} />
-        ))}
-      </div>
-
-      {groups.length === 0 && (
-        <div className="text-center py-12">
-          <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Nenhum grupo disponível</h3>
-          <p className="text-muted-foreground">
-            Os grupos serão exibidos aqui quando estiverem disponíveis.
-          </p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Hero Section */}
+      <div className="bg-gradient-to-br from-blue-500 via-cyan-500 to-green-500 text-white">
+        <div className="container mx-auto px-4 py-16">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6">
+              Grupos da Comunidade
+            </h1>
+            <p className="text-xl md:text-2xl mb-8 opacity-90">
+              Participe de grupos e comitês especializados da ANETI e conecte-se com profissionais da sua área.
+            </p>
+            
+            {/* Search Bar */}
+            <div className="relative max-w-2xl mx-auto">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/70" />
+              <Input
+                placeholder="Pesquisar grupos..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-12 py-4 text-lg bg-white/20 border-white/30 text-white placeholder:text-white/70 focus:bg-white/30"
+              />
+            </div>
+          </div>
         </div>
-      )}
+      </div>
+
+      {/* Filters and Content */}
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Grupos Disponíveis
+              </h2>
+              <Badge variant="secondary" className="text-sm">
+                {filteredGroups.length} {filteredGroups.length === 1 ? 'grupo' : 'grupos'}
+              </Badge>
+            </div>
+            
+            {/* Type Filter */}
+            <div className="w-full sm:w-auto sm:min-w-[200px]">
+              <Select value={selectedType} onValueChange={setSelectedType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos os tipos</SelectItem>
+                  <SelectItem value="public">
+                    <div className="flex items-center gap-2">
+                      <Globe className="w-4 h-4" />
+                      Públicos
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <div className="flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Privados
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        {/* Groups Grid */}
+        {filteredGroups.length === 0 ? (
+          <div className="text-center py-12">
+            <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold mb-2">
+              {groups.length === 0 ? 'Nenhum grupo disponível' : 'Nenhum grupo encontrado'}
+            </h3>
+            <p className="text-muted-foreground">
+              {groups.length === 0 
+                ? 'Os grupos serão exibidos aqui quando estiverem disponíveis.' 
+                : 'Tente ajustar os filtros de busca para encontrar grupos.'
+              }
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredGroups.map((group) => (
+              <GroupCard key={group.id} group={group} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
