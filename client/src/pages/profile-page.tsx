@@ -12,6 +12,37 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+// Experience form schema
+const experienceSchema = z.object({
+  position: z.string().min(1, "Título é obrigatório"),
+  company: z.string().min(1, "Empresa é obrigatória"),
+  startDate: z.string().min(1, "Data de início é obrigatória"),
+  endDate: z.string().optional(),
+  isCurrentPosition: z.boolean().default(false),
+  location: z.string().min(1, "Localidade é obrigatória"),
+  locationType: z.enum(['presencial', 'hibrida', 'remota'], {
+    required_error: "Tipo de localidade é obrigatório"
+  }),
+  description: z.string().optional()
+}).refine((data) => {
+  // If not current position, end date is required
+  if (!data.isCurrentPosition && !data.endDate) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Data de término é obrigatória se não for posição atual",
+  path: ["endDate"]
+});
+
+type ExperienceFormData = z.infer<typeof experienceSchema>;
 import { 
   User,
   MapPin, 
@@ -32,7 +63,8 @@ import {
   Upload,
   Pencil,
   Check,
-  X
+  X,
+  Plus
 } from "lucide-react";
 
 type UserProfile = {
@@ -68,6 +100,8 @@ type Experience = {
   endDate?: string;
   description?: string;
   isCurrentPosition: boolean;
+  location?: string;
+  locationType?: 'presencial' | 'hibrida' | 'remota';
 };
 
 type Education = {
@@ -766,11 +800,135 @@ function HighlightsSection({ highlights, isOwnProfile }: { highlights: Highlight
   );
 }
 
+// Brazilian locations data for autocomplete
+const brazilianLocations = [
+  "São Paulo, São Paulo, Brasil",
+  "Rio de Janeiro, Rio de Janeiro, Brasil",
+  "Belo Horizonte, Minas Gerais, Brasil",
+  "Brasília, Distrito Federal, Brasil",
+  "Salvador, Bahia, Brasil",
+  "Fortaleza, Ceará, Brasil",
+  "Curitiba, Paraná, Brasil",
+  "Recife, Pernambuco, Brasil",
+  "Porto Alegre, Rio Grande do Sul, Brasil",
+  "Manaus, Amazonas, Brasil",
+  "Belém, Pará, Brasil",
+  "Goiânia, Goiás, Brasil",
+  "Campinas, São Paulo, Brasil",
+  "Guarulhos, São Paulo, Brasil",
+  "Nova Iguaçu, Rio de Janeiro, Brasil",
+  "Maceió, Alagoas, Brasil",
+  "Duque de Caxias, Rio de Janeiro, Brasil",
+  "São Luís, Maranhão, Brasil",
+  "Natal, Rio Grande do Norte, Brasil",
+  "Teresina, Piauí, Brasil"
+];
+
 function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experience[]; isOwnProfile: boolean }) {
+  const [isAddingExperience, setIsAddingExperience] = useState(false);
+  const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
+  const [locationInput, setLocationInput] = useState('');
+  const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   const formatDate = (dateStr: string) => {
     const [year, month] = dateStr.split('-');
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     return `${months[parseInt(month) - 1]} ${year}`;
+  };
+
+  const form = useForm<ExperienceFormData>({
+    resolver: zodResolver(experienceSchema),
+    defaultValues: {
+      position: '',
+      company: '',
+      startDate: '',
+      endDate: '',
+      isCurrentPosition: false,
+      location: '',
+      locationType: undefined,
+      description: ''
+    }
+  });
+
+  // Filter locations based on input
+  const handleLocationInputChange = (value: string) => {
+    setLocationInput(value);
+    form.setValue('location', value);
+    
+    if (value.length > 0) {
+      const filtered = brazilianLocations.filter(location =>
+        location.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredLocations(filtered.slice(0, 10)); // Show max 10 results
+    } else {
+      setFilteredLocations([]);
+    }
+  };
+
+  // Mutation to add/update experience
+  const experienceMutation = useMutation({
+    mutationFn: async (data: ExperienceFormData) => {
+      const response = await fetch('/api/profile/experiences', {
+        method: editingExperienceId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingExperienceId ? { ...data, id: editingExperienceId } : data)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save experience');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsAddingExperience(false);
+      setEditingExperienceId(null);
+      form.reset();
+      toast({
+        title: "Experiência salva",
+        description: "Sua experiência profissional foi salva com sucesso."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a experiência.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSubmit = (data: ExperienceFormData) => {
+    experienceMutation.mutate(data);
+  };
+
+  const handleCancel = () => {
+    setIsAddingExperience(false);
+    setEditingExperienceId(null);
+    form.reset();
+    setLocationInput('');
+    setFilteredLocations([]);
+  };
+
+  const startEditing = (experience: Experience) => {
+    setEditingExperienceId(experience.id);
+    setIsAddingExperience(true);
+    form.reset({
+      position: experience.position,
+      company: experience.company,
+      startDate: experience.startDate,
+      endDate: experience.endDate || '',
+      isCurrentPosition: experience.isCurrentPosition,
+      location: experience.location || '',
+      locationType: experience.locationType,
+      description: experience.description || ''
+    });
+    setLocationInput(experience.location || '');
   };
 
   if (experiences.length === 0 && !isOwnProfile) return null;
@@ -783,12 +941,220 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
           Experiência Profissional
         </CardTitle>
         {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setIsAddingExperience(true)}
+              title="Adicionar experiência"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Edit3 className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </CardHeader>
       <CardContent>
+        {/* Experience Form */}
+        {isAddingExperience && isOwnProfile && (
+          <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+            <h3 className="text-lg font-semibold mb-4">
+              {editingExperienceId ? 'Editar Experiência' : 'Adicionar Experiência'}
+            </h3>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                {/* Title */}
+                <FormField
+                  control={form.control}
+                  name="position"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Título *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Desenvolvedor Full Stack" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Company */}
+                <FormField
+                  control={form.control}
+                  name="company"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Empresa *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Tech Solutions LTDA" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Date Range */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de Início *</FormLabel>
+                        <FormControl>
+                          <Input type="month" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Data de Término</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="month" 
+                            {...field} 
+                            disabled={form.watch('isCurrentPosition')}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Current Position Checkbox */}
+                <FormField
+                  control={form.control}
+                  name="isCurrentPosition"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>
+                          Esta é minha posição atual
+                        </FormLabel>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {/* Location */}
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Localidade *</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            placeholder="Digite uma cidade..."
+                            value={locationInput}
+                            onChange={(e) => handleLocationInputChange(e.target.value)}
+                          />
+                          {filteredLocations.length > 0 && (
+                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                              {filteredLocations.map((location, index) => (
+                                <div
+                                  key={index}
+                                  className="px-3 py-2 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+                                  onClick={() => {
+                                    setLocationInput(location);
+                                    form.setValue('location', location);
+                                    setFilteredLocations([]);
+                                  }}
+                                >
+                                  {location}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Location Type */}
+                <FormField
+                  control={form.control}
+                  name="locationType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Localidade *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="presencial">Presencial</SelectItem>
+                          <SelectItem value="hibrida">Híbrida</SelectItem>
+                          <SelectItem value="remota">Remota</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Description */}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descreva suas principais responsabilidades e conquistas..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Form Actions */}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={experienceMutation.isPending}
+                  >
+                    {experienceMutation.isPending ? 'Salvando...' : 'Salvar'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={experienceMutation.isPending}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </div>
+        )}
+
+        {/* Experience List */}
         {experiences.length > 0 ? (
           <div className="space-y-6">
             {experiences.map((exp, index) => (
@@ -798,16 +1164,36 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
                     <Building className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-lg">{exp.position}</h4>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">{exp.company}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {formatDate(exp.startDate)} - {exp.endDate ? formatDate(exp.endDate) : 'Atual'}
-                    </p>
-                    {exp.description && (
-                      <p className="text-gray-700 dark:text-gray-300 mt-3 whitespace-pre-wrap">
-                        {exp.description}
-                      </p>
-                    )}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg">{exp.position}</h4>
+                        <p className="text-gray-600 dark:text-gray-400 font-medium">{exp.company}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          {formatDate(exp.startDate)} - {exp.endDate ? formatDate(exp.endDate) : 'Atual'}
+                        </p>
+                        {exp.location && (
+                          <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                            <MapPin className="h-3 w-3" />
+                            {exp.location} • {exp.locationType}
+                          </p>
+                        )}
+                        {exp.description && (
+                          <p className="text-gray-700 dark:text-gray-300 mt-3 whitespace-pre-wrap">
+                            {exp.description}
+                          </p>
+                        )}
+                      </div>
+                      {isOwnProfile && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditing(exp)}
+                          className="ml-2"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
                 {index < experiences.length - 1 && <Separator className="mt-6" />}
@@ -815,9 +1201,11 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 italic">
-            {isOwnProfile ? "Adicione suas experiências profissionais" : "Nenhuma experiência disponível"}
-          </p>
+          !isAddingExperience && (
+            <p className="text-gray-500 italic">
+              {isOwnProfile ? "Adicione suas experiências profissionais" : "Nenhuma experiência disponível"}
+            </p>
+          )
         )}
       </CardContent>
     </Card>
