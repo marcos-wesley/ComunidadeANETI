@@ -1626,9 +1626,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recommendationData = {
         recommenderId,
         recommendeeId,
-        recommendationText: text,
-        position,
-        company,
+        recommendationText: text, // Map 'text' from frontend to 'recommendationText' for database
+        position: position || null,
+        company: company || null,
         relationship,
         status: "pending" as const
       };
