@@ -40,17 +40,12 @@ export function CommentSection({ postId, onUpdate }: CommentSectionProps): JSX.E
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<Comment[]>({
     queryKey: ["/api/comments", postId],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/posts/${postId}/comments`);
-      return res.json();
-    },
   });
 
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: async (commentData: { content: string }) => {
-      const res = await apiRequest("POST", `/api/posts/${postId}/comments`, commentData);
-      return res.json();
+      return await apiRequest("POST", `/api/posts/${postId}/comments`, commentData);
     },
     onSuccess: () => {
       setNewComment("");

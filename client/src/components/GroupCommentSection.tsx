@@ -36,17 +36,12 @@ export function GroupCommentSection({ postId, groupId, onUpdate }: GroupCommentS
   // Fetch comments
   const { data: comments = [], isLoading } = useQuery<GroupComment[]>({
     queryKey: [`/api/groups/${groupId}/posts/${postId}/comments`],
-    queryFn: async () => {
-      const res = await apiRequest("GET", `/api/groups/${groupId}/posts/${postId}/comments`);
-      return res.json();
-    },
   });
 
   // Create comment mutation
   const createCommentMutation = useMutation({
     mutationFn: async (commentData: { content: string }) => {
-      const res = await apiRequest("POST", `/api/groups/${groupId}/posts/${postId}/comments`, commentData);
-      return res.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/posts/${postId}/comments`, commentData);
     },
     onSuccess: () => {
       setNewComment("");

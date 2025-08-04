@@ -84,10 +84,9 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (data: { conversationId: string; content: string }) => {
-      const response = await apiRequest("POST", `/api/conversations/${data.conversationId}/messages`, {
+      return await apiRequest("POST", `/api/conversations/${data.conversationId}/messages`, {
         content: data.content,
       });
-      return response.json();
     },
     onSuccess: () => {
       setMessageText("");
@@ -105,12 +104,7 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   // Create conversation mutation
   const createConversationMutation = useMutation({
     mutationFn: async (userId: string) => {
-      const response = await apiRequest("POST", "/api/conversations/direct", { userId });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Falha ao criar conversa');
-      }
-      return response.json();
+      return await apiRequest("POST", "/api/conversations/direct", { userId });
     },
     onSuccess: (newConversation) => {
       setShowNewChat(false);
@@ -134,10 +128,9 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   // Edit message mutation
   const editMessageMutation = useMutation({
     mutationFn: async ({ messageId, content }: { messageId: string; content: string }) => {
-      const response = await apiRequest("PUT", `/api/messages/${messageId}`, {
+      return await apiRequest("PUT", `/api/messages/${messageId}`, {
         content,
       });
-      return response.json();
     },
     onSuccess: () => {
       setEditingMessageId(null);

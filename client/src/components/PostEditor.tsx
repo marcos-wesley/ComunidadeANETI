@@ -111,7 +111,7 @@ export function PostEditor({ onPostCreated }: PostEditorProps): JSX.Element {
     queryFn: async () => {
       try {
         const res = await apiRequest("GET", "/api/members");
-        return res.json();
+        return res;
       } catch (error) {
         console.error("Error fetching members:", error);
         return [];
@@ -128,7 +128,7 @@ export function PostEditor({ onPostCreated }: PostEditorProps): JSX.Element {
       mediaUrl?: string;
     }) => {
       const res = await apiRequest("POST", "/api/posts", postData);
-      return res.json();
+      return res;
     },
     onSuccess: () => {
       setContent("");

@@ -115,7 +115,7 @@ export default function AdminApplicationDetails() {
         status,
         adminNotes: notes,
       });
-      return await res.json();
+      return await res;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: [`/api/admin/applications/${id}`] });

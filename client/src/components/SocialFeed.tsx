@@ -33,10 +33,6 @@ export function SocialFeed(): JSX.Element {
   // Fetch posts
   const { data: posts = [], isLoading, refetch } = useQuery<Post[]>({
     queryKey: ["/api/posts"],
-    queryFn: async () => {
-      const res = await apiRequest("GET", "/api/posts");
-      return res.json();
-    },
   });
 
   if (isLoading) {

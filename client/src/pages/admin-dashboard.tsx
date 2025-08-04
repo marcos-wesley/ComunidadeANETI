@@ -53,7 +53,7 @@ export default function AdminDashboard() {
         status,
         adminNotes,
       });
-      return await res.json();
+      return await res;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/pending-applications"] });

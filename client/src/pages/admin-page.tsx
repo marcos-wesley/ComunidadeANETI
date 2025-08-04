@@ -304,7 +304,7 @@ export default function AdminPage() {
         method: "POST",
         credentials: "include",
       });
-      return await response.json();
+      return await response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/applications"] });
@@ -335,7 +335,7 @@ export default function AdminPage() {
         body: JSON.stringify({ isActive }),
       });
       if (!response.ok) throw new Error("Failed to update member status");
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
@@ -363,7 +363,7 @@ export default function AdminPage() {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to delete member");
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });

@@ -32,7 +32,7 @@ export function MentionInput({
     enabled: mentionQuery.length > 0,
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/users/search?q=${encodeURIComponent(mentionQuery)}`);
-      return await res.json();
+      return await res;
     },
   });
 

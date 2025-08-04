@@ -59,7 +59,7 @@ export default function EditProfilePage() {
   const updateProfileMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("PUT", "/api/profile", data);
-      return response.json();
+      return response;
     },
     onSuccess: () => {
       toast({

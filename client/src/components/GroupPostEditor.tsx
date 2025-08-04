@@ -54,8 +54,7 @@ export function GroupPostEditor({ groupId, onPostCreated }: GroupPostEditorProps
       mediaType?: string;
       mediaUrl?: string;
     }) => {
-      const res = await apiRequest("POST", `/api/groups/${groupId}/posts`, postData);
-      return res.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/posts`, postData);
     },
     onSuccess: () => {
       setContent("");

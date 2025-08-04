@@ -61,8 +61,7 @@ function GroupCard({ group }: { group: Group }) {
   // Join group mutation
   const joinGroupMutation = useMutation({
     mutationFn: async (groupId: string) => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/join`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/join`);
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -93,8 +92,7 @@ function GroupCard({ group }: { group: Group }) {
   // Leave group mutation
   const leaveGroupMutation = useMutation({
     mutationFn: async (groupId: string) => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/leave`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/leave`);
     },
     onSuccess: (data) => {
       if (data.success) {

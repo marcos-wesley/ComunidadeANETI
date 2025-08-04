@@ -76,8 +76,7 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
   // Update member info mutation
   const updateMemberMutation = useMutation({
     mutationFn: async (data: any) => {
-      const response = await apiRequest("PUT", `/api/admin/members/${member.id}`, data);
-      return response.json();
+      return await apiRequest("PUT", `/api/admin/members/${member.id}`, data);
     },
     onSuccess: (data) => {
       console.log("Member update success:", data);
@@ -102,8 +101,7 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
   // Change password mutation
   const changePasswordMutation = useMutation({
     mutationFn: async (data: { newPassword: string }) => {
-      const response = await apiRequest("PUT", `/api/admin/members/${member.id}/password`, data);
-      return response.json();
+      return await apiRequest("PUT", `/api/admin/members/${member.id}/password`, data);
     },
     onSuccess: () => {
       setPasswordData({ newPassword: "", confirmPassword: "" });
