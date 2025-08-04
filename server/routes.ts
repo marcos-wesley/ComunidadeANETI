@@ -13,6 +13,7 @@ import {
   insertMessageSchema,
   insertNotificationSchema,
   insertGroupSchema,
+  insertExperienceSchema,
   membershipPlans 
 } from "@shared/schema";
 import { db } from "./db";
@@ -1191,6 +1192,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating cover photo:", error);
       res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Experience management routes
+  app.post("/api/profile/experiences", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const experienceData = insertExperienceSchema.parse({
+        ...req.body,
+        userId
+      });
+
+      const newExperience = await storage.createExperience(experienceData);
+      res.json(newExperience);
+    } catch (error) {
+      console.error("Error creating experience:", error);
+      res.status(500).json({ error: "Failed to create experience" });
+    }
+  });
+
+  app.put("/api/profile/experiences", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { id, ...experienceData } = req.body;
+      
+      const updatedExperience = await storage.updateExperience(id, userId, experienceData);
+      if (!updatedExperience) {
+        return res.status(404).json({ error: "Experience not found" });
+      }
+      
+      res.json(updatedExperience);
+    } catch (error) {
+      console.error("Error updating experience:", error);
+      res.status(500).json({ error: "Failed to update experience" });
+    }
+  });
+
+  app.delete("/api/profile/experiences/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { id } = req.params;
+      
+      const deleted = await storage.deleteExperience(id, userId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Experience not found" });
+      }
+      
+      res.json({ message: "Experience deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting experience:", error);
+      res.status(500).json({ error: "Failed to delete experience" });
     }
   });
 

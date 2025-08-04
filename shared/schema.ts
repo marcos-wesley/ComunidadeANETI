@@ -154,6 +154,8 @@ export const experiences = pgTable("experiences", {
   endDate: text("end_date"), // null means current
   description: text("description"),
   isCurrentPosition: boolean("is_current_position").default(false),
+  location: text("location"),
+  locationType: text("location_type"), // presencial, hibrida, remota
   createdAt: timestamp("created_at").defaultNow(),
 });
 

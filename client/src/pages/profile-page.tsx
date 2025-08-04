@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -957,12 +958,14 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
         )}
       </CardHeader>
       <CardContent>
-        {/* Experience Form */}
-        {isAddingExperience && isOwnProfile && (
-          <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-            <h3 className="text-lg font-semibold mb-4">
-              {editingExperienceId ? 'Editar Experiência' : 'Adicionar Experiência'}
-            </h3>
+        {/* Experience Modal */}
+        <Dialog open={isAddingExperience} onOpenChange={(open) => !open && handleCancel()}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingExperienceId ? 'Editar Experiência' : 'Adicionar Experiência'}
+              </DialogTitle>
+            </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
                 {/* Title */}
@@ -1066,7 +1069,7 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
                             onChange={(e) => handleLocationInputChange(e.target.value)}
                           />
                           {filteredLocations.length > 0 && (
-                            <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border rounded-md shadow-lg max-h-48 overflow-y-auto">
                               {filteredLocations.map((location, index) => (
                                 <div
                                   key={index}
@@ -1151,8 +1154,8 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
                 </div>
               </form>
             </Form>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
 
         {/* Experience List */}
         {experiences.length > 0 ? (

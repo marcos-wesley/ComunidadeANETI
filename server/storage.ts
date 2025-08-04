@@ -1921,9 +1921,11 @@ export class DatabaseStorage implements IStorage {
 
     // For now, return just the user data without portfolio items
     // Portfolio items will be populated when tables are created
+    const experiences = await this.getUserExperiences(userId);
+
     return {
       ...user,
-      experiences: [],
+      experiences,
       educations: [],
       certifications: [],
       projects: [],
@@ -1934,9 +1936,62 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getUserExperiences(userId: string): Promise<any[]> {
-    // Portfolio tables will be implemented later
-    return [];
+  async getUserExperiences(userId: string): Promise<Experience[]> {
+    try {
+      const userExperiences = await db
+        .select()
+        .from(experiences)
+        .where(eq(experiences.userId, userId))
+        .orderBy(experiences.startDate);
+      
+      return userExperiences;
+    } catch (error) {
+      console.error("Error fetching user experiences:", error);
+      return [];
+    }
+  }
+
+  async createExperience(experienceData: InsertExperience): Promise<Experience> {
+    try {
+      const [newExperience] = await db
+        .insert(experiences)
+        .values(experienceData)
+        .returning();
+      
+      return newExperience;
+    } catch (error) {
+      console.error("Error creating experience:", error);
+      throw error;
+    }
+  }
+
+  async updateExperience(id: string, userId: string, experienceData: Partial<InsertExperience>): Promise<Experience | null> {
+    try {
+      const [updatedExperience] = await db
+        .update(experiences)
+        .set(experienceData)
+        .where(and(eq(experiences.id, id), eq(experiences.userId, userId)))
+        .returning();
+      
+      return updatedExperience || null;
+    } catch (error) {
+      console.error("Error updating experience:", error);
+      throw error;
+    }
+  }
+
+  async deleteExperience(id: string, userId: string): Promise<boolean> {
+    try {
+      const [deletedExperience] = await db
+        .delete(experiences)
+        .where(and(eq(experiences.id, id), eq(experiences.userId, userId)))
+        .returning();
+      
+      return !!deletedExperience;
+    } catch (error) {
+      console.error("Error deleting experience:", error);
+      throw error;
+    }
   }
 
   async getUserEducations(userId: string): Promise<any[]> {
