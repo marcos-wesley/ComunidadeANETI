@@ -78,6 +78,8 @@ type PostLike = {
     id: string;
     fullName: string;
     username: string;
+    professionalArea?: string;
+    position?: string;
     planName?: string;
   };
 };
@@ -104,49 +106,63 @@ function LikesModalContent({ postId, likesCount }: { postId: string; likesCount:
     );
   }
 
+  // Contar tipos de reação
+  const likesOnly = likes.filter(l => true); // Por enquanto só curtidas
+  const totalReactions = likes.length;
+
   return (
-    <div className="space-y-1">
+    <div className="space-y-0">
       {/* Tabs de reações no estilo LinkedIn */}
-      <div className="flex items-center gap-4 border-b pb-3 mb-4">
+      <div className="flex items-center gap-6 border-b pb-3 mb-4">
         <button className="flex items-center gap-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">
-          <span>Todas {likesCount}</span>
+          <span>Todas {totalReactions}</span>
         </button>
-        <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
-          <span>👍</span>
-          <span>{likes.filter(l => true).length}</span>
+        <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+          <span className="text-base">👍</span>
+          <span>{likesOnly.length}</span>
+        </button>
+        <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+          <span className="text-base">❤️</span>
+          <span>0</span>
+        </button>
+        <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+          <span className="text-base">😂</span>
+          <span>0</span>
         </button>
       </div>
 
       {/* Lista de usuários que reagiram */}
-      <div className="space-y-3 max-h-80 overflow-y-auto">
-        {likes.map((like) => (
-          <div key={like.id} className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors">
-            <div className="flex items-center gap-3">
-              <Avatar className="h-12 w-12">
-                <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                  {like.user.fullName?.charAt(0) || like.user.username.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold hover:text-blue-600 cursor-pointer">
-                    {like.user.fullName}
-                  </p>
-                  <span className="text-lg">👍</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-muted-foreground">
-                    {like.user.planName || 'Membro'}
-                  </p>
-                  <span className="text-xs text-muted-foreground">•</span>
-                  <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(like.createdAt), { addSuffix: true, locale: ptBR })}
-                  </p>
+      <div className="space-y-0 max-h-80 overflow-y-auto">
+        {likes.map((like, index) => (
+          <div key={like.id} className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-3 transition-colors">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="relative">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                    {like.user.fullName?.charAt(0) || like.user.username.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {/* Ícone de reação no canto */}
+                <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
+                  <span className="text-sm">👍</span>
                 </div>
               </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold hover:text-blue-600 cursor-pointer truncate">
+                    {like.user.fullName || like.user.username}
+                  </p>
+                  <span className="text-xs text-muted-foreground">• {index === 0 ? '1º' : index === 1 ? '2º' : `${index + 1}º`}</span>
+                </div>
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {(like.user.professionalArea && like.user.position) 
+                    ? `${like.user.position} em ${like.user.professionalArea}` 
+                    : like.user.professionalArea || like.user.planName || 'Especialista em TI'}
+                </p>
+              </div>
             </div>
-            <Button variant="outline" size="sm" className="text-xs">
-              Conectar
+            <Button variant="outline" size="sm" className="text-xs font-medium px-4 py-1.5 rounded-full">
+              <span className="text-blue-600">Conectar</span>
             </Button>
           </div>
         ))}
@@ -397,9 +413,9 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
                     {likesCount} reações
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>Reações</DialogTitle>
+                <DialogContent className="max-w-lg">
+                  <DialogHeader className="pb-0">
+                    <DialogTitle className="text-lg font-semibold">Reações</DialogTitle>
                   </DialogHeader>
                   <LikesModalContent postId={post.id} likesCount={likesCount} />
                 </DialogContent>

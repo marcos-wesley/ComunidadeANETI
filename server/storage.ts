@@ -1222,7 +1222,7 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async getPostLikes(postId: string): Promise<(Like & { user: Pick<User, 'id' | 'fullName' | 'username' | 'planName'> })[]> {
+  async getPostLikes(postId: string) {
     return await db
       .select({
         id: likes.id,
@@ -1233,6 +1233,8 @@ export class DatabaseStorage implements IStorage {
           id: users.id,
           fullName: users.fullName,
           username: users.username,
+          professionalArea: users.area,
+          position: users.position,
           planName: sql<string>`CASE 
             WHEN ${users.currentPlanId} IS NOT NULL THEN ${membershipPlans.name}
             ELSE NULL
