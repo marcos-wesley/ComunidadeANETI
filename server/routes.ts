@@ -737,9 +737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/connections/pending", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user?.id;
-      console.log(`[DEBUG] Fetching pending requests for user: ${userId}`);
       const pendingRequests = await storage.getPendingConnectionRequests(userId!);
-      console.log(`[DEBUG] Found ${pendingRequests.length} pending requests:`, pendingRequests);
       res.json(pendingRequests);
     } catch (error) {
       console.error("Error fetching pending connection requests:", error);
