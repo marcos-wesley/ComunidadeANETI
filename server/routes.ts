@@ -4105,7 +4105,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin Membership Plans Management Routes
-  app.get("/api/admin/membership-plans", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/membership-plans", isAdminAuthenticated, async (req, res) => {
     try {
       const plans = await storage.getAllMembershipPlansWithCount();
       res.json(plans);
@@ -4115,7 +4115,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/membership-plans", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/membership-plans", isAdminAuthenticated, async (req, res) => {
     try {
       const planData = req.body;
       
@@ -4136,7 +4136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/admin/membership-plans/:id", requireAdminAuth, async (req, res) => {
+  app.put("/api/admin/membership-plans/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const updateData = req.body;
@@ -4154,7 +4154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/admin/membership-plans/:id", requireAdminAuth, async (req, res) => {
+  app.delete("/api/admin/membership-plans/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
 
@@ -4179,7 +4179,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/membership-plans/:id/toggle-status", requireAdminAuth, async (req, res) => {
+  app.patch("/api/admin/membership-plans/:id/toggle-status", isAdminAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const { isActive } = req.body;
@@ -4201,7 +4201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/admin/membership-plans/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/membership-plans/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const { id } = req.params;
       const plan = await storage.getMembershipPlanWithCount(id);
