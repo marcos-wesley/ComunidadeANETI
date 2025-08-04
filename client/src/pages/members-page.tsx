@@ -643,9 +643,9 @@ export default function MembersPage(): JSX.Element {
                   <div className="flex gap-2 pt-3">
                     {member.connectionStatus === "connected" ? (
                       user?.planName === "Público" ? (
-                        <Button size="sm" variant="outline" className="flex-1" disabled>
+                        <Button size="sm" variant="outline" className="flex-1" disabled title="Recurso disponível apenas para planos pagos">
                           <Mail className="h-4 w-4 mr-1" />
-                          Mensagem (Premium)
+                          Premium
                         </Button>
                       ) : (
                         <Button size="sm" variant="outline" className="flex-1">

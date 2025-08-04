@@ -119,9 +119,13 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     },
     onError: (error: Error) => {
+      // Don't show toast for expected plan restriction errors
+      if (error.message?.includes("planos Júnior, Pleno, Sênior, Honra ou Diretivo")) {
+        return;
+      }
       toast({
         title: "Erro",
-        description: error.message || "Falha ao criar conversa",
+        description: "Não foi possível iniciar a conversa",
         variant: "destructive",
       });
     },
