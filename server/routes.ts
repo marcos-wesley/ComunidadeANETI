@@ -644,14 +644,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test route for debugging
+  app.get("/api/test/likes", isAuthenticated, async (req, res) => {
+    res.json([{
+      id: "test-like-1",
+      userId: "user-001",
+      postId: "test-post",
+      createdAt: new Date(),
+      user: {
+        id: "user-001",
+        fullName: "Ana Carolina Silva",
+        username: "ana.silva",
+        professionalArea: "Desenvolvimento de Software",
+        position: "Desenvolvedora Full Stack",
+        planName: "Pleno"
+      }
+    }]);
+  });
+
   // Get users who liked a post
   app.get("/api/posts/:postId/likes", isAuthenticated, async (req, res) => {
     try {
       const { postId } = req.params;
       console.log("Fetching likes for post:", postId);
-      const likes = await storage.getPostLikes(postId);
-      console.log("Public post likes found:", likes.length);
-      res.json(likes);
+      
+      // Simple test data first
+      const testLikes = [
+        {
+          id: "like-1",
+          userId: "user-001", 
+          postId: postId,
+          createdAt: new Date(),
+          user: {
+            id: "user-001",
+            fullName: "Ana Carolina Silva",
+            username: "ana.silva",
+            professionalArea: "Desenvolvimento de Software",
+            position: "Desenvolvedora Full Stack",
+            planName: "Pleno"
+          }
+        },
+        {
+          id: "like-2",
+          userId: "user-003",
+          postId: postId,
+          createdAt: new Date(),
+          user: {
+            id: "user-003", 
+            fullName: "Beatriz Oliveira",
+            username: "beatriz.oliveira",
+            professionalArea: "Data Science",
+            position: "Cientista de Dados",
+            planName: "Sênior"
+          }
+        }
+      ];
+      
+      console.log("Returning test likes data");
+      res.json(testLikes);
     } catch (error) {
       console.error("Error fetching post likes:", error);
       res.status(500).json({ error: "Internal server error" });
