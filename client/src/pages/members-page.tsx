@@ -52,7 +52,8 @@ type Member = {
   connectionStatus?: "none" | "pending" | "connected" | "can_accept";
   connectionId?: string | null;
   followersCount?: number;
-  connectionsCount?: number;
+  connectionsCount?: number;  
+  followingCount?: number;
 };
 
 export default function MembersPage(): JSX.Element {
@@ -621,22 +622,21 @@ export default function MembersPage(): JSX.Element {
                     <span className="truncate">{member.city}, {member.state}</span>
                   </div>
 
-                  {(member.connectionsCount > 0 || member.followersCount > 0) && (
-                    <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                      {member.connectionsCount > 0 && (
-                        <div className="flex items-center gap-1">
-                          <UserCheck className="h-3 w-3" />
-                          <span>{member.connectionsCount} conexões</span>
-                        </div>
-                      )}
-                      {member.followersCount > 0 && (
-                        <div className="flex items-center gap-1">
-                          <Star className="h-3 w-3" />
-                          <span>{member.followersCount} seguidores</span>
-                        </div>
-                      )}
+                  {/* Statistics Section - Always show */}
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t">
+                    <div className="flex items-center gap-1">
+                      <UserCheck className="h-3 w-3" />
+                      <span>{member.connectionsCount || 0} Conexões</span>
                     </div>
-                  )}
+                    <div className="flex items-center gap-1">
+                      <Star className="h-3 w-3" />
+                      <span>{member.followersCount || 0} Seguidores</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Users className="h-3 w-3" />
+                      <span>{member.followingCount || 0} Seguindo</span>
+                    </div>
+                  </div>
 
                   <div className="flex gap-2 pt-3">
                     {member.connectionStatus === "connected" ? (

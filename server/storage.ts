@@ -1698,6 +1698,7 @@ export class DatabaseStorage implements IStorage {
         connectionId,
         followersCount,
         connectionsCount,
+        followingCount: 0, // Temporary for now
       };
     });
   }
