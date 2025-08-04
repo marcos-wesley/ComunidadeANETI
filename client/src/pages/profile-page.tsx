@@ -2268,9 +2268,14 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
         )}
       </CardHeader>
       <CardContent>
-        {/* Add/Edit Form */}
-        {isAddingCertification && (
-          <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+        {/* Add/Edit Modal */}
+        <Dialog open={isAddingCertification} onOpenChange={setIsAddingCertification}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingCertificationId ? 'Editar Certificação' : 'Adicionar Curso/Certificação'}
+              </DialogTitle>
+            </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2452,8 +2457,8 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
               </div>
               </form>
             </Form>
-          </div>
-        )}
+          </DialogContent>
+        </Dialog>
 
         {/* Certifications List */}
         {displayedCertifications.length > 0 ? (
