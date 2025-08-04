@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   User,
   MapPin, 
@@ -535,20 +536,121 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 }
 
 function AboutSection({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedAbout, setEditedAbout] = useState(profile.aboutMe || '');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Mutation to update about section
+  const updateAboutMutation = useMutation({
+    mutationFn: async (newAbout: string) => {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ aboutMe: newAbout })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update about');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsEditing(false);
+      toast({
+        title: "Seção 'Sobre' atualizada",
+        description: "Sua descrição foi atualizada com sucesso."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a seção 'Sobre'.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSave = () => {
+    if (editedAbout.trim() !== profile.aboutMe) {
+      updateAboutMutation.mutate(editedAbout.trim());
+    } else {
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedAbout(profile.aboutMe || '');
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      handleCancel();
+    }
+    // Para textarea, Ctrl+Enter ou Cmd+Enter salva
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      handleSave();
+    }
+  };
+
   if (!profile.aboutMe && !isOwnProfile) return null;
   
   return (
     <Card className="border-0 shadow-sm">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-xl font-semibold">Sobre</CardTitle>
-        {isOwnProfile && (
-          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+        {isOwnProfile && !isEditing && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-8 w-8 p-0"
+            onClick={() => setIsEditing(true)}
+            title="Editar seção Sobre"
+          >
             <Edit3 className="h-4 w-4" />
           </Button>
         )}
       </CardHeader>
       <CardContent className="pt-0">
-        {profile.aboutMe ? (
+        {isEditing && isOwnProfile ? (
+          <div className="space-y-3">
+            <Textarea
+              value={editedAbout}
+              onChange={(e) => setEditedAbout(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Descreva suas principais qualificações, experiência e objetivos profissionais..."
+              className="min-h-[120px] resize-y"
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                onClick={handleSave}
+                disabled={updateAboutMutation.isPending}
+              >
+                <Check className="h-4 w-4 mr-1" />
+                Salvar
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleCancel}
+                disabled={updateAboutMutation.isPending}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Cancelar
+              </Button>
+            </div>
+            <p className="text-xs text-gray-500">
+              Dica: Use Ctrl+Enter para salvar ou Escape para cancelar
+            </p>
+          </div>
+        ) : profile.aboutMe ? (
           <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
             {profile.aboutMe}
           </div>
@@ -558,7 +660,12 @@ function AboutSection({ profile, isOwnProfile }: { profile: UserProfile; isOwnPr
               <p className="text-gray-500 dark:text-gray-400 mb-4">
                 Descreva suas principais qualificações
               </p>
-              <Button variant="outline" size="sm" className="text-blue-600 border-blue-600">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="text-blue-600 border-blue-600"
+                onClick={() => setIsEditing(true)}
+              >
                 <Edit3 className="h-4 w-4 mr-2" />
                 Adicionar sobre
               </Button>
