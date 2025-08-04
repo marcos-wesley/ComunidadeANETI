@@ -1633,29 +1633,25 @@ export class DatabaseStorage implements IStorage {
         inArray(follows.followingId, memberIds)
       ));
 
-    // Get connection counts using raw SQL for better performance
-    const connectionCountsResult = await db.execute(sql`
-      WITH member_connections AS (
-        SELECT 
-          CASE 
-            WHEN requester_id = ANY(${memberIds}) THEN requester_id
-            ELSE receiver_id
-          END as member_id,
-          COUNT(*) as count
-        FROM connections 
-        WHERE status = 'accepted' 
-        AND (requester_id = ANY(${memberIds}) OR receiver_id = ANY(${memberIds}))
-        GROUP BY 1
-      )
-      SELECT member_id, count FROM member_connections
-    `);
-    
-    const memberConnectionCounts = connectionCountsResult.rows.map(row => ({
-      memberId: row.member_id as string,
-      count: parseInt(row.count as string) || 0
-    }));
+    // Get real counts for connections - count for each member
+    const memberConnectionCounts = await Promise.all(
+      memberIds.map(async (memberId) => {
+        const count = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(connections)
+          .where(
+            and(
+              eq(connections.status, "accepted"),
+              or(
+                eq(connections.requesterId, memberId),
+                eq(connections.receiverId, memberId)
+              )
+            )
+          );
+        return { memberId, count: count[0]?.count || 0 };
+      })
+    );
 
-    // Get follower counts
     const memberFollowerCounts = await db
       .select({
         followingId: follows.followingId,
@@ -1664,16 +1660,6 @@ export class DatabaseStorage implements IStorage {
       .from(follows)
       .where(inArray(follows.followingId, memberIds))
       .groupBy(follows.followingId);
-      
-    // Get following counts  
-    const memberFollowingCounts = await db
-      .select({
-        followerId: follows.followerId,
-        count: sql<number>`count(*)`
-      })
-      .from(follows)
-      .where(inArray(follows.followerId, memberIds))
-      .groupBy(follows.followerId);
 
     // Map the data together
     return allMembers.map(member => {
