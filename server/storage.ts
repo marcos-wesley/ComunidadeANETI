@@ -464,9 +464,9 @@ export class DatabaseStorage implements IStorage {
 
       if (filters.planName) {
         if (filters.planName === 'sem-nivel') {
-          whereConditions.push(sql`${users.planName} IS NULL`);
+          whereConditions.push(isNull(membershipPlans.name));
         } else {
-          whereConditions.push(eq(users.planName, filters.planName));
+          whereConditions.push(eq(membershipPlans.name, filters.planName));
         }
       }
 
@@ -479,8 +479,41 @@ export class DatabaseStorage implements IStorage {
       }
 
       const users_data = await db
-        .select()
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          fullName: users.fullName,
+          city: users.city,
+          state: users.state,
+          area: users.area,
+          position: users.position,
+          company: users.company,
+          phone: users.phone,
+          linkedin: users.linkedin,
+          github: users.github,
+          website: users.website,
+          bio: users.bio,
+          gender: users.gender,
+          profilePicture: users.profilePicture,
+          coverPhoto: users.coverPhoto,
+          aboutMe: users.aboutMe,
+          professionalTitle: users.professionalTitle,
+          isApproved: users.isApproved,
+          isActive: users.isActive,
+          role: users.role,
+          currentPlanId: users.currentPlanId,
+          planName: membershipPlans.name,
+          stripeCustomerId: users.stripeCustomerId,
+          stripeSubscriptionId: users.stripeSubscriptionId,
+          subscriptionStatus: users.subscriptionStatus,
+          connectionsCount: users.connectionsCount,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt
+        })
         .from(users)
+        .leftJoin(membershipPlans, eq(users.currentPlanId, membershipPlans.id))
         .where(and(...whereConditions))
         .limit(filters.limit)
         .offset(filters.offset)
@@ -514,9 +547,9 @@ export class DatabaseStorage implements IStorage {
 
       if (filters.planName) {
         if (filters.planName === 'sem-nivel') {
-          whereConditions.push(sql`${users.planName} IS NULL`);
+          whereConditions.push(isNull(membershipPlans.name));
         } else {
-          whereConditions.push(eq(users.planName, filters.planName));
+          whereConditions.push(eq(membershipPlans.name, filters.planName));
         }
       }
 
@@ -531,6 +564,7 @@ export class DatabaseStorage implements IStorage {
       const [result] = await db
         .select({ count: sql<number>`count(*)` })
         .from(users)
+        .leftJoin(membershipPlans, eq(users.currentPlanId, membershipPlans.id))
         .where(and(...whereConditions));
 
       return result.count;
