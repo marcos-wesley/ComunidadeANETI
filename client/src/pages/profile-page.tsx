@@ -687,20 +687,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                 )}
               </div>
 
-              {/* Action Buttons - moved below position */}
-              {isOwnProfile && (
-                <div className="flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50">
-                    Disponível para trabalho
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Adicionar seção do perfil
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    Mais
-                  </Button>
-                </div>
-              )}
+
             </div>
 
             {/* Connection/Message Buttons - positioned better */}
