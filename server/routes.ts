@@ -1387,6 +1387,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Certification CRUD routes
+  
+  // Get user's certifications
+  app.get("/api/profile/certifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const certifications = await storage.getUserCertifications(userId);
+      res.json(certifications);
+    } catch (error) {
+      console.error("Error fetching certifications:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Add certification
+  app.post("/api/profile/certifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const certificationData = { ...req.body, userId };
+      
+      const newCertification = await storage.createCertification(certificationData);
+      res.status(201).json(newCertification);
+    } catch (error) {
+      console.error("Error creating certification:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update certification
+  app.put("/api/profile/certifications", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { id, ...certificationData } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ error: "Certification ID is required" });
+      }
+      
+      const updatedCertification = await storage.updateCertification(id, userId, certificationData);
+      
+      if (!updatedCertification) {
+        return res.status(404).json({ error: "Certification not found" });
+      }
+      
+      res.json(updatedCertification);
+    } catch (error) {
+      console.error("Error updating certification:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Delete certification
+  app.delete("/api/profile/certifications/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const certificationId = req.params.id;
+      
+      const deleted = await storage.deleteCertification(certificationId, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Certification not found" });
+      }
+      
+      res.json({ message: "Certification deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting certification:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
       const { 

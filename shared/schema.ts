@@ -175,11 +175,15 @@ export const certifications = pgTable("certifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
   name: text("name").notNull(),
-  issuer: text("issuer").notNull(),
-  issueDate: text("issue_date").notNull(),
-  expirationDate: text("expiration_date"),
+  issuer: text("issuer").notNull(), // Organização Emissora
+  issueDate: text("issue_date").notNull(), // YYYY-MM format
+  expirationDate: text("expiration_date"), // YYYY-MM format, opcional
+  workload: integer("workload"), // Carga Horária em horas
+  type: text("type").notNull().default("certificacao"), // 'curso' ou 'certificacao'
   credentialId: text("credential_id"),
-  credentialUrl: text("credential_url"),
+  credentialUrl: text("credential_url"), // URL da credencial para validar
+  credentialImageUrl: text("credential_image_url"), // Mídia para anexar foto da credencial
+  description: text("description"), // Descrição opcional
   createdAt: timestamp("created_at").defaultNow(),
 });
 

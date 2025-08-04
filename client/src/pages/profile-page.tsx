@@ -87,7 +87,10 @@ import {
   Search,
   Upload,
   Pencil,
-  Check
+  Check,
+  ExternalLink,
+  Image,
+  Trash2
 } from "lucide-react";
 
 type UserProfile = {
@@ -143,8 +146,12 @@ type Certification = {
   issuer: string;
   issueDate: string;
   expirationDate?: string;
+  workload?: number;
+  type: string;
   credentialId?: string;
   credentialUrl?: string;
+  credentialImageUrl?: string;
+  description?: string;
 };
 
 type Project = {
@@ -172,6 +179,8 @@ type PredefinedSkill = {
   name: string;
   category: string;
 };
+
+
 
 type Recommendation = {
   id: string;
@@ -1688,69 +1697,6 @@ function EducationSection({ educations, isOwnProfile }: { educations: Education[
   );
 }
 
-function CertificationSection({ certifications, isOwnProfile }: { certifications: Certification[]; isOwnProfile: boolean }) {
-  const formatDate = (dateStr: string) => {
-    const [year, month] = dateStr.split('-');
-    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return `${months[parseInt(month) - 1]} ${year}`;
-  };
-
-  if (certifications.length === 0 && !isOwnProfile) return null;
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Award className="h-5 w-5" />
-          Cursos e Certificações
-        </CardTitle>
-        {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent>
-        {certifications.length > 0 ? (
-          <div className="space-y-4">
-            {certifications.map((cert) => (
-              <div key={cert.id} className="border rounded-lg p-4">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-semibold">{cert.name}</h4>
-                    <p className="text-gray-600 dark:text-gray-400">{cert.issuer}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Emitido em {formatDate(cert.issueDate)}
-                      {cert.expirationDate && ` • Expira em ${formatDate(cert.expirationDate)}`}
-                    </p>
-                    {cert.credentialId && (
-                      <p className="text-xs text-gray-500 mt-1">
-                        ID da credencial: {cert.credentialId}
-                      </p>
-                    )}
-                  </div>
-                  {cert.credentialUrl && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer">
-                        <Globe className="h-4 w-4 mr-1" />
-                        Ver
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 italic">
-            {isOwnProfile ? "Adicione seus cursos e certificações" : "Nenhuma certificação disponível"}
-          </p>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
 function ProjectsSection({ projects, isOwnProfile }: { projects: Project[]; isOwnProfile: boolean }) {
   if (projects.length === 0 && !isOwnProfile) return null;
 
@@ -2133,6 +2079,492 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
   );
 }
 
+function CertificationsSection({ certifications, isOwnProfile }: { certifications: Certification[]; isOwnProfile: boolean }) {
+  const [isAddingCertification, setIsAddingCertification] = useState(false);
+  const [editingCertificationId, setEditingCertificationId] = useState<string | null>(null);
+  const [showAllCertifications, setShowAllCertifications] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Sort certifications chronologically (most recent first)
+  const sortedCertifications = [...certifications].sort((a, b) => {
+    // Sort by issue date (most recent first)
+    return b.issueDate.localeCompare(a.issueDate);
+  });
+
+  // Show only first 3 certifications unless "Ver mais" is clicked
+  const displayedCertifications = showAllCertifications ? sortedCertifications : sortedCertifications.slice(0, 3);
+
+  const toggleDescription = (certId: string) => {
+    const newExpanded = new Set(expandedDescriptions);
+    if (newExpanded.has(certId)) {
+      newExpanded.delete(certId);
+    } else {
+      newExpanded.add(certId);
+    }
+    setExpandedDescriptions(newExpanded);
+  };
+
+  const truncateDescription = (description: string, certId: string) => {
+    if (!description) return '';
+    
+    const lines = description.split('\n');
+    const isExpanded = expandedDescriptions.has(certId);
+    
+    if (lines.length <= 2 || isExpanded) {
+      return description;
+    }
+    
+    return lines.slice(0, 2).join('\n');
+  };
+
+  const formatDate = (dateStr: string) => {
+    const [year, month] = dateStr.split('-');
+    const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return `${months[parseInt(month) - 1]} ${year}`;
+  };
+
+  const certificationSchema = z.object({
+    name: z.string().min(1, "Nome é obrigatório"),
+    issuer: z.string().min(1, "Organização emissora é obrigatória"),
+    issueDate: z.string().min(1, "Data de emissão é obrigatória"),
+    expirationDate: z.string().optional(),
+    workload: z.number().optional(),
+    type: z.enum(["curso", "certificacao"]),
+    credentialId: z.string().optional(),
+    credentialUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+    credentialImageUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+    description: z.string().optional()
+  });
+
+  type CertificationFormData = z.infer<typeof certificationSchema>;
+
+  const form = useForm<CertificationFormData>({
+    resolver: zodResolver(certificationSchema),
+    defaultValues: {
+      name: '',
+      issuer: '',
+      issueDate: '',
+      expirationDate: '',
+      workload: undefined,
+      type: 'certificacao',
+      credentialId: '',
+      credentialUrl: '',
+      credentialImageUrl: '',
+      description: ''
+    }
+  });
+
+  // Mutation to add/update certification
+  const certificationMutation = useMutation({
+    mutationFn: async (data: CertificationFormData) => {
+      const response = await fetch('/api/profile/certifications', {
+        method: editingCertificationId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingCertificationId ? { ...data, id: editingCertificationId } : data)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save certification');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsAddingCertification(false);
+      setEditingCertificationId(null);
+      form.reset();
+      toast({
+        title: editingCertificationId ? "Certificação atualizada" : "Certificação adicionada",
+        description: editingCertificationId ? "A certificação foi atualizada com sucesso." : "A certificação foi adicionada ao seu perfil."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a certificação.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Mutation to delete certification
+  const deleteCertificationMutation = useMutation({
+    mutationFn: async (certificationId: string) => {
+      const response = await fetch(`/api/profile/certifications/${certificationId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete certification');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "Certificação removida",
+        description: "A certificação foi removida do seu perfil."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover a certificação.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleEdit = (certification: Certification) => {
+    setEditingCertificationId(certification.id);
+    form.reset({
+      name: certification.name,
+      issuer: certification.issuer,
+      issueDate: certification.issueDate,
+      expirationDate: certification.expirationDate || '',
+      workload: certification.workload || undefined,
+      type: certification.type as "curso" | "certificacao",
+      credentialId: certification.credentialId || '',
+      credentialUrl: certification.credentialUrl || '',
+      credentialImageUrl: certification.credentialImageUrl || '',
+      description: certification.description || ''
+    });
+    setIsAddingCertification(true);
+  };
+
+  const handleCancel = () => {
+    setIsAddingCertification(false);
+    setEditingCertificationId(null);
+    form.reset();
+  };
+
+  const onSubmit = (data: CertificationFormData) => {
+    certificationMutation.mutate(data);
+  };
+
+  if (certifications.length === 0 && !isOwnProfile) return null;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Award className="h-5 w-5" />
+          Cursos e Certificações
+        </CardTitle>
+        {isOwnProfile && (
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setIsAddingCertification(true)}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {/* Add/Edit Form */}
+        {isAddingCertification && (
+          <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome do Curso/Certificação *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Desenvolvimento Web Avançado" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="issuer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Organização Emissora *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Udemy, Coursera, Google" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="type"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo *</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="curso">Curso</SelectItem>
+                          <SelectItem value="certificacao">Certificação</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="issueDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Emissão *</FormLabel>
+                      <FormControl>
+                        <Input type="month" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="expirationDate"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Data de Expiração</FormLabel>
+                      <FormControl>
+                        <Input type="month" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="workload"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Carga Horária (horas)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Ex: 40" 
+                          {...field}
+                          onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="credentialId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>ID da Credencial</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: UC-12345678" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="credentialUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL da Credencial</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="credentialImageUrl"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>URL da Imagem da Credencial</FormLabel>
+                      <FormControl>
+                        <Input placeholder="https://..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Descreva o que você aprendeu neste curso/certificação..."
+                        rows={3}
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex gap-2">
+                <Button 
+                  type="submit" 
+                  disabled={certificationMutation.isPending}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {certificationMutation.isPending ? 'Salvando...' : (editingCertificationId ? 'Atualizar' : 'Adicionar')}
+                </Button>
+                <Button type="button" variant="outline" onClick={handleCancel}>
+                  Cancelar
+                </Button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Certifications List */}
+        {displayedCertifications.length > 0 ? (
+          <div className="space-y-4">
+            {displayedCertifications.map((cert) => (
+              <div key={cert.id} className="border rounded-lg p-4">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-semibold">{cert.name}</h4>
+                      <Badge variant={cert.type === 'curso' ? 'secondary' : 'default'} className="text-xs">
+                        {cert.type === 'curso' ? 'Curso' : 'Certificação'}
+                      </Badge>
+                    </div>
+                    
+                    <p className="text-gray-600 dark:text-gray-400 font-medium">{cert.issuer}</p>
+                    
+                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                      <span>Emitido em {formatDate(cert.issueDate)}</span>
+                      {cert.expirationDate && (
+                        <span>• Expira em {formatDate(cert.expirationDate)}</span>
+                      )}
+                      {cert.workload && (
+                        <span>• {cert.workload}h</span>
+                      )}
+                    </div>
+
+                    {cert.credentialId && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        ID da Credencial: {cert.credentialId}
+                      </p>
+                    )}
+
+                    {cert.description && (
+                      <div className="mt-3">
+                        <p className="text-gray-700 dark:text-gray-300 text-sm whitespace-pre-wrap">
+                          {truncateDescription(cert.description, cert.id)}
+                        </p>
+                        {cert.description.split('\n').length > 2 && (
+                          <button
+                            onClick={() => toggleDescription(cert.id)}
+                            className="text-blue-600 hover:text-blue-800 text-sm mt-1"
+                          >
+                            {expandedDescriptions.has(cert.id) ? 'Ver menos' : 'Ver mais'}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-2 mt-3">
+                      {cert.credentialUrl && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={cert.credentialUrl} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="h-4 w-4 mr-1" />
+                            Ver Credencial
+                          </a>
+                        </Button>
+                      )}
+                      {cert.credentialImageUrl && (
+                        <Button variant="outline" size="sm" asChild>
+                          <a href={cert.credentialImageUrl} target="_blank" rel="noopener noreferrer">
+                            <Image className="h-4 w-4 mr-1" />
+                            Ver Certificado
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+
+                  {isOwnProfile && (
+                    <div className="flex gap-1 ml-4">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(cert)}
+                      >
+                        <Edit3 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteCertificationMutation.mutate(cert.id)}
+                        disabled={deleteCertificationMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Show more/less button */}
+            {certifications.length > 3 && (
+              <Button
+                variant="ghost"
+                onClick={() => setShowAllCertifications(!showAllCertifications)}
+                className="w-full"
+              >
+                {showAllCertifications ? 'Ver menos' : `Ver todas as ${certifications.length} certificações`}
+              </Button>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-500 italic">
+            {isOwnProfile ? "Adicione seus cursos e certificações" : "Nenhuma certificação disponível"}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function RecommendationsSection({ recommendations, isOwnProfile }: { recommendations: Recommendation[]; isOwnProfile: boolean }) {
   const approvedRecommendations = recommendations.filter(rec => rec.status === 'approved');
   
@@ -2230,7 +2662,7 @@ export default function ProfilePage() {
           <HighlightsSection highlights={profile.highlights} isOwnProfile={isOwnProfile} />
           <ExperienceSection experiences={profile.experiences} isOwnProfile={isOwnProfile} />
           <EducationSection educations={profile.educations} isOwnProfile={isOwnProfile} />
-          <CertificationSection certifications={profile.certifications} isOwnProfile={isOwnProfile} />
+          <CertificationsSection certifications={profile.certifications} isOwnProfile={isOwnProfile} />
           <ProjectsSection projects={profile.projects} isOwnProfile={isOwnProfile} />
           <SkillsSection skills={profile.skills} isOwnProfile={isOwnProfile} />
           <LanguagesSection languages={profile.languages} isOwnProfile={isOwnProfile} />

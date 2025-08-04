@@ -192,6 +192,9 @@ export interface IStorage {
   getUserExperiences(userId: string): Promise<Experience[]>;
   getUserEducations(userId: string): Promise<Education[]>;
   getUserCertifications(userId: string): Promise<Certification[]>;
+  createCertification(certificationData: InsertCertification): Promise<Certification>;
+  updateCertification(id: string, userId: string, certificationData: Partial<InsertCertification>): Promise<Certification | undefined>;
+  deleteCertification(id: string, userId: string): Promise<boolean>;
   getUserProjects(userId: string): Promise<Project[]>;
   getUserSkills(userId: string): Promise<Skill[]>;
   getUserRecommendations(userId: string): Promise<any[]>;
@@ -2058,9 +2061,31 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserCertifications(userId: string): Promise<any[]> {
-    // Portfolio tables will be implemented later
-    return [];
+  async getUserCertifications(userId: string): Promise<Certification[]> {
+    return await db.select().from(certifications).where(eq(certifications.userId, userId)).orderBy(desc(certifications.issueDate));
+  }
+
+  async createCertification(certificationData: InsertCertification): Promise<Certification> {
+    const [certification] = await db.insert(certifications).values(certificationData).returning();
+    return certification;
+  }
+
+  async updateCertification(id: string, userId: string, certificationData: Partial<InsertCertification>): Promise<Certification | undefined> {
+    const [updatedCertification] = await db
+      .update(certifications)
+      .set(certificationData)
+      .where(and(eq(certifications.id, id), eq(certifications.userId, userId)))
+      .returning();
+    
+    return updatedCertification;
+  }
+
+  async deleteCertification(id: string, userId: string): Promise<boolean> {
+    const result = await db
+      .delete(certifications)
+      .where(and(eq(certifications.id, id), eq(certifications.userId, userId)));
+    
+    return result.rowCount > 0;
   }
 
   async getUserProjects(userId: string): Promise<any[]> {
