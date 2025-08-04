@@ -20,7 +20,7 @@ import PublishPage from "./pages/publish-page";
 import MembersPage from "./pages/members-page";
 import ProfilePage from "./pages/profile-page";
 import EditProfilePage from "./pages/edit-profile-page";
-import ProfessionalProfile from "./pages/professional-profile";
+
 import ChatPage from "./pages/chat-page";
 import { ConnectionsPage } from "./pages/connections-page";
 import GroupsPage from "./pages/groups";
@@ -46,8 +46,7 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/profile/:userId" component={ProfilePage} />
         <ProtectedRoute path="/profile/edit" component={EditProfilePage} />
         <ProtectedRoute path="/profile" component={ProfilePage} />
-        <ProtectedRoute path="/professional-profile/:userId" component={ProfessionalProfile} />
-        <ProtectedRoute path="/professional-profile" component={ProfessionalProfile} />
+
         <ProtectedRoute path="/chat" component={ChatPage} />
         <ProtectedRoute path="/connections" component={ConnectionsPage} />
         <ProtectedRoute path="/groups" component={GroupsPage} />

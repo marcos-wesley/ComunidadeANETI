@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { 
   User,
   MapPin, 
@@ -27,7 +28,10 @@ import {
   Briefcase,
   Languages,
   Camera,
-  Upload
+  Upload,
+  Pencil,
+  Check,
+  X
 } from "lucide-react";
 
 type UserProfile = {
@@ -134,6 +138,133 @@ type Highlight = {
   type: string;
   isPinned: boolean;
 };
+
+// Professional Title Editor Component
+function ProfessionalTitleEditor({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(profile.professionalTitle || '');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Mutation to update professional title
+  const updateTitleMutation = useMutation({
+    mutationFn: async (newTitle: string) => {
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ professionalTitle: newTitle })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to update title');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsEditing(false);
+      toast({
+        title: "Título atualizado",
+        description: "Seu título profissional foi atualizado com sucesso."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o título profissional.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSave = () => {
+    if (editedTitle.trim() !== profile.professionalTitle) {
+      updateTitleMutation.mutate(editedTitle.trim());
+    } else {
+      setIsEditing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditedTitle(profile.professionalTitle || '');
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSave();
+    } else if (e.key === 'Escape') {
+      handleCancel();
+    }
+  };
+
+  if (isEditing && isOwnProfile) {
+    return (
+      <div className="flex items-center gap-2 mt-1">
+        <Input
+          value={editedTitle}
+          onChange={(e) => setEditedTitle(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Ex: Desenvolvedora Full Stack"
+          className="text-xl bg-white border-gray-300 focus:border-blue-500"
+          autoFocus
+        />
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={updateTitleMutation.isPending}
+          className="h-8 w-8 p-0"
+        >
+          <Check className="h-4 w-4" />
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCancel}
+          disabled={updateTitleMutation.isPending}
+          className="h-8 w-8 p-0"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 mt-1">
+      {profile.professionalTitle && (
+        <p className="text-xl text-gray-700 dark:text-gray-200 font-normal">
+          {profile.professionalTitle}
+        </p>
+      )}
+      {isOwnProfile && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsEditing(true)}
+          className="h-8 w-8 p-0 hover:bg-gray-100"
+          title="Editar título profissional"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      )}
+      {!profile.professionalTitle && isOwnProfile && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => setIsEditing(true)}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <Pencil className="h-4 w-4 mr-1" />
+          Adicionar título profissional
+        </Button>
+      )}
+    </div>
+  );
+}
 
 function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
   const { toast } = useToast();
@@ -348,16 +479,10 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
               <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
                 {profile.fullName}
               </h1>
-              {profile.position && (
-                <p className="text-xl text-gray-700 dark:text-gray-200 mt-1 font-normal">
-                  {profile.position}
-                </p>
-              )}
-              {profile.company && (
-                <p className="text-lg text-gray-600 dark:text-gray-300 mt-1">
-                  {profile.company}
-                </p>
-              )}
+              <ProfessionalTitleEditor 
+                profile={profile} 
+                isOwnProfile={isOwnProfile} 
+              />
               
               <div className="flex items-center gap-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
                 <MapPin className="h-4 w-4" />
