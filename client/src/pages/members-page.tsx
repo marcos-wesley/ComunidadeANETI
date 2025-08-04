@@ -250,12 +250,7 @@ export default function MembersPage(): JSX.Element {
   // Accept connection mutation
   const acceptConnectionMutation = useMutation({
     mutationFn: async (connectionId: string) => {
-      const res = await apiRequest("POST", `/api/connections/${connectionId}/accept`, {});
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to accept connection');
-      }
-      return res.json();
+      return await apiRequest("POST", `/api/connections/${connectionId}/accept`, {});
     },
     onSuccess: () => {
       // Force refetch by removing all cached member data
@@ -279,12 +274,7 @@ export default function MembersPage(): JSX.Element {
   // Reject connection mutation
   const rejectConnectionMutation = useMutation({
     mutationFn: async (connectionId: string) => {
-      const res = await apiRequest("POST", `/api/connections/${connectionId}/reject`, {});
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to reject connection');
-      }
-      return res.json();
+      return await apiRequest("POST", `/api/connections/${connectionId}/reject`, {});
     },
     onSuccess: () => {
       // Force refetch by removing all cached member data
@@ -307,14 +297,7 @@ export default function MembersPage(): JSX.Element {
 
   const unfollowMutation = useMutation({
     mutationFn: async (memberId: string) => {
-      console.log('unfollowMutation called with:', memberId);
-      const res = await apiRequest("DELETE", `/api/follows/${memberId}`);
-      console.log('unfollowMutation response:', res.status);
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || 'Failed to unfollow member');
-      }
-      return res.json();
+      return await apiRequest("DELETE", `/api/follows/${memberId}`);
     },
     onMutate: async (memberId) => {
       // Cancel outgoing refetches

@@ -87,8 +87,7 @@ export default function GroupDetail() {
   // Join group mutation
   const joinGroupMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/join`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/join`);
     },
     onSuccess: (data) => {
       if (data.success) {
