@@ -747,6 +747,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Cannot connect to yourself" });
       }
 
+      // Check if user can connect (not Público plan)
+      const userPlan = req.user!.planName;
+      if (!userPlan || userPlan === 'Público') {
+        return res.status(403).json({ error: "Apenas membros com planos ativos podem conectar-se" });
+      }
+
       const connection = await storage.createConnectionRequest(userId!, receiverId);
       res.status(201).json({ success: true, connection });
     } catch (error) {
@@ -1071,10 +1077,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Cannot follow yourself" });
       }
 
-      // Check if user can follow (Junior, Pleno, Sênior only)
+      // Check if user can follow (not Público plan)
       const userPlan = req.user!.planName;
-      if (!userPlan || !['Júnior', 'Pleno', 'Sênior'].includes(userPlan)) {
-        return res.status(403).json({ error: "Only Junior, Pleno, and Sênior members can follow others" });
+      if (!userPlan || userPlan === 'Público') {
+        return res.status(403).json({ error: "Apenas membros com planos ativos podem seguir outros membros" });
       }
 
       const follow = await storage.createFollow(req.user!.id, followingId);

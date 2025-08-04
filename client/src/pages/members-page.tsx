@@ -99,7 +99,7 @@ export default function MembersPage(): JSX.Element {
   });
 
   // Check if user can connect/follow (Junior, Pleno, Sênior only)
-  const canConnect = user?.planName && ['Júnior', 'Pleno', 'Sênior'].includes(user.planName);
+  const canConnect = user?.planName && ['Júnior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'].includes(user.planName);
   
   console.log('User plan check:', { 
     userPlan: user?.planName, 
@@ -213,7 +213,7 @@ export default function MembersPage(): JSX.Element {
     if (!canConnect) {
       toast({
         title: "Acesso restrito",
-        description: "Apenas membros Júnior, Pleno e Sênior podem conectar-se.",
+        description: "Apenas membros com planos ativos podem conectar-se.",
         variant: "destructive",
       });
       return;
@@ -228,7 +228,7 @@ export default function MembersPage(): JSX.Element {
     if (!canConnect) {
       toast({
         title: "Acesso restrito",
-        description: "Apenas membros Júnior, Pleno e Sênior podem seguir outros membros.",
+        description: "Apenas membros com planos ativos podem seguir outros membros.",
         variant: "destructive",
       });
       return;
@@ -550,7 +550,7 @@ export default function MembersPage(): JSX.Element {
 
                   {!canConnect && (
                     <p className="text-xs text-muted-foreground text-center pt-2 border-t">
-                      Recursos de conexão disponíveis para membros Júnior, Pleno e Sênior
+                      Recursos de conexão disponíveis para membros com planos ativos
                     </p>
                   )}
                 </CardContent>
