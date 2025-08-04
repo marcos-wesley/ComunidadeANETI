@@ -638,27 +638,32 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         <div className="ml-48">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
-                {profile.fullName}
-              </h1>
-              <ProfessionalTitleEditor 
-                profile={profile} 
-                isOwnProfile={isOwnProfile} 
-              />
+              {/* Main Profile Info */}
+              <div className="space-y-1">
+                <h1 className="text-3xl font-semibold text-gray-900 dark:text-white leading-tight">
+                  {profile.fullName}
+                </h1>
+                <ProfessionalTitleEditor 
+                  profile={profile} 
+                  isOwnProfile={isOwnProfile} 
+                />
+              </div>
               
-              {/* Current Position - subtly displayed */}
+              {/* Current Position - moved above buttons, more subtle */}
               {getCurrentPosition() && (
-                <div className="text-lg text-gray-700 dark:text-gray-300 mt-1">
+                <div className="text-base text-gray-600 dark:text-gray-400 mt-3 mb-4 font-medium">
                   {getCurrentPosition()}
                 </div>
               )}
               
-              <div className="flex items-center gap-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
+              {/* Location */}
+              <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
                 <MapPin className="h-4 w-4" />
                 {profile.city}, {profile.state}
               </div>
 
-              <div className="flex items-center gap-4 mt-3">
+              {/* Connections and Plan Badge */}
+              <div className="flex items-center gap-4 mb-5">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline">
                   {isOwnProfile 
                     ? formatConnectionsCount(profile.connectionsCount || 0)
@@ -674,8 +679,9 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                 )}
               </div>
 
+              {/* Action Buttons - moved below position */}
               {isOwnProfile && (
-                <div className="flex gap-2 mt-4">
+                <div className="flex flex-wrap gap-2">
                   <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 hover:bg-blue-50">
                     Disponível para trabalho
                   </Button>
@@ -689,11 +695,12 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
               )}
             </div>
 
+            {/* Connection/Message Buttons - positioned better */}
             {!isOwnProfile && (
-              <div className="flex gap-2 ml-4">
+              <div className="flex flex-col gap-2 ml-6 mt-2">
                 <Button 
                   size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 min-w-[120px]"
                   onClick={handleMessageClick}
                 >
                   <MessageSquare className="h-4 w-4 mr-2" />
@@ -702,7 +709,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 min-w-[120px]"
                   onClick={handleConnectionClick}
                   disabled={connectionStatus?.status === 'accepted' || connectionStatus?.status === 'pending' || connectionMutation.isPending}
                 >
