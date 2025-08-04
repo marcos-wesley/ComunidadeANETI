@@ -19,6 +19,43 @@ import { useForm } from "react-hook-form";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { 
+  Check, 
+  X, 
+  Pencil, 
+  Users, 
+  MessageSquare, 
+  UserPlus, 
+  UserCheck, 
+  Clock,
+  Plus,
+  Building,
+  MapPin,
+  Calendar,
+  GraduationCap,
+  Award,
+  Languages,
+  Star,
+  Eye,
+  EyeOff,
+  Edit3,
+  Trash2,
+  Camera,
+  Mail,
+  Phone,
+  Globe,
+  Linkedin,
+  Github,
+  Twitter,
+  Instagram,
+  User,
+  Code,
+  Briefcase,
+  Search,
+  Upload,
+  ExternalLink,
+  Image
+} from "lucide-react";
 
 // Experience form schema
 const experienceSchema = z.object({
@@ -65,33 +102,7 @@ const skillSchema = z.object({
 
 type SkillFormData = z.infer<typeof skillSchema>;
 
-import { 
-  User,
-  MapPin, 
-  Calendar, 
-  Building, 
-  GraduationCap, 
-  Award, 
-  Code, 
-  Users, 
-  Globe, 
-  Edit3,
-  Mail,
-  MessageSquare,
-  Star,
-  Briefcase,
-  Languages,
-  Camera,
-  Plus,
-  X,
-  Search,
-  Upload,
-  Pencil,
-  Check,
-  ExternalLink,
-  Image,
-  Trash2
-} from "lucide-react";
+
 
 type UserProfile = {
   id: string;
@@ -109,6 +120,7 @@ type UserProfile = {
   planName?: string;
   createdAt: string;
   connectionsCount?: number;
+  isConnected?: boolean;
   experiences: Experience[];
   educations: Education[];
   certifications: Certification[];
@@ -3043,7 +3055,7 @@ function RecommendationsSection({ recommendations, isOwnProfile, profile, isConn
         </CardHeader>
         <CardContent>
           {/* Pending recommendations for approval */}
-          {isOwnProfile && pendingRecs.length > 0 && (
+          {isOwnProfile && Array.isArray(pendingRecs) && pendingRecs.length > 0 && (
             <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h4 className="font-medium text-sm mb-3">Recomendações pendentes de aprovação:</h4>
               <div className="space-y-3">
