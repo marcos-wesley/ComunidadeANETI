@@ -108,6 +108,16 @@ export function ConnectionBell() {
 
   const pendingCount = pendingRequests.length;
 
+  // Temporary debug logging
+  console.log('[DEBUG] ConnectionBell Render State:', {
+    pendingCount,
+    isLoading,
+    pendingRequestsLength: pendingRequests?.length,
+    firstRequest: pendingRequests?.[0],
+    hasData: !!pendingRequests,
+    arrayType: Array.isArray(pendingRequests)
+  });
+
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>

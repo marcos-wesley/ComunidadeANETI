@@ -37,6 +37,14 @@ export function ConnectionsPage() {
     refetchInterval: 30000,
   });
 
+  // Debug logging
+  console.log('[DEBUG] Connections Page:', {
+    pendingRequestsCount: pendingRequests?.length,
+    isLoadingPending,
+    pendingRequests: pendingRequests,
+    firstRequest: pendingRequests?.[0]
+  });
+
   // Fetch all connections
   const { data: allConnections = [], isLoading: isLoadingAll } = useQuery({
     queryKey: ["/api/connections"],
