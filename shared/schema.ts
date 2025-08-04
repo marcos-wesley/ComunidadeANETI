@@ -235,7 +235,7 @@ export const recommendations = pgTable("recommendations", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   recommenderId: varchar("recommender_id").references(() => users.id).notNull(), // Quem está recomendando
   recommendeeId: varchar("recommendee_id").references(() => users.id).notNull(), // Quem está sendo recomendado
-  text: text("text").notNull(), // Texto da recomendação
+  recommendationText: text("recommendation_text").notNull(), // Texto da recomendação
   position: text("position"), // Cargo/posição da pessoa recomendada
   company: text("company"), // Empresa onde trabalharam juntos
   relationship: text("relationship").notNull(), // Como se conheceram (colega, chefe, subordinado, etc.)
