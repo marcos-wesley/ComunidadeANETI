@@ -907,13 +907,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/profile/:userId", isAuthenticated, async (req, res) => {
     try {
       const { userId } = req.params;
+      const currentUserId = req.user!.id;
       const profile = await storage.getUserProfile(userId);
       
       if (!profile) {
         return res.status(404).json({ error: "Profile not found" });
       }
+
+      // Check if current user is connected to the profile user
+      let isConnected = false;
+      if (currentUserId !== userId) {
+        const connection = await db
+          .select()
+          .from(connections)
+          .where(and(
+            or(
+              and(eq(connections.requesterId, currentUserId), eq(connections.receiverId, userId)),
+              and(eq(connections.requesterId, userId), eq(connections.receiverId, currentUserId))
+            ),
+            eq(connections.status, 'accepted')
+          ))
+          .limit(1);
+        
+        isConnected = connection.length > 0;
+      }
       
-      res.json(profile);
+      res.json({
+        ...profile,
+        isConnected
+      });
     } catch (error) {
       console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Internal server error" });
