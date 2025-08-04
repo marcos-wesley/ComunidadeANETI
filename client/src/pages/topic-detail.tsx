@@ -105,50 +105,30 @@ export default function TopicDetailPage(): JSX.Element {
   // Fetch topic details
   const { data: topic, isLoading: topicLoading } = useQuery({
     queryKey: [`/api/forums/${forumId}/topics/${topicId}`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/forums/${forumId}/topics/${topicId}`);
-      return response.json() as TopicDetails;
-    },
     enabled: !!forumId && !!topicId,
   });
 
   // Fetch topic replies
   const { data: replies = [], isLoading: repliesLoading } = useQuery({
     queryKey: [`/api/topics/${topicId}/replies`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/topics/${topicId}/replies`);
-      return response.json() as TopicReply[];
-    },
     enabled: !!topicId,
   });
 
   // Fetch participants count
   const { data: participantsData } = useQuery({
     queryKey: [`/api/topics/${topicId}/participants`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/topics/${topicId}/participants`);
-      return response.json();
-    },
     enabled: !!topicId,
   });
 
   // Fetch forum details to get groupId
   const { data: forum } = useQuery({
     queryKey: [`/api/forums/${forumId}`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/forums/${forumId}`);
-      return response.json();
-    },
     enabled: !!forumId,
   });
 
   // Check if user can reply (must be group member with active membership)
   const { data: membership } = useQuery({
     queryKey: [`/api/groups/${forum?.groupId}/membership`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/groups/${forum?.groupId}/membership`);
-      return response.json();
-    },
     enabled: !!forum?.groupId,
   });
 
@@ -158,8 +138,7 @@ export default function TopicDetailPage(): JSX.Element {
   // Create reply mutation
   const createReplyMutation = useMutation({
     mutationFn: async (data: CreateReplyForm) => {
-      const response = await apiRequest("POST", `/api/topics/${topicId}/replies`, data);
-      return response.json();
+      return await apiRequest("POST", `/api/topics/${topicId}/replies`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/topics/${topicId}/replies`] });
@@ -183,8 +162,7 @@ export default function TopicDetailPage(): JSX.Element {
   // Lock/unlock topic mutation
   const lockTopicMutation = useMutation({
     mutationFn: async (isLocked: boolean) => {
-      const response = await apiRequest("PATCH", `/api/topics/${topicId}/lock`, { isLocked });
-      return response.json();
+      return await apiRequest("PATCH", `/api/topics/${topicId}/lock`, { isLocked });
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: [`/api/forums/${forumId}/topics/${topicId}`] });
@@ -205,8 +183,7 @@ export default function TopicDetailPage(): JSX.Element {
   // Like reply mutation
   const likeReplyMutation = useMutation({
     mutationFn: async (replyId: string) => {
-      const response = await apiRequest("POST", `/api/topics/replies/${replyId}/like`);
-      return response.json();
+      return await apiRequest("POST", `/api/topics/replies/${replyId}/like`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/topics/${topicId}/replies`] });
