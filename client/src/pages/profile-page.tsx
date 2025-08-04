@@ -2150,7 +2150,6 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
       type: 'certificacao',
       credentialId: '',
       credentialUrl: '',
-      credentialImageUrl: '',
       description: ''
     }
   });
@@ -2231,7 +2230,7 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
       type: certification.type as "curso" | "certificacao",
       credentialId: certification.credentialId || '',
       credentialUrl: certification.credentialUrl || '',
-      credentialImageUrl: certification.credentialImageUrl || '',
+
       description: certification.description || ''
     });
     setIsAddingCertification(true);

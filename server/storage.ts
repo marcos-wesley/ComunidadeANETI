@@ -1925,18 +1925,17 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return null;
 
-    // For now, return just the user data without portfolio items
-    // Portfolio items will be populated when tables are created
+    // Get all profile data including certifications
     const experiences = await this.getUserExperiences(userId);
-
     const educations = await this.getUserEducations(user.id);
+    const certifications = await this.getUserCertifications(user.id);
     const skills = await this.getUserSkills(user.id);
 
     return {
       ...user,
       experiences,
       educations,
-      certifications: [],
+      certifications,
       projects: [],
       skills,
       recommendations: [],
