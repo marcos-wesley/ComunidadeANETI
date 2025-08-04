@@ -637,28 +637,28 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
         <div className="ml-48">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
+            <div className="flex-1 space-y-1">
               <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
                 {profile.fullName}
               </h1>
+              {getCurrentPosition() && (
+                <p className="text-lg text-gray-700 dark:text-gray-300">
+                  {getCurrentPosition()}
+                </p>
+              )}
               <ProfessionalTitleEditor 
                 profile={profile} 
                 isOwnProfile={isOwnProfile} 
               />
               
-              {/* Current Position - subtly displayed */}
-              {getCurrentPosition() && (
-                <div className="text-lg text-gray-700 dark:text-gray-300 mt-1">
-                  {getCurrentPosition()}
-                </div>
-              )}
-              
-              <div className="flex items-center gap-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
+              <div className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
                 <MapPin className="h-4 w-4" />
-                {profile.city}, {profile.state}
+                <span>{profile.city}, {profile.state}</span>
+                <span>•</span>
+                <button className="text-blue-600 hover:underline">Informações de contato</button>
               </div>
 
-              <div className="flex items-center gap-4 mt-3">
+              <div className="flex items-center gap-4 mt-2">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline">
                   {isOwnProfile 
                     ? formatConnectionsCount(profile.connectionsCount || 0)
@@ -691,23 +691,76 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
             {!isOwnProfile && (
               <div className="flex gap-2 ml-4">
-                <Button 
-                  size="sm" 
-                  className="bg-blue-600 hover:bg-blue-700"
-                  onClick={handleMessageClick}
-                >
-                  <MessageSquare className="h-4 w-4 mr-2" />
-                  Mensagem
-                </Button>
+                {connectionStatus?.status === 'accepted' ? (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      onClick={handleMessageClick}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Enviar mensagem
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      disabled
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Conectado
+                    </Button>
+                  </>
+                ) : connectionStatus?.status === 'pending' ? (
+                  <>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                      onClick={handleMessageClick}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Enviar mensagem
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      disabled
+                    >
+                      <Clock className="h-4 w-4 mr-2" />
+                      Pendente
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button 
+                      size="sm" 
+                      className="bg-blue-600 hover:bg-blue-700"
+                      onClick={handleConnectionClick}
+                      disabled={connectionMutation.isPending}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      {connectionMutation.isPending ? "Enviando..." : "Conectar"}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      onClick={handleMessageClick}
+                    >
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Enviar mensagem
+                    </Button>
+                  </>
+                )}
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                  onClick={handleConnectionClick}
-                  disabled={connectionStatus?.status === 'accepted' || connectionStatus?.status === 'pending' || connectionMutation.isPending}
+                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
-                  <Users className="h-4 w-4 mr-2" />
-                  {connectionMutation.isPending ? "Enviando..." : getConnectionButtonText()}
+                  Mais
                 </Button>
               </div>
             )}
