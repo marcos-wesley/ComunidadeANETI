@@ -101,8 +101,37 @@ type PostReaction = {
   };
 };
 
+// Component to show reaction icons based on actual reactions
+function ReactionIcons({ postId }: { postId: string }) {
+  const { data: reactions = [] } = useQuery({
+    queryKey: ["/api/posts", postId, "likes"],
+    queryFn: async () => {
+      const response = await fetch(`/api/posts/${postId}/likes`);
+      if (!response.ok) return [];
+      return response.json();
+    }
+  });
+
+  // Count unique reaction types
+  const reactionTypes = [...new Set(reactions.map((r: any) => r.reactionType))];
+  const reactionEmojis = {
+    like: "👍",
+    love: "❤️", 
+    laugh: "😂",
+    celebrate: "🎉",
+    sad: "😢",
+    angry: "😠"
+  };
+
+  return (
+    <span className="text-xs">
+      {reactionTypes.map((type: string) => reactionEmojis[type as keyof typeof reactionEmojis]).filter(Boolean).join('')}
+    </span>
+  );
+}
+
 function LikesModalContent({ postId, likesCount, groupId }: { postId: string; likesCount: number; groupId?: string }) {
-  const [activeTab, setActiveTab] = useState<'all' | 'like' | 'love' | 'laugh' | 'celebrate'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'like' | 'love' | 'laugh' | 'celebrate' | 'sad' | 'angry'>('all');
   
   // Buscar reações reais do backend
   const { data: reactions = [], isLoading } = useQuery({
@@ -184,11 +213,13 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
 
   const allReactions = reactions.length > 0 ? reactions : fallbackReactions;
 
-  // Contar tipos de reação
+  // Contar tipos de reação usando dados reais
   const likesOnly = allReactions.filter((r: any) => r.reactionType === "like");
   const lovesOnly = allReactions.filter((r: any) => r.reactionType === "love");
   const laughsOnly = allReactions.filter((r: any) => r.reactionType === "laugh");
   const celebratesOnly = allReactions.filter((r: any) => r.reactionType === "celebrate");
+  const sadOnly = allReactions.filter((r: any) => r.reactionType === "sad");
+  const angryOnly = allReactions.filter((r: any) => r.reactionType === "angry");
   const totalReactions = allReactions.length;
 
   // Mapas de emoji e título para cada tipo de reação
@@ -208,6 +239,8 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
       case 'love': return lovesOnly; 
       case 'laugh': return laughsOnly;
       case 'celebrate': return celebratesOnly;
+      case 'sad': return sadOnly;
+      case 'angry': return angryOnly;
       default: return allReactions;
     }
   };
@@ -284,6 +317,34 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
             <span>{celebratesOnly.length}</span>
           </button>
         )}
+        
+        {sadOnly.length > 0 && (
+          <button 
+            onClick={() => setActiveTab('sad')}
+            className={`flex items-center gap-1 text-sm pb-1 ${
+              activeTab === 'sad' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-base">😢</span>
+            <span>{sadOnly.length}</span>
+          </button>
+        )}
+        
+        {angryOnly.length > 0 && (
+          <button 
+            onClick={() => setActiveTab('angry')}
+            className={`flex items-center gap-1 text-sm pb-1 ${
+              activeTab === 'angry' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-base">😠</span>
+            <span>{angryOnly.length}</span>
+          </button>
+        )}
       </div>
 
       {/* Lista de usuários que reagiram */}
@@ -338,7 +399,7 @@ export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Elemen
   const [showComments, setShowComments] = useState(false);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post._count.likes);
-  const [userReaction, setUserReaction] = useState<string | undefined>(post.userReaction);
+  const [userReaction, setUserReaction] = useState<string | undefined>((post as any).userReaction);
 
   // Like/Unlike mutation
   const likeMutation = useMutation({
@@ -568,7 +629,7 @@ export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Elemen
         {likesCount > 0 && (
           <div className="flex items-center gap-2 pb-2">
             <div className="flex items-center gap-1">
-              <span className="text-xs">👍❤️😂</span>
+              <ReactionIcons postId={post.id} />
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">
