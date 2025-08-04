@@ -2271,12 +2271,13 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
         {/* Add/Edit Form */}
         {isAddingCertification && (
           <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nome do Curso/Certificação *</FormLabel>
                       <FormControl>
@@ -2285,12 +2286,12 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="issuer"
-                  render={({ field }) => (
+                  />
+                  
+                  <FormField
+                    control={form.control}
+                    name="issuer"
+                    render={({ field }) => (
                     <FormItem>
                       <FormLabel>Organização Emissora *</FormLabel>
                       <FormControl>
@@ -2299,14 +2300,14 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
                       <FormMessage />
                     </FormItem>
                   )}
-                />
-              </div>
+                  />
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="type"
-                  render={({ field }) => (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tipo *</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -2449,7 +2450,8 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
                   Cancelar
                 </Button>
               </div>
-            </form>
+              </form>
+            </Form>
           </div>
         )}
 
