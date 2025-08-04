@@ -2754,7 +2754,7 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
   );
 }
 
-function RecommendationsSection({ recommendations, isOwnProfile }: { recommendations: any[]; isOwnProfile: boolean }) {
+function RecommendationsSection({ recommendations, isOwnProfile, profile }: { recommendations: any[]; isOwnProfile: boolean; profile?: any }) {
   const [isAddingRecommendation, setIsAddingRecommendation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -2800,7 +2800,6 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
       setIsAddingRecommendation(false);
-      setSelectedUser(null);
       form.reset();
       toast({
         title: "Sucesso",
@@ -2841,10 +2840,10 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
   });
 
   const onSubmit = (data: RecommendationFormData) => {
-    if (!selectedUser) {
+    if (!profile?.id) {
       toast({
         title: "Erro",
-        description: "Selecione um usuário para recomendar",
+        description: "Perfil não encontrado",
         variant: "destructive",
       });
       return;
@@ -2852,11 +2851,11 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
 
     createRecommendationMutation.mutate({
       ...data,
-      recommendeeId: selectedUser.id
+      recommendeeId: profile.id
     });
   };
 
-  if (recommendations.length === 0 && !isOwnProfile) return null;
+  // Always show the card - either for viewing recommendations or to recommend someone
 
   return (
     <>
@@ -2867,8 +2866,9 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
             <CardTitle className="text-base">Recomendações</CardTitle>
           </div>
           {!isOwnProfile && (
-            <Button variant="ghost" size="sm" onClick={() => setIsAddingRecommendation(true)}>
-              <Plus className="h-4 w-4" />
+            <Button variant="outline" size="sm" onClick={() => setIsAddingRecommendation(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Recomendar profissional
             </Button>
           )}
         </CardHeader>
@@ -2955,50 +2955,17 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
       <Dialog open={isAddingRecommendation} onOpenChange={setIsAddingRecommendation}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Recomendar profissional</DialogTitle>
+            <DialogTitle>Recomendar este profissional</DialogTitle>
             <DialogDescription>
-              Escreva uma recomendação para um colega ou parceiro de trabalho
+              Escreva uma recomendação para este profissional baseada na sua experiência trabalhando juntos
             </DialogDescription>
           </DialogHeader>
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              {/* User search */}
-              <div className="space-y-2">
-                <FormLabel>Buscar usuário para recomendar</FormLabel>
-                <Input
-                  placeholder="Digite o nome do usuário..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                {searchResults.length > 0 && (
-                  <div className="border rounded-md max-h-40 overflow-y-auto">
-                    {searchResults.map((user: any) => (
-                      <div 
-                        key={user.id}
-                        className={`p-2 cursor-pointer hover:bg-gray-50 ${selectedUser?.id === user.id ? 'bg-blue-50' : ''}`}
-                        onClick={() => {
-                          setSelectedUser(user);
-                          setSearchTerm(user.fullName);
-                        }}
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
-                            <User className="h-4 w-4" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-sm">{user.fullName}</p>
-                            <p className="text-xs text-muted-foreground">@{user.username}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {selectedUser && (
-                <>
+              {/* Automatically set the user from profile */}
+              {/* No need for user search since we're recommending the profile owner */}
+              
                   <FormField
                     control={form.control}
                     name="text"
@@ -3073,8 +3040,7 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
                       )}
                     />
                   </div>
-                </>
-              )}
+
 
               <div className="flex justify-end gap-2">
                 <Button
@@ -3082,7 +3048,6 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
                   variant="outline"
                   onClick={() => {
                     setIsAddingRecommendation(false);
-                    setSelectedUser(null);
                     form.reset();
                   }}
                 >
@@ -3090,7 +3055,7 @@ function RecommendationsSection({ recommendations, isOwnProfile }: { recommendat
                 </Button>
                 <Button 
                   type="submit" 
-                  disabled={!selectedUser || createRecommendationMutation.isPending}
+                  disabled={createRecommendationMutation.isPending}
                 >
                   {createRecommendationMutation.isPending ? "Enviando..." : "Enviar recomendação"}
                 </Button>
@@ -3152,7 +3117,7 @@ export default function ProfilePage() {
           <ProjectsSection projects={profile.projects} isOwnProfile={isOwnProfile} />
           <SkillsSection skills={profile.skills} isOwnProfile={isOwnProfile} />
           <LanguagesSection languages={profile.languages} isOwnProfile={isOwnProfile} />
-          <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} />
+          <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} profile={profile} />
         </div>
       </div>
     </div>
