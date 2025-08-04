@@ -36,7 +36,7 @@ const planFormSchema = z.object({
   description: z.string().optional(),
   price: z.number().min(0, 'Preço deve ser maior ou igual a zero'),
   minExperienceYears: z.number().min(0).default(0),
-  maxExperienceYears: z.number().optional(),
+  maxExperienceYears: z.number().optional().nullable(),
   requiresPayment: z.boolean().default(false),
   isRecurring: z.boolean().default(false),
   billingPeriod: z.enum(['monthly', 'yearly', 'one_time']).default('monthly'),
@@ -49,9 +49,18 @@ const planFormSchema = z.object({
   isActive: z.boolean().default(true),
   isAvailableForRegistration: z.boolean().default(true),
   priority: z.number().min(1).max(10).default(5),
-  maxMembers: z.number().optional(),
-  stripePriceId: z.string().optional(),
-  stripeProductId: z.string().optional(),
+  maxMembers: z.number().optional().nullable(), // null = unlimited
+  stripePriceId: z.string().optional().nullable(),
+  stripeProductId: z.string().optional().nullable(),
+}).refine((data) => {
+  // If payment is required, Stripe fields must be provided
+  if (data.requiresPayment) {
+    return data.stripePriceId && data.stripeProductId;
+  }
+  return true;
+}, {
+  message: "Stripe Price ID e Product ID são obrigatórios quando pagamento é necessário",
+  path: ["stripePriceId"],
 });
 
 type PlanFormData = z.infer<typeof planFormSchema>;
@@ -502,8 +511,8 @@ export default function AdminMembershipPlans() {
                             <Input 
                               type="number"
                               placeholder="Ilimitado"
-                              {...field}
-                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                              value={field.value || ''}
+                              onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
                             />
                           </FormControl>
                           <FormMessage />
@@ -595,35 +604,37 @@ export default function AdminMembershipPlans() {
                     </>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="stripePriceId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Stripe Price ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="price_xxx" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  {form.watch('requiresPayment') && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="stripePriceId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Stripe Price ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="price_xxx" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
 
-                    <FormField
-                      control={form.control}
-                      name="stripeProductId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Stripe Product ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="prod_xxx" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                      <FormField
+                        control={form.control}
+                        name="stripeProductId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Stripe Product ID</FormLabel>
+                            <FormControl>
+                              <Input placeholder="prod_xxx" {...field} value={field.value || ''} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -660,8 +671,8 @@ export default function AdminMembershipPlans() {
                           <Input 
                             type="number"
                             placeholder="Ilimitado"
-                            {...field}
-                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                            value={field.value || ''}
+                            onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
                           />
                         </FormControl>
                         <FormMessage />

@@ -751,6 +751,21 @@ export type GroupWithDetails = Group & {
 export const insertMembershipPlanSchema = createInsertSchema(membershipPlans).omit({
   id: true,
   createdAt: true,
+}).extend({
+  // Make maxMembers optional - null means unlimited
+  maxMembers: z.number().optional().nullable(),
+  // Make Stripe fields optional - only required when requiresPayment is true
+  stripePriceId: z.string().optional().nullable(),
+  stripeProductId: z.string().optional().nullable(),
+}).refine((data) => {
+  // If payment is required, Stripe fields must be provided
+  if (data.requiresPayment) {
+    return data.stripePriceId && data.stripeProductId;
+  }
+  return true;
+}, {
+  message: "Stripe Price ID e Product ID são obrigatórios quando pagamento é necessário",
+  path: ["stripePriceId"],
 });
 
 // Profile schemas
