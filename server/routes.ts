@@ -2540,6 +2540,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.params.id;
       const updateData = req.body;
       
+      console.log("Admin member update request:", { userId, updateData });
+      
       // Remove sensitive fields that shouldn't be updated via this endpoint
       delete updateData.password;
       delete updateData.id;
@@ -2549,6 +2551,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...updateData,
         updatedAt: new Date()
       });
+      
+      console.log("Updated user result:", updatedUser);
       
       if (!updatedUser) {
         return res.status(404).json({ 

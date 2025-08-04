@@ -73,8 +73,8 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
       u.email?.toLowerCase().includes(userSearchQuery.toLowerCase())
     );
     
-    setFilteredUsers(filtered);
-  }, [userSearchQuery, users]);
+    setFilteredUsers(filtered.slice(0, 10));
+  }, [userSearchQuery]);
 
   // Auto scroll to bottom of messages
   useEffect(() => {

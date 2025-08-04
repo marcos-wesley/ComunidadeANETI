@@ -79,8 +79,11 @@ export function EditMemberModal({ member, trigger }: EditMemberModalProps) {
       const response = await apiRequest("PUT", `/api/admin/members/${member.id}`, data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Member update success:", data);
       queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/stats"] });
+      setOpen(false);
       toast({
         title: "Sucesso",
         description: "Informações do membro atualizadas com sucesso!",
