@@ -101,54 +101,11 @@ type PostReaction = {
   };
 };
 
-// Component to show reaction icons based on actual reactions
-function ReactionIcons({ postId }: { postId: string }) {
-  const { data: reactions = [] } = useQuery({
-    queryKey: ["/api/posts", postId, "likes"],
-    queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/likes`);
-      if (!response.ok) return [];
-      return response.json();
-    }
-  });
-
-  // Count unique reaction types
-  const reactionTypes = [...new Set(reactions.map((r: any) => r.reactionType))];
-  const reactionEmojis = {
-    like: "👍",
-    love: "❤️", 
-    laugh: "😂",
-    celebrate: "🎉",
-    sad: "😢",
-    angry: "😠"
-  };
-
-  return (
-    <span className="text-xs">
-      {reactionTypes.map((type: string) => reactionEmojis[type as keyof typeof reactionEmojis]).filter(Boolean).join('')}
-    </span>
-  );
-}
-
 function LikesModalContent({ postId, likesCount, groupId }: { postId: string; likesCount: number; groupId?: string }) {
-  const [activeTab, setActiveTab] = useState<'all' | 'like' | 'love' | 'laugh' | 'celebrate' | 'sad' | 'angry'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'like' | 'love' | 'laugh'>('all');
   
-  // Buscar reações reais do backend
-  const { data: reactions = [], isLoading } = useQuery({
-    queryKey: ["/api/posts", postId, "likes"],
-    queryFn: async () => {
-      const response = await fetch(`/api/posts/${postId}/likes`);
-      if (!response.ok) throw new Error('Failed to fetch reactions');
-      return response.json();
-    }
-  });
-
-  if (isLoading) {
-    return <div className="p-4">Carregando reações...</div>;
-  }
-
-  // Dados de teste como fallback se não houver reações reais
-  const fallbackReactions = [
+  // Dados de teste com diferentes tipos de reações
+  const mockReactions = [
     {
       id: "reaction-1",
       userId: "user-001",
@@ -211,23 +168,19 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
     }
   ];
 
-  const allReactions = reactions.length > 0 ? reactions : fallbackReactions;
+  const reactions = mockReactions;
 
-  // Contar tipos de reação usando dados reais
-  const likesOnly = allReactions.filter((r: any) => r.reactionType === "like");
-  const lovesOnly = allReactions.filter((r: any) => r.reactionType === "love");
-  const laughsOnly = allReactions.filter((r: any) => r.reactionType === "laugh");
-  const celebratesOnly = allReactions.filter((r: any) => r.reactionType === "celebrate");
-  const sadOnly = allReactions.filter((r: any) => r.reactionType === "sad");
-  const angryOnly = allReactions.filter((r: any) => r.reactionType === "angry");
-  const totalReactions = allReactions.length;
+  // Contar tipos de reação
+  const likesOnly = reactions.filter(r => r.reactionType === "like");
+  const lovesOnly = reactions.filter(r => r.reactionType === "love");
+  const laughsOnly = reactions.filter(r => r.reactionType === "laugh");
+  const totalReactions = reactions.length;
 
   // Mapas de emoji e título para cada tipo de reação
   const reactionConfig = {
     like: { emoji: "👍", title: "Curtir" },
     love: { emoji: "❤️", title: "Amar" },
     laugh: { emoji: "😂", title: "Rir" },
-    celebrate: { emoji: "🎉", title: "Parabéns" },
     sad: { emoji: "😢", title: "Triste" },
     angry: { emoji: "😠", title: "Irritado" }
   };
@@ -238,10 +191,7 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
       case 'like': return likesOnly;
       case 'love': return lovesOnly; 
       case 'laugh': return laughsOnly;
-      case 'celebrate': return celebratesOnly;
-      case 'sad': return sadOnly;
-      case 'angry': return angryOnly;
-      default: return allReactions;
+      default: return reactions;
     }
   };
 
@@ -303,53 +253,11 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
             <span>{laughsOnly.length}</span>
           </button>
         )}
-        
-        {celebratesOnly.length > 0 && (
-          <button 
-            onClick={() => setActiveTab('celebrate')}
-            className={`flex items-center gap-1 text-sm pb-1 ${
-              activeTab === 'celebrate' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            <span className="text-base">🎉</span>
-            <span>{celebratesOnly.length}</span>
-          </button>
-        )}
-        
-        {sadOnly.length > 0 && (
-          <button 
-            onClick={() => setActiveTab('sad')}
-            className={`flex items-center gap-1 text-sm pb-1 ${
-              activeTab === 'sad' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            <span className="text-base">😢</span>
-            <span>{sadOnly.length}</span>
-          </button>
-        )}
-        
-        {angryOnly.length > 0 && (
-          <button 
-            onClick={() => setActiveTab('angry')}
-            className={`flex items-center gap-1 text-sm pb-1 ${
-              activeTab === 'angry' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
-                : 'text-gray-600 hover:text-blue-600'
-            }`}
-          >
-            <span className="text-base">😠</span>
-            <span>{angryOnly.length}</span>
-          </button>
-        )}
       </div>
 
       {/* Lista de usuários que reagiram */}
       <div className="space-y-0 max-h-80 overflow-y-auto">
-        {getFilteredReactions().map((reaction: any, index: number) => (
+        {getFilteredReactions().map((reaction, index) => (
           <div key={reaction.id} className="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-3 transition-colors">
             <div className="flex items-center gap-3 flex-1">
               <div className="relative">
@@ -399,23 +307,22 @@ export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Elemen
   const [showComments, setShowComments] = useState(false);
   const [isLiked, setIsLiked] = useState(post.isLiked);
   const [likesCount, setLikesCount] = useState(post._count.likes);
-  const [userReaction, setUserReaction] = useState<string | undefined>((post as any).userReaction);
+  const [userReaction, setUserReaction] = useState<string | undefined>(post.isLiked ? "like" : undefined);
 
   // Like/Unlike mutation
   const likeMutation = useMutation({
-    mutationFn: async (reactionType: string) => {
-      return await apiRequest("POST", `/api/posts/${post.id}/like`, { reactionType });
+    mutationFn: async () => {
+      return await apiRequest("POST", `/api/posts/${post.id}/like`);
     },
     onSuccess: (data) => {
       setIsLiked(data.liked);
       setLikesCount(data.likes);
-      setUserReaction(data.reactionType);
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Erro",
-        description: "Não foi possível reagir ao post.",
+        description: "Não foi possível curtir o post.",
         variant: "destructive",
       });
     },
@@ -475,7 +382,22 @@ export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Elemen
       return;
     }
     
-    likeMutation.mutate(reactionType);
+    // Toggle: se já reagiu com o mesmo tipo, remove. Senão, substitui ou adiciona
+    const newReaction = userReaction === reactionType ? undefined : reactionType;
+    setUserReaction(newReaction);
+    
+    // Atualizar contadores localmente para feedback imediato
+    if (userReaction && userReaction !== reactionType) {
+      // Mudou tipo de reação - mantém o total
+    } else if (userReaction === reactionType) {
+      // Remove reação - diminui contador
+      setLikesCount(prev => Math.max(0, prev - 1));
+    } else {
+      // Adiciona nova reação - aumenta contador
+      setLikesCount(prev => prev + 1);
+    }
+    
+    likeMutation.mutate();
   };
 
   const handleShare = () => {
@@ -629,7 +551,7 @@ export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Elemen
         {likesCount > 0 && (
           <div className="flex items-center gap-2 pb-2">
             <div className="flex items-center gap-1">
-              <ReactionIcons postId={post.id} />
+              <span className="text-xs">👍❤️😂</span>
               <Dialog>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="sm" className="text-xs text-muted-foreground hover:text-primary">

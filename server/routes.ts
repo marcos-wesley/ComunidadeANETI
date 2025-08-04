@@ -630,19 +630,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Like/Unlike post with reaction type
+  // Like/Unlike post
   app.post("/api/posts/:postId/like", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user?.id;
       const { postId } = req.params;
-      const { reactionType = "like" } = req.body;
 
-      const result = await storage.toggleLike(userId!, postId, reactionType);
-      res.json({ 
-        liked: result.liked, 
-        likes: result.likesCount,
-        reactionType: result.reactionType 
-      });
+      const result = await storage.toggleLike(userId!, postId);
+      res.json({ liked: result.liked, likes: result.likesCount });
     } catch (error) {
       console.error("Error toggling like:", error);
       res.status(500).json({ error: "Internal server error" });
