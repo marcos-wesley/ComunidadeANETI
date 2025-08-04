@@ -34,21 +34,14 @@ export default function ForumsListPage() {
   const [selectedGroup, setSelectedGroup] = useState<string>("");
 
   // Fetch all forums
-  const { data: forums = [], isLoading } = useQuery({
+  const { data: forums = [], isLoading, error } = useQuery({
     queryKey: ["/api/forums"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/forums");
-      return response.json();
-    },
+    retry: false,
   });
 
   // Fetch all groups for filter dropdown
   const { data: groups = [] } = useQuery({
     queryKey: ["/api/groups"],
-    queryFn: async () => {
-      const response = await apiRequest("GET", "/api/groups");
-      return response.json();
-    },
   });
 
   // Filter forums based on search and group
@@ -76,6 +69,56 @@ export default function ForumsListPage() {
           <div className="text-center text-white">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
             <p>Carregando fóruns...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if user doesn't have access (403 error)
+  const accessDenied = error && error.message.includes('403');
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        {/* Hero Section */}
+        <div className="bg-gradient-to-br from-pink-400 via-red-400 to-orange-400 text-white">
+          <div className="container mx-auto px-4 py-16">
+            <div className="text-center max-w-4xl mx-auto">
+              <h1 className="text-4xl md:text-6xl font-bold mb-6">
+                Fóruns da Comunidade
+              </h1>
+              <p className="text-xl md:text-2xl mb-8 opacity-90">
+                Encontre respostas, faça perguntas e conecte-se com nossa
+                comunidade ao redor do mundo.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Access Restricted Message */}
+        <div className="container mx-auto px-4 py-16">
+          <div className="max-w-2xl mx-auto text-center">
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-8">
+              <Lock className="mx-auto h-16 w-16 text-red-500 mb-4" />
+              <h2 className="text-2xl font-bold text-red-700 dark:text-red-300 mb-4">
+                Acesso Restrito aos Fóruns
+              </h2>
+              <p className="text-red-600 dark:text-red-400 mb-6">
+                Os fóruns estão disponíveis apenas para membros com planos pagos: <strong>Junior, Pleno, Senior, Honra e Diretivo</strong>.
+              </p>
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
+                Seu plano atual <strong>({user?.planName || 'Público'})</strong> não permite acesso aos fóruns da comunidade.
+              </p>
+              <div className="space-y-4">
+                <Button onClick={() => setLocation("/membership-plans")} className="w-full">
+                  Ver Planos de Associação
+                </Button>
+                <Button variant="outline" onClick={() => setLocation("/")} className="w-full">
+                  Voltar ao Início
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -218,7 +261,7 @@ export default function ForumsListPage() {
                     
                     {!forum.canAccess && (
                       <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
-                        Você precisa ser membro do grupo para acessar
+                        Acesso restrito aos membros do grupo
                       </p>
                     )}
                   </div>
@@ -234,14 +277,16 @@ export default function ForumsListPage() {
             Acesso aos Fóruns
           </h3>
           <p className="text-blue-800 dark:text-blue-200 mb-4">
-            Os fóruns estão disponíveis para membros com planos Junior, Pleno, Senior, Honra e Diretivo.
-            Para acessar um fórum específico, você também precisa ser membro aprovado do grupo correspondente.
+            ⚠️ <strong>Restrição de Acesso:</strong> Os fóruns estão disponíveis apenas para membros com planos pagos: Junior, Pleno, Senior, Honra e Diretivo.
+            Para participar de um fórum específico, você também precisa ser membro aprovado do grupo correspondente.
           </p>
-          {user?.planName && !['Junior', 'Pleno', 'Senior', 'Honra', 'Diretivo'].includes(user.planName) && (
-            <p className="text-red-600 dark:text-red-400 font-medium">
-              Seu plano atual ({user.planName || 'Sem nível'}) não permite acesso aos fóruns.
-              Considere fazer upgrade para um plano elegível.
-            </p>
+          {user?.planName === 'Público' && (
+            <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+              <p className="text-red-700 dark:text-red-300 font-medium">
+                🔒 Seu plano atual (Público) não permite acesso aos fóruns.
+                Considere fazer upgrade para um plano pago para participar das discussões da comunidade.
+              </p>
+            </div>
           )}
         </div>
       </div>
