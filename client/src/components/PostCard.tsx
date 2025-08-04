@@ -86,6 +86,8 @@ type PostLike = {
 };
 
 function LikesModalContent({ postId, likesCount, groupId }: { postId: string; likesCount: number; groupId?: string }) {
+  const [activeTab, setActiveTab] = useState<'all' | 'like' | 'love' | 'laugh'>('all');
+  
   // Dados de teste mockados para funcionar imediatamente
   const mockLikes: PostLike[] = [
     {
@@ -142,18 +144,46 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
     <div className="space-y-0">
       {/* Tabs de reações no estilo LinkedIn */}
       <div className="flex items-center gap-6 border-b pb-3 mb-4">
-        <button className="flex items-center gap-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">
+        <button 
+          onClick={() => setActiveTab('all')}
+          className={`flex items-center gap-2 text-sm font-medium pb-1 ${
+            activeTab === 'all' 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
           <span>Todas {totalReactions}</span>
         </button>
-        <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+        <button 
+          onClick={() => setActiveTab('like')}
+          className={`flex items-center gap-1 text-sm pb-1 ${
+            activeTab === 'like' 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
           <span className="text-base">👍</span>
           <span>{likesOnly.length}</span>
         </button>
-        <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+        <button 
+          onClick={() => setActiveTab('love')}
+          className={`flex items-center gap-1 text-sm pb-1 ${
+            activeTab === 'love' 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
           <span className="text-base">❤️</span>
           <span>0</span>
         </button>
-        <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-blue-600">
+        <button 
+          onClick={() => setActiveTab('laugh')}
+          className={`flex items-center gap-1 text-sm pb-1 ${
+            activeTab === 'laugh' 
+              ? 'text-blue-600 border-b-2 border-blue-600' 
+              : 'text-gray-600 hover:text-blue-600'
+          }`}
+        >
           <span className="text-base">😂</span>
           <span>0</span>
         </button>
@@ -161,8 +191,8 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
 
       {/* Lista de usuários que reagiram */}
       <div className="space-y-0 max-h-80 overflow-y-auto">
-        {likes.map((like, index) => (
-          <div key={like.id} className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-3 transition-colors">
+        {(activeTab === 'all' ? likes : activeTab === 'like' ? likesOnly : []).map((like, index) => (
+          <div key={like.id} className="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-3 transition-colors">
             <div className="flex items-center gap-3 flex-1">
               <div className="relative">
                 <Avatar className="h-12 w-12">
@@ -189,11 +219,15 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
                 </p>
               </div>
             </div>
-            <Button variant="outline" size="sm" className="text-xs font-medium px-4 py-1.5 rounded-full">
-              <span className="text-blue-600">Conectar</span>
-            </Button>
           </div>
         ))}
+        
+        {/* Mensagem quando aba está vazia */}
+        {activeTab !== 'all' && activeTab !== 'like' && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">Nenhuma reação deste tipo ainda</p>
+          </div>
+        )}
       </div>
     </div>
   );
