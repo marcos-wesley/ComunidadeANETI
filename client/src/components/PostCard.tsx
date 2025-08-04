@@ -85,15 +85,32 @@ type PostLike = {
   };
 };
 
+type PostReaction = {
+  id: string;
+  userId: string;
+  postId: string;
+  reactionType: 'like' | 'love' | 'laugh' | 'sad' | 'angry';
+  createdAt: string;
+  user: {
+    id: string;
+    fullName: string;
+    username: string;
+    professionalArea?: string;
+    position?: string;
+    planName?: string;
+  };
+};
+
 function LikesModalContent({ postId, likesCount, groupId }: { postId: string; likesCount: number; groupId?: string }) {
   const [activeTab, setActiveTab] = useState<'all' | 'like' | 'love' | 'laugh'>('all');
   
-  // Dados de teste mockados para funcionar imediatamente
-  const mockLikes: PostLike[] = [
+  // Dados de teste com diferentes tipos de reações
+  const mockReactions = [
     {
-      id: "like-1",
+      id: "reaction-1",
       userId: "user-001",
       postId: postId,
+      reactionType: "like",
       createdAt: new Date().toISOString(),
       user: {
         id: "user-001",
@@ -105,9 +122,10 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
       }
     },
     {
-      id: "like-2", 
+      id: "reaction-2", 
       userId: "user-003",
       postId: postId,
+      reactionType: "love",
       createdAt: new Date().toISOString(),
       user: {
         id: "user-003",
@@ -119,9 +137,10 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
       }
     },
     {
-      id: "like-3",
+      id: "reaction-3",
       userId: "user-005",
       postId: postId,
+      reactionType: "like",
       createdAt: new Date().toISOString(),
       user: {
         id: "user-005", 
@@ -131,19 +150,56 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
         position: "Engenheiro DevOps",
         planName: "Pleno"
       }
+    },
+    {
+      id: "reaction-4",
+      userId: "user-007",
+      postId: postId,
+      reactionType: "laugh",
+      createdAt: new Date().toISOString(),
+      user: {
+        id: "user-007", 
+        fullName: "Diana Costa",
+        username: "diana.costa",
+        professionalArea: "UX Design",
+        position: "Designer UX/UI",
+        planName: "Pleno"
+      }
     }
   ];
 
-  const likes = mockLikes;
+  const reactions = mockReactions;
 
   // Contar tipos de reação
-  const likesOnly = likes.filter(l => true); // Por enquanto só curtidas
-  const totalReactions = likes.length;
+  const likesOnly = reactions.filter(r => r.reactionType === "like");
+  const lovesOnly = reactions.filter(r => r.reactionType === "love");
+  const laughsOnly = reactions.filter(r => r.reactionType === "laugh");
+  const totalReactions = reactions.length;
+
+  // Mapas de emoji e título para cada tipo de reação
+  const reactionConfig = {
+    like: { emoji: "👍", title: "Curtir" },
+    love: { emoji: "❤️", title: "Amar" },
+    laugh: { emoji: "😂", title: "Rir" },
+    sad: { emoji: "😢", title: "Triste" },
+    angry: { emoji: "😠", title: "Irritado" }
+  };
+
+  // Filtrar reações por aba ativa
+  const getFilteredReactions = () => {
+    switch(activeTab) {
+      case 'like': return likesOnly;
+      case 'love': return lovesOnly; 
+      case 'laugh': return laughsOnly;
+      default: return reactions;
+    }
+  };
 
   return (
     <div className="space-y-0">
-      {/* Tabs de reações no estilo LinkedIn */}
+      {/* Tabs de reações no estilo LinkedIn - mostrar apenas quando há reações */}
       <div className="flex items-center gap-6 border-b pb-3 mb-4">
+        {/* Aba "Todas" sempre visível */}
         <button 
           onClick={() => setActiveTab('all')}
           className={`flex items-center gap-2 text-sm font-medium pb-1 ${
@@ -154,76 +210,88 @@ function LikesModalContent({ postId, likesCount, groupId }: { postId: string; li
         >
           <span>Todas {totalReactions}</span>
         </button>
-        <button 
-          onClick={() => setActiveTab('like')}
-          className={`flex items-center gap-1 text-sm pb-1 ${
-            activeTab === 'like' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
-              : 'text-gray-600 hover:text-blue-600'
-          }`}
-        >
-          <span className="text-base">👍</span>
-          <span>{likesOnly.length}</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('love')}
-          className={`flex items-center gap-1 text-sm pb-1 ${
-            activeTab === 'love' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
-              : 'text-gray-600 hover:text-blue-600'
-          }`}
-        >
-          <span className="text-base">❤️</span>
-          <span>0</span>
-        </button>
-        <button 
-          onClick={() => setActiveTab('laugh')}
-          className={`flex items-center gap-1 text-sm pb-1 ${
-            activeTab === 'laugh' 
-              ? 'text-blue-600 border-b-2 border-blue-600' 
-              : 'text-gray-600 hover:text-blue-600'
-          }`}
-        >
-          <span className="text-base">😂</span>
-          <span>0</span>
-        </button>
+        
+        {/* Abas por tipo - mostrar apenas se há reações desse tipo */}
+        {likesOnly.length > 0 && (
+          <button 
+            onClick={() => setActiveTab('like')}
+            className={`flex items-center gap-1 text-sm pb-1 ${
+              activeTab === 'like' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-base">👍</span>
+            <span>{likesOnly.length}</span>
+          </button>
+        )}
+        
+        {lovesOnly.length > 0 && (
+          <button 
+            onClick={() => setActiveTab('love')}
+            className={`flex items-center gap-1 text-sm pb-1 ${
+              activeTab === 'love' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-base">❤️</span>
+            <span>{lovesOnly.length}</span>
+          </button>
+        )}
+        
+        {laughsOnly.length > 0 && (
+          <button 
+            onClick={() => setActiveTab('laugh')}
+            className={`flex items-center gap-1 text-sm pb-1 ${
+              activeTab === 'laugh' 
+                ? 'text-blue-600 border-b-2 border-blue-600' 
+                : 'text-gray-600 hover:text-blue-600'
+            }`}
+          >
+            <span className="text-base">😂</span>
+            <span>{laughsOnly.length}</span>
+          </button>
+        )}
       </div>
 
       {/* Lista de usuários que reagiram */}
       <div className="space-y-0 max-h-80 overflow-y-auto">
-        {(activeTab === 'all' ? likes : activeTab === 'like' ? likesOnly : []).map((like, index) => (
-          <div key={like.id} className="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-3 transition-colors">
+        {getFilteredReactions().map((reaction, index) => (
+          <div key={reaction.id} className="flex items-center hover:bg-gray-50 dark:hover:bg-gray-800 px-4 py-3 transition-colors">
             <div className="flex items-center gap-3 flex-1">
               <div className="relative">
                 <Avatar className="h-12 w-12">
                   <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
-                    {like.user.fullName?.charAt(0) || like.user.username.charAt(0).toUpperCase()}
+                    {reaction.user.fullName?.charAt(0) || reaction.user.username.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 {/* Ícone de reação no canto */}
                 <div className="absolute -bottom-1 -right-1 bg-white dark:bg-gray-800 rounded-full p-0.5">
-                  <span className="text-sm">👍</span>
+                  <span className="text-sm">
+                    {reactionConfig[reaction.reactionType as keyof typeof reactionConfig]?.emoji || '👍'}
+                  </span>
                 </div>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold hover:text-blue-600 cursor-pointer truncate">
-                    {like.user.fullName || like.user.username}
+                    {reaction.user.fullName || reaction.user.username}
                   </p>
                   <span className="text-xs text-muted-foreground">• {index === 0 ? '1º' : index === 1 ? '2º' : `${index + 1}º`}</span>
                 </div>
                 <p className="text-xs text-muted-foreground line-clamp-2">
-                  {(like.user.professionalArea && like.user.position) 
-                    ? `${like.user.position} em ${like.user.professionalArea}` 
-                    : like.user.professionalArea || like.user.planName || 'Especialista em TI'}
+                  {(reaction.user.professionalArea && reaction.user.position) 
+                    ? `${reaction.user.position} em ${reaction.user.professionalArea}` 
+                    : reaction.user.professionalArea || reaction.user.planName || 'Especialista em TI'}
                 </p>
               </div>
             </div>
           </div>
         ))}
         
-        {/* Mensagem quando aba está vazia */}
-        {activeTab !== 'all' && activeTab !== 'like' && (
+        {/* Mensagem quando não há reações na aba */}
+        {getFilteredReactions().length === 0 && (
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">Nenhuma reação deste tipo ainda</p>
           </div>
@@ -313,7 +381,22 @@ export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Elemen
       });
       return;
     }
-    setUserReaction(prev => prev === reactionType ? undefined : reactionType);
+    
+    // Toggle: se já reagiu com o mesmo tipo, remove. Senão, substitui ou adiciona
+    const newReaction = userReaction === reactionType ? undefined : reactionType;
+    setUserReaction(newReaction);
+    
+    // Atualizar contadores localmente para feedback imediato
+    if (userReaction && userReaction !== reactionType) {
+      // Mudou tipo de reação - mantém o total
+    } else if (userReaction === reactionType) {
+      // Remove reação - diminui contador
+      setLikesCount(prev => Math.max(0, prev - 1));
+    } else {
+      // Adiciona nova reação - aumenta contador
+      setLikesCount(prev => prev + 1);
+    }
+    
     likeMutation.mutate();
   };
 
