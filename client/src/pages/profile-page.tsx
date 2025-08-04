@@ -2069,15 +2069,11 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
   // Mutation to add/update language
   const languageMutation = useMutation({
     mutationFn: async (data: LanguageFormData) => {
-      const url = editingLanguageId ? '/api/profile/languages' : '/api/profile/languages';
+      const url = '/api/profile/languages';
       const method = editingLanguageId ? 'PUT' : 'POST';
       const body = editingLanguageId ? { id: editingLanguageId, ...data } : data;
       
-      return apiRequest(url, {
-        method,
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'application/json' }
-      });
+      return apiRequest(method, url, body);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
@@ -2102,9 +2098,7 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
   // Mutation to delete language
   const deleteLanguageMutation = useMutation({
     mutationFn: async (languageId: string) => {
-      return apiRequest(`/api/profile/languages/${languageId}`, {
-        method: 'DELETE'
-      });
+      return apiRequest('DELETE', `/api/profile/languages/${languageId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
