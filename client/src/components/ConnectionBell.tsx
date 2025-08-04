@@ -52,6 +52,7 @@ export function ConnectionBell() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
         title: "Conexão aceita",
         description: "Você agora está conectado com este membro.",
@@ -74,9 +75,10 @@ export function ConnectionBell() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
       toast({
         title: "Conexão recusada",
-        description: "O pedido de conexão foi recusado.",
+        description: "O pedido foi recusado. O usuário pode tentar conectar novamente.",
       });
       setIsOpen(false);
     },

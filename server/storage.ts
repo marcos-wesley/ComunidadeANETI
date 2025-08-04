@@ -1332,7 +1332,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createConnectionRequest(requesterId: string, receiverId: string): Promise<Connection> {
-    // Check if connection already exists
+    // Check if connection already exists and is not rejected
     const [existingConnection] = await db
       .select()
       .from(connections)
@@ -1343,8 +1343,13 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    if (existingConnection) {
+    if (existingConnection && existingConnection.status !== 'rejected') {
       throw new Error("Connection already exists");
+    }
+
+    // If there was a rejected connection, remove it first
+    if (existingConnection && existingConnection.status === 'rejected') {
+      await db.delete(connections).where(eq(connections.id, existingConnection.id));
     }
 
     const [connection] = await db
@@ -1356,13 +1361,24 @@ export class DatabaseStorage implements IStorage {
 
   async updateConnectionStatus(connectionId: string, status: string, userId: string): Promise<Connection | undefined> {
     // Only the receiver can accept/reject the connection
-    const [connection] = await db
-      .update(connections)
-      .set({ status, updatedAt: new Date() })
-      .where(and(eq(connections.id, connectionId), eq(connections.receiverId, userId)))
-      .returning();
-    
-    return connection || undefined;
+    if (status === 'rejected') {
+      // If rejected, delete the connection completely so user can try again
+      const [connection] = await db
+        .delete(connections)
+        .where(and(eq(connections.id, connectionId), eq(connections.receiverId, userId)))
+        .returning();
+      
+      return connection || undefined;
+    } else {
+      // If accepted, update the status
+      const [connection] = await db
+        .update(connections)
+        .set({ status, updatedAt: new Date() })
+        .where(and(eq(connections.id, connectionId), eq(connections.receiverId, userId)))
+        .returning();
+      
+      return connection || undefined;
+    }
   }
 
   async searchUsers(query: string): Promise<Pick<User, 'id' | 'fullName' | 'username'>[]> {
