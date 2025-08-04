@@ -24,8 +24,11 @@ import {
   Code,
   Star,
   Languages,
-  BookOpen
+  BookOpen,
+  Check,
+  X
 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
@@ -129,6 +132,8 @@ interface ProfileData {
 
 export default function ProfessionalProfile() {
   const [isOwner, setIsOwner] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editedTitle, setEditedTitle] = useState('');
   const queryClient = useQueryClient();
 
   // Get current user to check if it's the profile owner
@@ -146,6 +151,50 @@ export default function ProfessionalProfile() {
       setIsOwner((currentUser as any).id === profileData.user.id);
     }
   }, [currentUser, profileData]);
+
+  // Mutation to update professional title
+  const updateTitleMutation = useMutation({
+    mutationFn: async (newTitle: string) => {
+      const response = await apiRequest('/api/profile', {
+        method: 'PUT',
+        body: { professionalTitle: newTitle }
+      });
+      return response;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile/professional'] });
+      setIsEditingTitle(false);
+      toast({
+        title: "Título atualizado",
+        description: "Seu título profissional foi atualizado com sucesso."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o título profissional.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleStartEditTitle = () => {
+    if (profileData?.user) {
+      setEditedTitle(profileData.user.professionalTitle || '');
+      setIsEditingTitle(true);
+    }
+  };
+
+  const handleSaveTitle = () => {
+    if (editedTitle.trim()) {
+      updateTitleMutation.mutate(editedTitle.trim());
+    }
+  };
+
+  const handleCancelEditTitle = () => {
+    setIsEditingTitle(false);
+    setEditedTitle('');
+  };
 
   const getInitials = (name: string) => {
     return name
@@ -284,9 +333,56 @@ export default function ProfessionalProfile() {
           <div className="space-y-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900">{user.fullName}</h1>
-              <p className="text-xl text-gray-600 mt-1">
-                {user.professionalTitle || `${user.position} ${user.company ? `na ${user.company}` : ''}`}
-              </p>
+              <div className="mt-1 flex items-center gap-2">
+                {isEditingTitle ? (
+                  <div className="flex items-center gap-2 flex-1">
+                    <Input
+                      value={editedTitle}
+                      onChange={(e) => setEditedTitle(e.target.value)}
+                      placeholder="Digite seu título profissional"
+                      className="text-xl h-auto py-1 border-gray-300 focus:border-blue-500"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleSaveTitle();
+                        } else if (e.key === 'Escape') {
+                          handleCancelEditTitle();
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSaveTitle}
+                      disabled={updateTitleMutation.isPending}
+                    >
+                      <Check className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleCancelEditTitle}
+                      disabled={updateTitleMutation.isPending}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 flex-1">
+                    <p className="text-xl text-gray-600">
+                      {user.professionalTitle || `${user.position} ${user.company ? `na ${user.company}` : ''}`}
+                    </p>
+                    {isOwner && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleStartEditTitle}
+                        className="h-8 w-8 p-0 hover:bg-gray-100"
+                      >
+                        <Edit className="w-4 h-4 text-gray-500" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">

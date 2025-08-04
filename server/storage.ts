@@ -636,6 +636,46 @@ export class DatabaseStorage implements IStorage {
     console.log("Profile data:", profileData);
     
     try {
+      // Build update object dynamically based on provided fields
+      const updateFields: any = {};
+      
+      if (profileData.professionalTitle !== undefined) {
+        updateFields.professionalTitle = profileData.professionalTitle;
+      }
+      if (profileData.position !== undefined) {
+        updateFields.position = profileData.position;
+      }
+      if (profileData.company !== undefined) {
+        updateFields.company = profileData.company;
+      }
+      if (profileData.bio !== undefined) {
+        updateFields.bio = profileData.bio;
+      }
+      if (profileData.aboutMe !== undefined) {
+        updateFields.aboutMe = profileData.aboutMe;
+      }
+      if (profileData.linkedin !== undefined) {
+        updateFields.linkedin = profileData.linkedin;
+      }
+      if (profileData.github !== undefined) {
+        updateFields.github = profileData.github;
+      }
+      if (profileData.website !== undefined) {
+        updateFields.website = profileData.website;
+      }
+      if (profileData.phone !== undefined) {
+        updateFields.phone = profileData.phone;
+      }
+      if (profileData.city !== undefined) {
+        updateFields.city = profileData.city;
+      }
+      if (profileData.state !== undefined) {
+        updateFields.state = profileData.state;
+      }
+      if (profileData.area !== undefined) {
+        updateFields.area = profileData.area;
+      }
+      
       // For image updates, use direct SQL to avoid Drizzle typing issues
       if (profileData.profilePicture !== undefined) {
         await db.execute(sql`
@@ -651,6 +691,12 @@ export class DatabaseStorage implements IStorage {
           SET cover_photo = ${profileData.coverPhoto}, updated_at = NOW() 
           WHERE id = ${id}
         `);
+      }
+      
+      // Update other fields using Drizzle ORM if any were provided
+      if (Object.keys(updateFields).length > 0) {
+        updateFields.updatedAt = new Date();
+        await db.update(users).set(updateFields).where(eq(users.id, id));
       }
       
       // Get the updated user
