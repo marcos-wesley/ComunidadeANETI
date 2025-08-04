@@ -830,8 +830,47 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
   const [editingExperienceId, setEditingExperienceId] = useState<string | null>(null);
   const [locationInput, setLocationInput] = useState('');
   const [filteredLocations, setFilteredLocations] = useState<string[]>([]);
+  const [showAllExperiences, setShowAllExperiences] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Sort experiences chronologically (most recent first)
+  const sortedExperiences = [...experiences].sort((a, b) => {
+    const aDate = a.endDate || '9999-12'; // Current positions go first
+    const bDate = b.endDate || '9999-12';
+    if (aDate !== bDate) {
+      return bDate.localeCompare(aDate);
+    }
+    // If end dates are same, sort by start date (most recent first)
+    return b.startDate.localeCompare(a.startDate);
+  });
+
+  // Show only first 3 experiences unless "Ver mais" is clicked
+  const displayedExperiences = showAllExperiences ? sortedExperiences : sortedExperiences.slice(0, 3);
+
+  const toggleDescription = (expId: string) => {
+    const newExpanded = new Set(expandedDescriptions);
+    if (newExpanded.has(expId)) {
+      newExpanded.delete(expId);
+    } else {
+      newExpanded.add(expId);
+    }
+    setExpandedDescriptions(newExpanded);
+  };
+
+  const truncateDescription = (description: string, expId: string) => {
+    if (!description) return '';
+    
+    const lines = description.split('\n');
+    const isExpanded = expandedDescriptions.has(expId);
+    
+    if (lines.length <= 2 || isExpanded) {
+      return description;
+    }
+    
+    return lines.slice(0, 2).join('\n');
+  };
 
   const formatDate = (dateStr: string) => {
     const [year, month] = dateStr.split('-');
@@ -1158,9 +1197,9 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
         </Dialog>
 
         {/* Experience List */}
-        {experiences.length > 0 ? (
+        {sortedExperiences.length > 0 ? (
           <div className="space-y-6">
-            {experiences.map((exp, index) => (
+            {displayedExperiences.map((exp, index) => (
               <div key={exp.id}>
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
@@ -1181,9 +1220,21 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
                           </p>
                         )}
                         {exp.description && (
-                          <p className="text-gray-700 dark:text-gray-300 mt-3 whitespace-pre-wrap">
-                            {exp.description}
-                          </p>
+                          <div className="mt-3">
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                              {truncateDescription(exp.description, exp.id)}
+                            </p>
+                            {exp.description.split('\n').length > 2 && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => toggleDescription(exp.id)}
+                                className="p-0 h-auto text-blue-600 hover:text-blue-800"
+                              >
+                                {expandedDescriptions.has(exp.id) ? 'Ver menos' : 'Ver mais'}
+                              </Button>
+                            )}
+                          </div>
                         )}
                       </div>
                       {isOwnProfile && (
@@ -1199,9 +1250,25 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
                     </div>
                   </div>
                 </div>
-                {index < experiences.length - 1 && <Separator className="mt-6" />}
+                {index < displayedExperiences.length - 1 && <Separator className="mt-6" />}
               </div>
             ))}
+            
+            {/* Show More Experiences Button */}
+            {sortedExperiences.length > 3 && (
+              <div className="pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAllExperiences(!showAllExperiences)}
+                  className="w-full"
+                >
+                  {showAllExperiences 
+                    ? `Ver menos experiências` 
+                    : `Ver mais experiências (${sortedExperiences.length - 3} restantes)`
+                  }
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           !isAddingExperience && (
