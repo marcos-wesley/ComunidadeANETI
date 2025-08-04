@@ -381,6 +381,14 @@ export const forumReplyLikes = pgTable("forum_reply_likes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Follows system
+export const follows = pgTable("follows", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  followerId: varchar("follower_id").references(() => users.id).notNull(), // who is following
+  followingId: varchar("following_id").references(() => users.id).notNull(), // who is being followed
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Notifications system
 export const notifications = pgTable("notifications", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -424,6 +432,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   comments: many(comments),
   sentConnectionRequests: many(connections, { relationName: "requester" }),
   receivedConnectionRequests: many(connections, { relationName: "receiver" }),
+  following: many(follows, { relationName: "follower" }),
+  followers: many(follows, { relationName: "following" }),
   conversationParticipants: many(conversationParticipants),
   sentMessages: many(messages),
   createdConversations: many(conversations),
@@ -484,6 +494,19 @@ export const connectionsRelations = relations(connections, ({ one }) => ({
     fields: [connections.receiverId],
     references: [users.id],
     relationName: "receiver",
+  }),
+}));
+
+export const followsRelations = relations(follows, ({ one }) => ({
+  follower: one(users, {
+    fields: [follows.followerId],
+    references: [users.id],
+    relationName: "follower",
+  }),
+  following: one(users, {
+    fields: [follows.followingId],
+    references: [users.id],
+    relationName: "following",
   }),
 }));
 
@@ -651,6 +674,11 @@ export const insertConnectionSchema = createInsertSchema(connections).omit({
   status: true,
 });
 
+export const insertFollowSchema = createInsertSchema(follows).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const insertLikeSchema = createInsertSchema(likes).omit({
   id: true,
   createdAt: true,
@@ -665,6 +693,8 @@ export type Comment = typeof comments.$inferSelect;
 export type InsertComment = z.infer<typeof insertCommentSchema>;
 export type Connection = typeof connections.$inferSelect;
 export type InsertConnection = z.infer<typeof insertConnectionSchema>;
+export type Follow = typeof follows.$inferSelect;
+export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Like = typeof likes.$inferSelect;
 export type InsertLike = z.infer<typeof insertLikeSchema>;
 

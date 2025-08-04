@@ -7,6 +7,7 @@ import {
   comments,
   likes,
   connections,
+  follows,
   experiences,
   educations,
   certifications,
@@ -44,6 +45,8 @@ import {
   type InsertLike,
   type Connection,
   type InsertConnection,
+  type Follow,
+  type InsertFollow,
   type PostWithDetails,
   type Experience,
   type InsertExperience,
@@ -1559,7 +1562,18 @@ export class DatabaseStorage implements IStorage {
         )
       );
 
-    // Map the data together with simulated follows for now
+    // Get follow status for each member
+    const userFollows = await db
+      .select({
+        followingId: follows.followingId,
+      })
+      .from(follows)
+      .where(and(
+        eq(follows.followerId, currentUserId),
+        inArray(follows.followingId, memberIds)
+      ));
+
+    // Map the data together
     return allMembers.map(member => {
       const connection = userConnections.find(c => 
         (c.requesterId === currentUserId && c.receiverId === member.id) ||
@@ -1571,9 +1585,11 @@ export class DatabaseStorage implements IStorage {
         connectionStatus = connection.status === "accepted" ? "connected" : "pending";
       }
 
+      const isFollowing = userFollows.some(f => f.followingId === member.id);
+
       return {
         ...member,
-        isFollowing: false, // Will implement follow system later
+        isFollowing,
         connectionStatus,
         followersCount: 0,
         connectionsCount: 0,
@@ -1582,14 +1598,40 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFollow(followerId: string, followingId: string) {
-    // For now, just return a success response
-    // Will implement actual follow system when tables are created
-    return { followerId, followingId, success: true };
+    // Check if already following
+    const existingFollow = await db
+      .select({ id: follows.id })
+      .from(follows)
+      .where(and(
+        eq(follows.followerId, followerId),
+        eq(follows.followingId, followingId)
+      ))
+      .limit(1);
+
+    if (existingFollow.length > 0) {
+      throw new Error("Already following this user");
+    }
+
+    // Create the follow relationship
+    const newFollow = await db
+      .insert(follows)
+      .values({
+        followerId,
+        followingId,
+      })
+      .returning();
+
+    return newFollow[0];
   }
 
   async removeFollow(followerId: string, followingId: string) {
-    // For now, just return success
-    // Will implement actual follow system when tables are created
+    await db
+      .delete(follows)
+      .where(and(
+        eq(follows.followerId, followerId),
+        eq(follows.followingId, followingId)
+      ));
+
     return { success: true };
   }
 
