@@ -122,20 +122,12 @@ export default function ForumDetailPage(): JSX.Element {
   // Fetch forum details
   const { data: forum, isLoading: forumLoading } = useQuery({
     queryKey: [`/api/forums/${forumId}`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/forums/${forumId}`);
-      return response.json();
-    },
     enabled: !!forumId,
   });
 
   // Fetch forum topics
   const { data: topics = [], isLoading: topicsLoading } = useQuery({
     queryKey: [`/api/forums/${forumId}/topics`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/forums/${forumId}/topics`);
-      return response.json();
-    },
     enabled: !!forumId,
   });
 
@@ -172,10 +164,6 @@ export default function ForumDetailPage(): JSX.Element {
   // Check if user is group member and has active membership
   const { data: membership } = useQuery({
     queryKey: [`/api/groups/${forum?.groupId}/membership`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/groups/${forum?.groupId}/membership`);
-      return response.json();
-    },
     enabled: !!forum?.groupId,
   });
 
@@ -185,8 +173,7 @@ export default function ForumDetailPage(): JSX.Element {
   // Create topic mutation
   const createTopicMutation = useMutation({
     mutationFn: async (data: CreateTopicForm) => {
-      const response = await apiRequest("POST", `/api/forums/${forumId}/topics`, data);
-      return response.json();
+      return await apiRequest("POST", `/api/forums/${forumId}/topics`, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/forums/${forumId}/topics`] });

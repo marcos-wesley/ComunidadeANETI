@@ -3350,7 +3350,10 @@ export class DatabaseStorage implements IStorage {
     const [forum] = await db
       .select()
       .from(forums)
-      .where(eq(forums.id, forumId));
+      .where(and(
+        eq(forums.id, forumId),
+        eq(forums.isActive, true)
+      ));
     
     return forum || undefined;
   }
