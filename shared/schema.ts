@@ -221,16 +221,7 @@ export const predefinedSkills = pgTable("predefined_skills", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const recommendations = pgTable("recommendations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  profileUserId: varchar("profile_user_id").references(() => users.id).notNull(), // who receives the recommendation
-  recommenderUserId: varchar("recommender_user_id").references(() => users.id).notNull(), // who gives the recommendation
-  message: text("message").notNull(),
-  relationship: text("relationship"), // colleague, manager, client, etc.
-  status: text("status").default("pending"), // pending, approved, rejected
-  createdAt: timestamp("created_at").defaultNow(),
-  approvedAt: timestamp("approved_at"),
-});
+
 
 export const languages = pgTable("languages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -238,6 +229,19 @@ export const languages = pgTable("languages", {
   language: text("language").notNull(),
   proficiency: text("proficiency_level").notNull(), // Básico, Intermediário, Avançado, Fluente, Nativo
   createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const recommendations = pgTable("recommendations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recommenderId: varchar("recommender_id").references(() => users.id).notNull(), // Quem está recomendando
+  recommendeeId: varchar("recommendee_id").references(() => users.id).notNull(), // Quem está sendo recomendado
+  text: text("text").notNull(), // Texto da recomendação
+  position: text("position"), // Cargo/posição da pessoa recomendada
+  company: text("company"), // Empresa onde trabalharam juntos
+  relationship: text("relationship").notNull(), // Como se conheceram (colega, chefe, subordinado, etc.)
+  status: text("status").default("pending").notNull(), // pending, accepted, rejected
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const highlights = pgTable("highlights", {
@@ -715,10 +719,7 @@ export type Follow = typeof follows.$inferSelect;
 export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Like = typeof likes.$inferSelect;
 export type InsertLike = z.infer<typeof insertLikeSchema>;
-export type Certification = typeof certifications.$inferSelect;
-export type InsertCertification = z.infer<typeof insertCertificationSchema>;
-export type Language = typeof languages.$inferSelect;
-export type InsertLanguage = z.infer<typeof insertLanguageSchema>;
+
 
 // Extended types with relations
 export type PostWithDetails = Post & {
@@ -825,7 +826,7 @@ export const insertPredefinedSkillSchema = createInsertSchema(predefinedSkills).
 export const insertRecommendationSchema = createInsertSchema(recommendations).omit({
   id: true,
   createdAt: true,
-  approvedAt: true,
+  updatedAt: true,
   status: true,
 });
 

@@ -14,10 +14,11 @@ import {
   insertNotificationSchema,
   insertGroupSchema,
   insertExperienceSchema,
-  membershipPlans 
+  membershipPlans,
+  recommendations 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import express from "express";
 import path from "path";
 import fs from "fs/promises";
@@ -1523,6 +1524,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ message: "Language deleted successfully" });
     } catch (error) {
       console.error("Error deleting language:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Recommendation CRUD routes
+  
+  // Get user's recommendations (accepted only)
+  app.get("/api/profile/recommendations", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const recommendations = await storage.getUserRecommendations(userId);
+      res.json(recommendations);
+    } catch (error) {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get pending recommendations for user to approve/reject
+  app.get("/api/profile/recommendations/pending", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const pendingRecommendations = await storage.getPendingRecommendations(userId);
+      res.json(pendingRecommendations);
+    } catch (error) {
+      console.error("Error fetching pending recommendations:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Create new recommendation
+  app.post("/api/profile/recommendations", isAuthenticated, async (req, res) => {
+    try {
+      const recommenderId = req.user!.id;
+      const { recommendeeId, text, position, company, relationship } = req.body;
+      
+      if (!recommendeeId || !text || !relationship) {
+        return res.status(400).json({ error: "Dados obrigatórios: recommendeeId, text, relationship" });
+      }
+
+      // Check if recommender is trying to recommend themselves
+      if (recommenderId === recommendeeId) {
+        return res.status(400).json({ error: "Você não pode recomendar a si mesmo" });
+      }
+
+      // Check if recommendation already exists
+      const existingRecommendation = await db
+        .select()
+        .from(recommendations)
+        .where(and(
+          eq(recommendations.recommenderId, recommenderId),
+          eq(recommendations.recommendeeId, recommendeeId)
+        ))
+        .limit(1);
+
+      if (existingRecommendation.length > 0) {
+        return res.status(400).json({ error: "Você já enviou uma recomendação para este usuário" });
+      }
+      
+      const recommendationData = {
+        recommenderId,
+        recommendeeId,
+        text,
+        position,
+        company,
+        relationship,
+        status: "pending" as const
+      };
+      
+      const newRecommendation = await storage.createRecommendation(recommendationData);
+      res.status(201).json(newRecommendation);
+    } catch (error) {
+      console.error("Error creating recommendation:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update recommendation status (accept/reject)
+  app.put("/api/profile/recommendations/:id/status", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const recommendationId = req.params.id;
+      const { status } = req.body;
+      
+      if (!["accepted", "rejected"].includes(status)) {
+        return res.status(400).json({ error: "Status deve ser 'accepted' ou 'rejected'" });
+      }
+      
+      const updatedRecommendation = await storage.updateRecommendationStatus(recommendationId, userId, status);
+      
+      if (!updatedRecommendation) {
+        return res.status(404).json({ error: "Recomendação não encontrada" });
+      }
+      
+      res.json(updatedRecommendation);
+    } catch (error) {
+      console.error("Error updating recommendation status:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Delete recommendation
+  app.delete("/api/profile/recommendations/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const recommendationId = req.params.id;
+      
+      const deleted = await storage.deleteRecommendation(recommendationId, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Recomendação não encontrada" });
+      }
+      
+      res.json({ message: "Recomendação removida com sucesso" });
+    } catch (error) {
+      console.error("Error deleting recommendation:", error);
       res.status(500).json({ error: "Internal server error" });
     }
   });

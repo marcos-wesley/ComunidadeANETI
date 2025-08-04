@@ -2201,9 +2201,128 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserRecommendations(userId: string): Promise<any[]> {
-    // Portfolio tables will be implemented later
-    return [];
+  async getUserRecommendations(userId: string): Promise<(Recommendation & { recommender: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'> })[]> {
+    try {
+      const userRecommendations = await db
+        .select({
+          id: recommendations.id,
+          recommenderId: recommendations.recommenderId,
+          recommendeeId: recommendations.recommendeeId,
+          text: recommendations.text,
+          position: recommendations.position,
+          company: recommendations.company,
+          relationship: recommendations.relationship,
+          status: recommendations.status,
+          createdAt: recommendations.createdAt,
+          updatedAt: recommendations.updatedAt,
+          recommender: {
+            id: users.id,
+            fullName: users.fullName,
+            username: users.username,
+            profilePicture: users.profilePicture,
+          }
+        })
+        .from(recommendations)
+        .leftJoin(users, eq(recommendations.recommenderId, users.id))
+        .where(and(
+          eq(recommendations.recommendeeId, userId),
+          eq(recommendations.status, "accepted")
+        ));
+      
+      return userRecommendations;
+    } catch (error) {
+      console.error("Error fetching user recommendations:", error);
+      return [];
+    }
+  }
+
+  async getPendingRecommendations(userId: string): Promise<(Recommendation & { recommender: Pick<User, 'id' | 'fullName' | 'username' | 'profilePicture'> })[]> {
+    try {
+      const pendingRecommendations = await db
+        .select({
+          id: recommendations.id,
+          recommenderId: recommendations.recommenderId,
+          recommendeeId: recommendations.recommendeeId,
+          text: recommendations.text,
+          position: recommendations.position,
+          company: recommendations.company,
+          relationship: recommendations.relationship,
+          status: recommendations.status,
+          createdAt: recommendations.createdAt,
+          updatedAt: recommendations.updatedAt,
+          recommender: {
+            id: users.id,
+            fullName: users.fullName,
+            username: users.username,
+            profilePicture: users.profilePicture,
+          }
+        })
+        .from(recommendations)
+        .leftJoin(users, eq(recommendations.recommenderId, users.id))
+        .where(and(
+          eq(recommendations.recommendeeId, userId),
+          eq(recommendations.status, "pending")
+        ));
+      
+      return pendingRecommendations;
+    } catch (error) {
+      console.error("Error fetching pending recommendations:", error);
+      return [];
+    }
+  }
+
+  async createRecommendation(data: InsertRecommendation): Promise<Recommendation> {
+    try {
+      const [newRecommendation] = await db
+        .insert(recommendations)
+        .values(data)
+        .returning();
+      
+      return newRecommendation;
+    } catch (error) {
+      console.error("Error creating recommendation:", error);
+      throw error;
+    }
+  }
+
+  async updateRecommendationStatus(recommendationId: string, userId: string, status: "accepted" | "rejected"): Promise<Recommendation | null> {
+    try {
+      const [updatedRecommendation] = await db
+        .update(recommendations)
+        .set({ 
+          status, 
+          updatedAt: new Date() 
+        })
+        .where(and(
+          eq(recommendations.id, recommendationId),
+          eq(recommendations.recommendeeId, userId)
+        ))
+        .returning();
+      
+      return updatedRecommendation || null;
+    } catch (error) {
+      console.error("Error updating recommendation status:", error);
+      throw error;
+    }
+  }
+
+  async deleteRecommendation(recommendationId: string, userId: string): Promise<boolean> {
+    try {
+      const result = await db
+        .delete(recommendations)
+        .where(and(
+          eq(recommendations.id, recommendationId),
+          or(
+            eq(recommendations.recommenderId, userId),
+            eq(recommendations.recommendeeId, userId)
+          )
+        ));
+      
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting recommendation:", error);
+      throw error;
+    }
   }
 
   async getUserLanguages(userId: string): Promise<Language[]> {

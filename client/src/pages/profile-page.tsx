@@ -2754,55 +2754,352 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
   );
 }
 
-function RecommendationsSection({ recommendations, isOwnProfile }: { recommendations: Recommendation[]; isOwnProfile: boolean }) {
-  const approvedRecommendations = recommendations.filter(rec => rec.status === 'approved');
-  
-  if (approvedRecommendations.length === 0 && !isOwnProfile) return null;
+function RecommendationsSection({ recommendations, isOwnProfile }: { recommendations: any[]; isOwnProfile: boolean }) {
+  const [isAddingRecommendation, setIsAddingRecommendation] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const recommendationSchema = z.object({
+    text: z.string().min(10, "Recomendação deve ter pelo menos 10 caracteres"),
+    position: z.string().optional(),
+    company: z.string().optional(),
+    relationship: z.enum(["colega", "chefe", "subordinado", "cliente", "fornecedor", "parceiro", "outro"])
+  });
+
+  type RecommendationFormData = z.infer<typeof recommendationSchema>;
+
+  const form = useForm<RecommendationFormData>({
+    resolver: zodResolver(recommendationSchema),
+    defaultValues: {
+      text: '',
+      position: '',
+      company: '',
+      relationship: 'colega'
+    }
+  });
+
+  // Query for pending recommendations
+  const { data: pendingRecs = [] } = useQuery({
+    queryKey: ['/api/profile/recommendations/pending'],
+    enabled: isOwnProfile
+  });
+
+  // Query for searching users
+  const { data: searchResults = [] } = useQuery({
+    queryKey: ['/api/members', { search: searchTerm }],
+    enabled: searchTerm.length > 2
+  });
+
+  // Mutation to create recommendation
+  const createRecommendationMutation = useMutation({
+    mutationFn: async (data: RecommendationFormData & { recommendeeId: string }) => {
+      return apiRequest('POST', '/api/profile/recommendations', data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsAddingRecommendation(false);
+      setSelectedUser(null);
+      form.reset();
+      toast({
+        title: "Sucesso",
+        description: "Recomendação enviada com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error creating recommendation:', error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao enviar recomendação. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation to update recommendation status
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'accepted' | 'rejected' }) => {
+      return apiRequest('PUT', `/api/profile/recommendations/${id}/status`, { status });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile/recommendations/pending'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "Sucesso",
+        description: "Recomendação atualizada com sucesso!",
+      });
+    },
+    onError: (error: any) => {
+      console.error('Error updating recommendation:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar recomendação. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const onSubmit = (data: RecommendationFormData) => {
+    if (!selectedUser) {
+      toast({
+        title: "Erro",
+        description: "Selecione um usuário para recomendar",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createRecommendationMutation.mutate({
+      ...data,
+      recommendeeId: selectedUser.id
+    });
+  };
+
+  if (recommendations.length === 0 && !isOwnProfile) return null;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Star className="h-5 w-5" />
-          Recomendações
-        </CardTitle>
-        {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
-          </Button>
-        )}
-      </CardHeader>
-      <CardContent>
-        {approvedRecommendations.length > 0 ? (
-          <div className="space-y-4">
-            {approvedRecommendations.map((rec) => (
-              <div key={rec.id} className="border-l-4 border-blue-500 pl-4">
-                <p className="text-gray-700 dark:text-gray-300 italic mb-3">
-                  "{rec.message}"
-                </p>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-sm">{rec.recommender.fullName}</p>
-                    {rec.recommender.position && (
-                      <p className="text-xs text-gray-500">{rec.recommender.position}</p>
-                    )}
-                  </div>
-                  {rec.relationship && (
-                    <Badge variant="outline" className="text-xs">
-                      {rec.relationship}
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
+    <>
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <div className="flex items-center gap-2">
+            <Star className="h-4 w-4" />
+            <CardTitle className="text-base">Recomendações</CardTitle>
           </div>
-        ) : (
-          <p className="text-gray-500 italic">
-            {isOwnProfile ? "Você ainda não recebeu recomendações" : "Nenhuma recomendação disponível"}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+          {!isOwnProfile && (
+            <Button variant="ghost" size="sm" onClick={() => setIsAddingRecommendation(true)}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {/* Pending recommendations for approval */}
+          {isOwnProfile && pendingRecs.length > 0 && (
+            <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <h4 className="font-medium text-sm mb-3">Recomendações pendentes de aprovação:</h4>
+              <div className="space-y-3">
+                {pendingRecs.map((rec: any) => (
+                  <div key={rec.id} className="bg-white p-3 rounded border">
+                    <p className="text-sm mb-2">"{rec.text}"</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center">
+                          <User className="h-3 w-3" />
+                        </div>
+                        <div>
+                          <p className="text-xs font-medium">{rec.recommender.fullName}</p>
+                          <p className="text-xs text-muted-foreground">{rec.relationship}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => updateStatusMutation.mutate({ id: rec.id, status: 'accepted' })}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          Aceitar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => updateStatusMutation.mutate({ id: rec.id, status: 'rejected' })}
+                          disabled={updateStatusMutation.isPending}
+                        >
+                          Rejeitar
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Accepted recommendations */}
+          {recommendations.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              {isOwnProfile ? "Você ainda não recebeu recomendações" : "Este usuário ainda não tem recomendações"}
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {recommendations.map((rec: any) => (
+                <div key={rec.id} className="border-l-2 border-blue-200 pl-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground mb-2">
+                        "{rec.text}"
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{rec.recommender?.fullName || "Anônimo"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {rec.position && `${rec.position} • `}{rec.relationship}
+                            {rec.company && ` • ${rec.company}`}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Add Recommendation Modal */}
+      <Dialog open={isAddingRecommendation} onOpenChange={setIsAddingRecommendation}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Recomendar profissional</DialogTitle>
+            <DialogDescription>
+              Escreva uma recomendação para um colega ou parceiro de trabalho
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {/* User search */}
+              <div className="space-y-2">
+                <FormLabel>Buscar usuário para recomendar</FormLabel>
+                <Input
+                  placeholder="Digite o nome do usuário..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                {searchResults.length > 0 && (
+                  <div className="border rounded-md max-h-40 overflow-y-auto">
+                    {searchResults.map((user: any) => (
+                      <div 
+                        key={user.id}
+                        className={`p-2 cursor-pointer hover:bg-gray-50 ${selectedUser?.id === user.id ? 'bg-blue-50' : ''}`}
+                        onClick={() => {
+                          setSelectedUser(user);
+                          setSearchTerm(user.fullName);
+                        }}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
+                            <User className="h-4 w-4" />
+                          </div>
+                          <div>
+                            <p className="font-medium text-sm">{user.fullName}</p>
+                            <p className="text-xs text-muted-foreground">@{user.username}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {selectedUser && (
+                <>
+                  <FormField
+                    control={form.control}
+                    name="text"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Recomendação *</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder="Escreva sua recomendação aqui..."
+                            className="min-h-[120px]"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="relationship"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Relacionamento profissional *</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecione o relacionamento" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="colega">Colega de trabalho</SelectItem>
+                              <SelectItem value="chefe">Chefe/Supervisor</SelectItem>
+                              <SelectItem value="subordinado">Subordinado</SelectItem>
+                              <SelectItem value="cliente">Cliente</SelectItem>
+                              <SelectItem value="fornecedor">Fornecedor</SelectItem>
+                              <SelectItem value="parceiro">Parceiro de negócios</SelectItem>
+                              <SelectItem value="outro">Outro</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="position"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Cargo/Posição</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Desenvolvedor Senior" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="company"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Empresa</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Ex: Tech Corp" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setIsAddingRecommendation(false);
+                    setSelectedUser(null);
+                    form.reset();
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button 
+                  type="submit" 
+                  disabled={!selectedUser || createRecommendationMutation.isPending}
+                >
+                  {createRecommendationMutation.isPending ? "Enviando..." : "Enviar recomendação"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
