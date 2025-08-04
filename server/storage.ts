@@ -1921,6 +1921,27 @@ export class DatabaseStorage implements IStorage {
     return { success: true };
   }
 
+  async getUserConnectionsCount(userId: string): Promise<number> {
+    try {
+      const count = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(connections)
+        .where(
+          and(
+            eq(connections.status, "accepted"),
+            or(
+              eq(connections.requesterId, userId),
+              eq(connections.receiverId, userId)
+            )
+          )
+        );
+      return count[0]?.count || 0;
+    } catch (error) {
+      console.error("Error getting user connections count:", error);
+      return 0;
+    }
+  }
+
   async getUserProfile(userId: string): Promise<any> {
     const user = await this.getUser(userId);
     if (!user) return null;
@@ -1932,6 +1953,9 @@ export class DatabaseStorage implements IStorage {
     const skills = await this.getUserSkills(user.id);
     const recommendations = await this.getUserRecommendations(user.id);
 
+    // Get connections count
+    const connectionsCount = await this.getUserConnectionsCount(user.id);
+
     return {
       ...user,
       experiences,
@@ -1942,6 +1966,7 @@ export class DatabaseStorage implements IStorage {
       recommendations,
       languages: await this.getUserLanguages(user.id),
       highlights: [],
+      connectionsCount,
     };
   }
 

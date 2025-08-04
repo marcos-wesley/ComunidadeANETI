@@ -108,6 +108,7 @@ type UserProfile = {
   professionalTitle?: string;
   planName?: string;
   createdAt: string;
+  connectionsCount?: number;
   experiences: Experience[];
   educations: Education[];
   certifications: Certification[];
@@ -342,6 +343,7 @@ function ProfessionalTitleEditor({ profile, isOwnProfile }: { profile: UserProfi
 function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
@@ -355,6 +357,93 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
       case 'júnior': return 'outline';
       default: return 'outline';
     }
+  };
+
+  // Get current position from most recent experience
+  const getCurrentPosition = () => {
+    if (!profile.experiences || profile.experiences.length === 0) return null;
+    
+    // Find current position (no end date) or most recent
+    const currentExp = profile.experiences.find(exp => !exp.endDate) || 
+                     profile.experiences.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())[0];
+    
+    return currentExp ? `${currentExp.position} na ${currentExp.company}` : null;
+  };
+
+  // Get real connections count
+  const { data: connectionsData } = useQuery({
+    queryKey: ['/api/connections', profile.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/connections/count/${profile.id}`);
+      if (!response.ok) throw new Error('Failed to fetch connections count');
+      return response.json();
+    },
+    enabled: !isOwnProfile
+  });
+
+  // Get connection status with this user
+  const { data: connectionStatus } = useQuery({
+    queryKey: ['/api/connections/status', profile.id],
+    queryFn: async () => {
+      const response = await fetch(`/api/connections/status/${profile.id}`);
+      if (!response.ok) throw new Error('Failed to fetch connection status');
+      return response.json();
+    },
+    enabled: !isOwnProfile && !!user
+  });
+
+  // Connection request mutation
+  const connectionMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('POST', '/api/connections/request', {
+        receiverId: profile.id
+      });
+      if (!response.ok) throw new Error('Failed to send connection request');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/connections/status', profile.id] });
+      toast({
+        title: "Solicitação enviada",
+        description: "Sua solicitação de conexão foi enviada com sucesso."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar a solicitação de conexão.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const formatConnectionsCount = (count: number) => {
+    if (count >= 500) return "500+ conexões";
+    if (count === 0) return "Sem conexões";
+    if (count === 1) return "1 conexão";
+    return `${count} conexões`;
+  };
+
+  const getConnectionButtonText = () => {
+    if (!connectionStatus) return "Conectar";
+    
+    switch (connectionStatus.status) {
+      case 'accepted': return "Conectado";
+      case 'pending': return "Pendente";
+      case 'rejected': return "Conectar";
+      default: return "Conectar";
+    }
+  };
+
+  const handleConnectionClick = () => {
+    if (!connectionStatus || connectionStatus.status === 'rejected' || !connectionStatus.status) {
+      connectionMutation.mutate();
+    }
+  };
+
+  const handleMessageClick = () => {
+    // Navigate to conversations with this user
+    window.location.href = `/conversations?userId=${profile.id}`;
   };
 
 
@@ -557,6 +646,13 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                 isOwnProfile={isOwnProfile} 
               />
               
+              {/* Current Position - subtly displayed */}
+              {getCurrentPosition() && (
+                <div className="text-lg text-gray-700 dark:text-gray-300 mt-1">
+                  {getCurrentPosition()}
+                </div>
+              )}
+              
               <div className="flex items-center gap-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
                 <MapPin className="h-4 w-4" />
                 {profile.city}, {profile.state}
@@ -564,7 +660,12 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
               <div className="flex items-center gap-4 mt-3">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline">
-                  500+ conexões
+                  {isOwnProfile 
+                    ? formatConnectionsCount(profile.connectionsCount || 0)
+                    : connectionsData 
+                      ? formatConnectionsCount(connectionsData.count) 
+                      : "Carregando..."
+                  }
                 </span>
                 {profile.planName && (
                   <Badge variant={getPlanBadgeVariant(profile.planName)} className="text-xs">
@@ -590,13 +691,23 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
             {!isOwnProfile && (
               <div className="flex gap-2 ml-4">
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleMessageClick}
+                >
                   <MessageSquare className="h-4 w-4 mr-2" />
                   Mensagem
                 </Button>
-                <Button variant="outline" size="sm" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  onClick={handleConnectionClick}
+                  disabled={connectionStatus?.status === 'accepted' || connectionStatus?.status === 'pending' || connectionMutation.isPending}
+                >
                   <Users className="h-4 w-4 mr-2" />
-                  Conectar
+                  {connectionMutation.isPending ? "Enviando..." : getConnectionButtonText()}
                 </Button>
               </div>
             )}

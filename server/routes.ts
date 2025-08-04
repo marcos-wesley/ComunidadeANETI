@@ -18,7 +18,7 @@ import {
   recommendations 
 } from "@shared/schema";
 import { db } from "./db";
-import { users, applications, documents, subscriptions, notifications, posts, postReactions, experiences, educations, skills, userSkills, certifications, projects, languages, recommendations, connections } from "../shared/schema";
+import { users, applications, documents, subscriptions, notifications, posts, postReactions, experiences, educations, skills, userSkills, certifications, projects, languages, connections } from "../shared/schema";
 import { eq, and, or } from "drizzle-orm";
 import express from "express";
 import path from "path";
@@ -899,6 +899,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(connection);
     } catch (error) {
       console.error("Error updating connection:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get connections count for a user
+  app.get("/api/connections/count/:userId", isAuthenticated, async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      const connectionsCount = await db
+        .select()
+        .from(connections)
+        .where(and(
+          or(
+            eq(connections.requesterId, userId),
+            eq(connections.receiverId, userId)
+          ),
+          eq(connections.status, 'accepted')
+        ));
+      
+      res.json({ count: connectionsCount.length });
+    } catch (error) {
+      console.error("Error fetching connections count:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get connection status between current user and another user
+  app.get("/api/connections/status/:userId", isAuthenticated, async (req, res) => {
+    try {
+      const targetUserId = req.params.userId;
+      const currentUserId = req.user?.id;
+      
+      if (!targetUserId || !currentUserId || targetUserId === currentUserId) {
+        return res.json({ status: null });
+      }
+      
+      const connection = await db
+        .select()
+        .from(connections)
+        .where(or(
+          and(eq(connections.requesterId, currentUserId), eq(connections.receiverId, targetUserId)),
+          and(eq(connections.requesterId, targetUserId), eq(connections.receiverId, currentUserId))
+        ))
+        .limit(1);
+      
+      if (connection.length === 0) {
+        return res.json({ status: null });
+      }
+      
+      res.json({ 
+        status: connection[0].status,
+        isRequester: connection[0].requesterId === currentUserId
+      });
+    } catch (error) {
+      console.error("Error fetching connection status:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Create connection request (updated endpoint)
+  app.post("/api/connections/request", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { receiverId } = req.body;
+
+      if (!receiverId) {
+        return res.status(400).json({ error: "Receiver ID is required" });
+      }
+
+      if (userId === receiverId) {
+        return res.status(400).json({ error: "Cannot connect to yourself" });
+      }
+
+      // Check if user can connect (not Público plan)
+      const userPlan = req.user!.planName;
+      if (!userPlan || userPlan === 'Público') {
+        return res.status(403).json({ error: "Apenas membros com planos ativos podem conectar-se" });
+      }
+
+      const connection = await storage.createConnectionRequest(userId!, receiverId);
+      res.status(201).json({ success: true, connection });
+    } catch (error) {
+      console.error("Error creating connection request:", error);
+      if (error instanceof Error && error.message === "Connection already exists") {
+        return res.status(400).json({ error: "Connection already exists" });
+      }
       res.status(500).json({ error: "Internal server error" });
     }
   });
