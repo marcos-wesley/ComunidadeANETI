@@ -30,7 +30,9 @@ import {
   Eye,
   Clock,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Check,
+  X
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -47,7 +49,8 @@ type Member = {
   planName?: string;
   isConnected?: boolean;
   isFollowing?: boolean;
-  connectionStatus?: "none" | "pending" | "connected";
+  connectionStatus?: "none" | "pending" | "connected" | "can_accept";
+  connectionId?: string | null;
   followersCount?: number;
   connectionsCount?: number;
 };
@@ -235,6 +238,62 @@ export default function MembersPage(): JSX.Element {
       toast({
         title: "Erro",
         description: error instanceof Error ? error.message : "Não foi possível seguir este membro.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Accept connection mutation
+  const acceptConnectionMutation = useMutation({
+    mutationFn: async (connectionId: string) => {
+      const res = await apiRequest("POST", `/api/connections/${connectionId}/accept`, {});
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to accept connection');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
+      
+      toast({
+        title: "Conexão aceita",
+        description: "Vocês agora estão conectados!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao aceitar conexão",
+        description: error.message || "Não foi possível aceitar a conexão.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reject connection mutation
+  const rejectConnectionMutation = useMutation({
+    mutationFn: async (connectionId: string) => {
+      const res = await apiRequest("POST", `/api/connections/${connectionId}/reject`, {});
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to reject connection');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
+      
+      toast({
+        title: "Conexão recusada",
+        description: "A solicitação de conexão foi recusada.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao recusar conexão",
+        description: error.message || "Não foi possível recusar a conexão.",
         variant: "destructive",
       });
     },
@@ -585,6 +644,37 @@ export default function MembersPage(): JSX.Element {
                         <UserX className="h-4 w-4 mr-1" />
                         Pendente
                       </Button>
+                    ) : member.connectionStatus === "can_accept" ? (
+                      <div className="flex gap-1 flex-1">
+                        <Button 
+                          size="sm" 
+                          variant="default" 
+                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            acceptConnectionMutation.mutate(member.connectionId!);
+                          }}
+                          disabled={!canConnect}
+                        >
+                          <Check className="h-3 w-3 mr-1" />
+                          Aceitar
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            rejectConnectionMutation.mutate(member.connectionId!);
+                          }}
+                          disabled={!canConnect}
+                        >
+                          <X className="h-3 w-3 mr-1" />
+                          Recusar
+                        </Button>
+                      </div>
                     ) : (
                       <Button 
                         size="sm" 

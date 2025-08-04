@@ -1609,6 +1609,7 @@ export class DatabaseStorage implements IStorage {
 
     const userConnections = await db
       .select({
+        id: connections.id,
         receiverId: connections.receiverId,
         requesterId: connections.requesterId,
         status: connections.status,
@@ -1639,9 +1640,21 @@ export class DatabaseStorage implements IStorage {
         (c.receiverId === currentUserId && c.requesterId === member.id)
       );
 
-      let connectionStatus: "none" | "pending" | "connected" = "none";
+      let connectionStatus: "none" | "pending" | "connected" | "can_accept" = "none";
+      let connectionId: string | null = null;
+      
       if (connection) {
-        connectionStatus = connection.status === "accepted" ? "connected" : "pending";
+        connectionId = connection.id;
+        if (connection.status === "accepted") {
+          connectionStatus = "connected";
+        } else if (connection.status === "pending") {
+          // Check if current user is the receiver (can accept/reject)
+          if (connection.receiverId === currentUserId) {
+            connectionStatus = "can_accept"; // User received the request
+          } else {
+            connectionStatus = "pending"; // User sent the request
+          }
+        }
       }
 
       const isFollowing = userFollows.some(f => f.followingId === member.id);
@@ -1650,6 +1663,7 @@ export class DatabaseStorage implements IStorage {
         ...member,
         isFollowing,
         connectionStatus,
+        connectionId,
         followersCount: 0,
         connectionsCount: 0,
       };
