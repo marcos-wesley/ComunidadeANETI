@@ -1633,6 +1633,34 @@ export class DatabaseStorage implements IStorage {
         inArray(follows.followingId, memberIds)
       ));
 
+    // Get real counts for connections - count for each member
+    const memberConnectionCounts = await Promise.all(
+      memberIds.map(async (memberId) => {
+        const count = await db
+          .select({ count: sql<number>`count(*)` })
+          .from(connections)
+          .where(
+            and(
+              eq(connections.status, "accepted"),
+              or(
+                eq(connections.requesterId, memberId),
+                eq(connections.receiverId, memberId)
+              )
+            )
+          );
+        return { memberId, count: count[0]?.count || 0 };
+      })
+    );
+
+    const memberFollowerCounts = await db
+      .select({
+        followingId: follows.followingId,
+        count: sql<number>`count(*)`
+      })
+      .from(follows)
+      .where(inArray(follows.followingId, memberIds))
+      .groupBy(follows.followingId);
+
     // Map the data together
     return allMembers.map(member => {
       const connection = userConnections.find(c => 
@@ -1658,14 +1686,18 @@ export class DatabaseStorage implements IStorage {
       }
 
       const isFollowing = userFollows.some(f => f.followingId === member.id);
+      
+      // Get real counts
+      const connectionsCount = memberConnectionCounts.find(c => c.memberId === member.id)?.count || 0;
+      const followersCount = memberFollowerCounts.find(f => f.followingId === member.id)?.count || 0;
 
       return {
         ...member,
         isFollowing,
         connectionStatus,
         connectionId,
-        followersCount: 0,
-        connectionsCount: 0,
+        followersCount,
+        connectionsCount,
       };
     });
   }

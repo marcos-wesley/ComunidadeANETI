@@ -82,6 +82,7 @@ export default function MembersPage(): JSX.Element {
     queryKey: ["/api/members", currentPage, limit, sortBy, stateFilter, planFilter, genderFilter, areaFilter, searchQuery],
     staleTime: 0,
     cacheTime: 0, // Don't cache connection status data
+    refetchOnMount: true,
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -620,15 +621,15 @@ export default function MembersPage(): JSX.Element {
                     <span className="truncate">{member.city}, {member.state}</span>
                   </div>
 
-                  {(member.connectionsCount || member.followersCount) && (
+                  {(member.connectionsCount > 0 || member.followersCount > 0) && (
                     <div className="flex items-center gap-4 text-xs text-muted-foreground pt-2 border-t">
-                      {member.connectionsCount && (
+                      {member.connectionsCount > 0 && (
                         <div className="flex items-center gap-1">
                           <UserCheck className="h-3 w-3" />
                           <span>{member.connectionsCount} conexões</span>
                         </div>
                       )}
-                      {member.followersCount && (
+                      {member.followersCount > 0 && (
                         <div className="flex items-center gap-1">
                           <Star className="h-3 w-3" />
                           <span>{member.followersCount} seguidores</span>
