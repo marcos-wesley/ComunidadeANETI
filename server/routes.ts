@@ -1480,20 +1480,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin middleware
-  const requireAdminAuth = (req: any, res: any, next: any) => {
-    if (!req.session?.adminUser?.isAuthenticated) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Admin authentication required" 
-      });
-    }
-    req.adminUser = req.session.adminUser;
-    next();
-  };
+  // Admin middleware removed - using isAdminAuthenticated instead
 
   // Bulk notification endpoint (admin only)
-  app.post("/api/admin/notifications/bulk", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/notifications/bulk", isAdminAuthenticated, async (req, res) => {
     try {
       const {
         title,
@@ -1780,7 +1770,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin dashboard stats
-  app.get("/api/admin/stats", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/stats", isAdminAuthenticated, async (req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
       const pendingApplications = await storage.getPendingApplications();
@@ -2122,7 +2112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get pending applications for admin
-  app.get("/api/admin/applications", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/applications", isAdminAuthenticated, async (req, res) => {
     try {
       const filters = {
         search: req.query.search as string || '',
@@ -2162,7 +2152,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific application details (admin only)
-  app.get("/api/admin/applications/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/applications/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const applicationId = req.params.id;
       const application = await storage.getMemberApplicationWithDetails(applicationId);
@@ -2185,7 +2175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Admin member moderation routes
-  app.post("/api/admin/members/:memberId/ban", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/members/:memberId/ban", isAdminAuthenticated, async (req, res) => {
     try {
 
       const { memberId } = req.params;
@@ -2213,7 +2203,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/members/:memberId/kick", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/members/:memberId/kick", isAdminAuthenticated, async (req, res) => {
     try {
 
       const { memberId } = req.params;
@@ -2241,7 +2231,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/admin/members/:memberId/notify", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/members/:memberId/notify", isAdminAuthenticated, async (req, res) => {
     try {
 
       const { memberId } = req.params;
@@ -2283,7 +2273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all members for admin
-  app.get("/api/admin/members", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/members", isAdminAuthenticated, async (req, res) => {
     try {
       const { 
         page = '1', 
@@ -2333,7 +2323,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new member (admin only)
-  app.post("/api/admin/members", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/members", isAdminAuthenticated, async (req, res) => {
     try {
       const {
         username,
@@ -2434,7 +2424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Approve application
-  app.post("/api/admin/applications/:id/approve", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/applications/:id/approve", isAdminAuthenticated, async (req, res) => {
     try {
       const applicationId = req.params.id;
       const application = await storage.getApplication(applicationId);
@@ -2467,7 +2457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reject application
-  app.post("/api/admin/applications/:id/reject", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/applications/:id/reject", isAdminAuthenticated, async (req, res) => {
     try {
       const applicationId = req.params.id;
       const { reason, requestDocuments } = req.body;
@@ -2512,7 +2502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get specific member details for admin
-  app.get("/api/admin/members/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/members/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const userId = req.params.id;
       const user = await storage.getUserById(userId);
@@ -2535,7 +2525,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update member information (admin only)
-  app.put("/api/admin/members/:id", requireAdminAuth, async (req, res) => {
+  app.put("/api/admin/members/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const userId = req.params.id;
       const updateData = req.body;
@@ -2588,7 +2578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Change member password (admin only)
-  app.put("/api/admin/members/:id/password", requireAdminAuth, async (req, res) => {
+  app.put("/api/admin/members/:id/password", isAdminAuthenticated, async (req, res) => {
     try {
       const userId = req.params.id;
       const { newPassword } = req.body;
@@ -2627,7 +2617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete member (admin only)
-  app.delete("/api/admin/members/:id", requireAdminAuth, async (req, res) => {
+  app.delete("/api/admin/members/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const userId = req.params.id;
       
@@ -2673,7 +2663,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Groups management routes (Admin only)
   
   // Get all groups
-  app.get("/api/admin/groups", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/groups", isAdminAuthenticated, async (req, res) => {
     try {
       const groups = await storage.getAllGroups();
       res.json(groups);
@@ -2687,7 +2677,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create new group
-  app.post("/api/admin/groups", requireAdminAuth, async (req, res) => {
+  app.post("/api/admin/groups", isAdminAuthenticated, async (req, res) => {
     try {
       const groupData = insertGroupSchema.parse(req.body);
       
@@ -2720,7 +2710,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get eligible users for group moderation
-  app.get("/api/admin/groups/eligible-moderators", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/groups/eligible-moderators", isAdminAuthenticated, async (req, res) => {
     try {
       const users = await storage.getUsersForGroupModeration();
       res.json(users);
@@ -2762,7 +2752,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get single group details
-  app.get("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
+  app.get("/api/admin/groups/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const group = await storage.getGroupById(req.params.id);
       if (!group) {
@@ -2782,7 +2772,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update group
-  app.put("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
+  app.put("/api/admin/groups/:id", isAdminAuthenticated, async (req, res) => {
     try {
       const groupId = req.params.id;
       const updateData = req.body;
@@ -2822,7 +2812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete group (soft delete)
-  app.delete("/api/admin/groups/:id", requireAdminAuth, async (req, res) => {
+  app.delete("/api/admin/groups/:id", isAdminAuthenticated, async (req, res) => {
     try {
       await storage.deleteGroup(req.params.id);
       res.json({
