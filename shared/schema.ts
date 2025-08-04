@@ -236,7 +236,7 @@ export const languages = pgTable("languages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
   language: text("language").notNull(),
-  proficiency: text("proficiency").notNull(), // Básico, Intermediário, Avançado, Fluente, Nativo
+  proficiency: text("proficiency_level").notNull(), // Básico, Intermediário, Avançado, Fluente, Nativo
   createdAt: timestamp("created_at").defaultNow(),
 });
 
