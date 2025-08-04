@@ -102,7 +102,7 @@ import {
   type SelectForumReplyLike,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc, isNotNull } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -1580,6 +1580,10 @@ export class DatabaseStorage implements IStorage {
         eq(users.isActive, true),
         ne(users.id, currentUserId),
         eq(memberApplications.status, "approved"),
+        // Only include members with approved applications and valid membership plans
+        isNotNull(memberApplications.planId),
+        isNotNull(membershipPlans.name),
+        eq(membershipPlans.isActive, true),
         // Apply filters
         filters.state ? eq(users.state, filters.state) : undefined,
         filters.plan ? eq(membershipPlans.name, filters.plan) : undefined,
