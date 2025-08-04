@@ -144,7 +144,6 @@ export default function ProfessionalProfile() {
   // Get profile data
   const { data: profileData, isLoading } = useQuery<ProfileData>({
     queryKey: ['/api/profile/professional'],
-    queryFn: () => apiRequest('/api/profile/professional'),
   });
 
   useEffect(() => {
@@ -156,11 +155,19 @@ export default function ProfessionalProfile() {
   // Mutation to update professional title
   const updateTitleMutation = useMutation({
     mutationFn: async (newTitle: string) => {
-      const response = await apiRequest('/api/profile', {
+      const response = await fetch('/api/profile', {
         method: 'PUT',
-        body: { professionalTitle: newTitle }
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ professionalTitle: newTitle })
       });
-      return response;
+      
+      if (!response.ok) {
+        throw new Error('Failed to update title');
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/profile/professional'] });

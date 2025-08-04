@@ -935,17 +935,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get professional profile with all sections
-  app.get('/api/profile/professional/:userId?', isAuthenticated, async (req, res) => {
+  // Get current user's professional profile
+  app.get('/api/profile/professional', isAuthenticated, async (req, res) => {
     try {
-      const userId = req.params.userId || req.user?.id;
+      const userId = req.user?.id;
+      console.log('=== CURRENT USER PROFESSIONAL PROFILE REQUEST ===');
+      console.log('req.user:', req.user);
+      console.log('userId:', userId);
       
       if (!userId) {
+        console.log('No userId found, returning 401');
         return res.status(401).json({ error: 'Not authenticated' });
       }
 
       const user = await storage.getUserById(userId);
+      console.log('User found:', user ? `${user.username} (${user.id})` : 'null');
+      
       if (!user) {
+        console.log('User not found in database, returning 404');
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Get all profile sections (using mock data for now since storage methods don't exist yet)
+      const profileData = {
+        user: {
+          ...user,
+          connectionsCount: user.connectionsCount || 0
+        },
+        experiences: [],
+        educations: [],
+        certifications: [],
+        projects: [],
+        skills: [],
+        languages: [],
+        highlights: []
+      };
+
+      console.log('Returning profile data for user:', user.username);
+      res.json(profileData);
+    } catch (error) {
+      console.error('Error fetching professional profile:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Get specific user's professional profile
+  app.get('/api/profile/professional/:userId', isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.params.userId || req.user?.id;
+      console.log('=== PROFESSIONAL PROFILE REQUEST ===');
+      console.log('req.params.userId:', req.params.userId);
+      console.log('req.user:', req.user);
+      console.log('Final userId:', userId);
+      
+      if (!userId) {
+        console.log('No userId found, returning 401');
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const user = await storage.getUserById(userId);
+      console.log('User found:', user ? `${user.username} (${user.id})` : 'null');
+      
+      if (!user) {
+        console.log('User not found in database, returning 404');
         return res.status(404).json({ error: 'User not found' });
       }
 
