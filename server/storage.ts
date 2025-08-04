@@ -161,6 +161,7 @@ export interface IStorage {
   createPost(post: InsertPost): Promise<Post>;
   getPostWithDetails(postId: string): Promise<PostWithDetails | undefined>;
   toggleLike(userId: string, postId: string): Promise<{ liked: boolean; likesCount: number }>;
+  getPostLikes(postId: string): Promise<(Like & { user: Pick<User, 'id' | 'fullName' | 'username' | 'planName'> })[]>;
   getPostById(postId: string): Promise<Post | undefined>;
   deletePost(postId: string): Promise<void>;
   reportPost(postId: string, userId: string, reason: string): Promise<void>;
@@ -1219,6 +1220,30 @@ export class DatabaseStorage implements IStorage {
       liked: !existingLike,
       likesCount: likesCount[0]?.count || 0,
     };
+  }
+
+  async getPostLikes(postId: string): Promise<(Like & { user: Pick<User, 'id' | 'fullName' | 'username' | 'planName'> })[]> {
+    return await db
+      .select({
+        id: likes.id,
+        userId: likes.userId,
+        postId: likes.postId,
+        createdAt: likes.createdAt,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          planName: sql<string>`CASE 
+            WHEN ${users.currentPlanId} IS NOT NULL THEN ${membershipPlans.name}
+            ELSE NULL
+          END`.as('planName')
+        }
+      })
+      .from(likes)
+      .innerJoin(users, eq(likes.userId, users.id))
+      .leftJoin(membershipPlans, eq(users.currentPlanId, membershipPlans.id))
+      .where(eq(likes.postId, postId))
+      .orderBy(desc(likes.createdAt));
   }
 
   async getPostById(postId: string): Promise<Post | undefined> {

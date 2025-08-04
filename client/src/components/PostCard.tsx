@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FormattedContent } from "./FormattedContent";
 import { ReactionSelector } from "./ReactionSelector";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -34,7 +34,8 @@ import {
   Trash2,
   Flag,
   Copy,
-  ThumbsUp
+  ThumbsUp,
+  Loader2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -66,6 +67,73 @@ type Post = {
 interface PostCardProps {
   post: Post;
   onUpdate: () => void;
+}
+
+type PostLike = {
+  id: string;
+  userId: string;
+  postId: string;
+  createdAt: string;
+  user: {
+    id: string;
+    fullName: string;
+    username: string;
+    planName?: string;
+  };
+};
+
+function LikesModalContent({ postId, likesCount }: { postId: string; likesCount: number }) {
+  const { data: likes = [], isLoading, error } = useQuery<PostLike[]>({
+    queryKey: ["/api/posts", postId, "likes"],
+    queryFn: () => apiRequest(`/api/posts/${postId}/likes`)
+  });
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-4">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        {likesCount} pessoa{likesCount > 1 ? 's' : ''} reagiu{likesCount > 1 ? 'ram' : ''} a este post
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {likes.length > 0 ? (
+        <div className="space-y-3">
+          {likes.map((like) => (
+            <div key={like.id} className="flex items-center gap-3">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                  {like.user.fullName?.charAt(0) || like.user.username.charAt(0).toUpperCase()}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="text-sm font-medium">{like.user.fullName}</p>
+                <p className="text-xs text-muted-foreground">@{like.user.username}</p>
+              </div>
+              {like.user.planName && (
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {like.user.planName}
+                </Badge>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          {likesCount} pessoa{likesCount > 1 ? 's' : ''} reagiu{likesCount > 1 ? 'ram' : ''} a este post
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
@@ -314,11 +382,7 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
                   <DialogHeader>
                     <DialogTitle>Quem reagiu</DialogTitle>
                   </DialogHeader>
-                  <div className="space-y-4">
-                    <p className="text-sm text-muted-foreground">
-                      {likesCount} pessoa{likesCount > 1 ? 's' : ''} reagiu{likesCount > 1 ? 'ram' : ''} a este post
-                    </p>
-                  </div>
+                  <LikesModalContent postId={post.id} likesCount={likesCount} />
                 </DialogContent>
               </Dialog>
             </div>

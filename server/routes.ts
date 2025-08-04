@@ -644,6 +644,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get users who liked a post
+  app.get("/api/posts/:postId/likes", isAuthenticated, async (req, res) => {
+    try {
+      const { postId } = req.params;
+      const likes = await storage.getPostLikes(postId);
+      res.json(likes);
+    } catch (error) {
+      console.error("Error fetching post likes:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Delete post
   app.delete("/api/posts/:postId", isAuthenticated, async (req, res) => {
     try {
