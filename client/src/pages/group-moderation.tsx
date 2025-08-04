@@ -111,8 +111,7 @@ export default function GroupModeration() {
   // Approve request mutation
   const approveRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/approve-request/${requestId}`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/approve-request/${requestId}`);
     },
     onSuccess: (data) => {
       if (data.success) {
@@ -135,8 +134,7 @@ export default function GroupModeration() {
   // Reject request mutation
   const rejectRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/reject-request/${requestId}`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/reject-request/${requestId}`);
     },
     onSuccess: (data) => {
       if (data.success) {

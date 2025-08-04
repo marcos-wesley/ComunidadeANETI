@@ -123,8 +123,7 @@ export default function GroupDetail() {
   // Leave group mutation
   const leaveGroupMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/leave`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/leave`);
     },
     onSuccess: (data) => {
       if (data.success) {
