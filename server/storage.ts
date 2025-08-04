@@ -13,6 +13,7 @@ import {
   certifications,
   projects,
   skills,
+  predefinedSkills,
   recommendations,
   languages,
   highlights,
@@ -58,6 +59,8 @@ import {
   type InsertProject,
   type Skill,
   type InsertSkill,
+  type PredefinedSkill,
+  type InsertPredefinedSkill,
   type Recommendation,
   type InsertRecommendation,
   type Language,
@@ -1924,6 +1927,7 @@ export class DatabaseStorage implements IStorage {
     const experiences = await this.getUserExperiences(userId);
 
     const educations = await this.getUserEducations(user.id);
+    const skills = await this.getUserSkills(user.id);
 
     return {
       ...user,
@@ -1931,7 +1935,7 @@ export class DatabaseStorage implements IStorage {
       educations,
       certifications: [],
       projects: [],
-      skills: [],
+      skills,
       recommendations: [],
       languages: [],
       highlights: [],
@@ -2064,9 +2068,113 @@ export class DatabaseStorage implements IStorage {
     return [];
   }
 
-  async getUserSkills(userId: string): Promise<any[]> {
-    // Portfolio tables will be implemented later
-    return [];
+  async getUserSkills(userId: string): Promise<Skill[]> {
+    try {
+      const userSkills = await db
+        .select()
+        .from(skills)
+        .where(eq(skills.userId, userId))
+        .orderBy(skills.createdAt);
+      
+      return userSkills;
+    } catch (error) {
+      console.error("Error fetching user skills:", error);
+      return [];
+    }
+  }
+
+  async createSkill(skillData: InsertSkill): Promise<Skill> {
+    try {
+      const [newSkill] = await db
+        .insert(skills)
+        .values(skillData)
+        .returning();
+      
+      return newSkill;
+    } catch (error) {
+      console.error("Error creating skill:", error);
+      throw error;
+    }
+  }
+
+  async deleteSkill(id: string, userId: string): Promise<boolean> {
+    try {
+      const [deletedSkill] = await db
+        .delete(skills)
+        .where(and(eq(skills.id, id), eq(skills.userId, userId)))
+        .returning();
+      
+      return !!deletedSkill;
+    } catch (error) {
+      console.error("Error deleting skill:", error);
+      throw error;
+    }
+  }
+
+  async getPredefinedSkills(): Promise<PredefinedSkill[]> {
+    try {
+      const allSkills = await db
+        .select()
+        .from(predefinedSkills)
+        .where(eq(predefinedSkills.isActive, true))
+        .orderBy(predefinedSkills.name);
+      
+      return allSkills;
+    } catch (error) {
+      console.error("Error fetching predefined skills:", error);
+      return [];
+    }
+  }
+
+  async getSuggestedSkills(userPositions: string[]): Promise<PredefinedSkill[]> {
+    try {
+      if (userPositions.length === 0) {
+        // Return general programming skills if no positions
+        return await db
+          .select()
+          .from(predefinedSkills)
+          .where(and(
+            eq(predefinedSkills.isActive, true),
+            eq(predefinedSkills.category, 'Programming')
+          ))
+          .limit(10);
+      }
+
+      // Find skills that match user's positions
+      const suggestedSkills = await db
+        .select()
+        .from(predefinedSkills)
+        .where(eq(predefinedSkills.isActive, true));
+
+      // Filter skills based on position matches
+      const matchingSkills = suggestedSkills.filter(skill => {
+        const relatedPositions = skill.relatedPositions || [];
+        return userPositions.some(userPos => 
+          relatedPositions.some(relatedPos => 
+            relatedPos.toLowerCase().includes(userPos.toLowerCase()) ||
+            userPos.toLowerCase().includes(relatedPos.toLowerCase())
+          )
+        );
+      });
+
+      // If we have matches, return them. Otherwise return popular programming skills
+      if (matchingSkills.length > 0) {
+        return matchingSkills.slice(0, 10);
+      }
+
+      return await db
+        .select()
+        .from(predefinedSkills)
+        .where(and(
+          eq(predefinedSkills.isActive, true),
+          eq(predefinedSkills.category, 'Programming')
+        ))
+        .limit(10);
+        
+    } catch (error) {
+      console.error("Error getting suggested skills:", error);
+      return [];
+    }
   }
 
   async getUserRecommendations(userId: string): Promise<any[]> {

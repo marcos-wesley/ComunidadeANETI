@@ -202,8 +202,18 @@ export const skills = pgTable("skills", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
   name: text("name").notNull(),
-  category: text("category"), // technical, soft, etc.
-  proficiencyLevel: text("proficiency_level"), // beginner, intermediate, advanced, expert
+  isCustom: boolean("is_custom").default(false), // true if user added custom skill
+  endorsements: integer("endorsements").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Pre-defined skills/competencies table
+export const predefinedSkills = pgTable("predefined_skills", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  category: text("category").notNull(), // Programming, Management, Design, etc.
+  relatedPositions: json("related_positions").$type<string[]>().default([]), // Array of job positions/titles
+  isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -794,6 +804,12 @@ export const insertProjectSchema = createInsertSchema(projects).omit({
 export const insertSkillSchema = createInsertSchema(skills).omit({
   id: true,
   createdAt: true,
+  endorsements: true,
+});
+
+export const insertPredefinedSkillSchema = createInsertSchema(predefinedSkills).omit({
+  id: true,
+  createdAt: true,
 });
 
 export const insertRecommendationSchema = createInsertSchema(recommendations).omit({
@@ -912,6 +928,8 @@ export type Project = typeof projects.$inferSelect;
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type Skill = typeof skills.$inferSelect;
 export type InsertSkill = z.infer<typeof insertSkillSchema>;
+export type PredefinedSkill = typeof predefinedSkills.$inferSelect;
+export type InsertPredefinedSkill = z.infer<typeof insertPredefinedSkillSchema>;
 export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 export type Language = typeof languages.$inferSelect;

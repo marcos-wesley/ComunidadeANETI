@@ -1300,6 +1300,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Skills CRUD routes
+  
+  // Get user's skills
+  app.get("/api/profile/skills", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const skills = await storage.getUserSkills(userId);
+      res.json(skills);
+    } catch (error) {
+      console.error("Error fetching skills:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get predefined skills
+  app.get("/api/skills/predefined", isAuthenticated, async (req, res) => {
+    try {
+      const predefinedSkills = await storage.getPredefinedSkills();
+      res.json(predefinedSkills);
+    } catch (error) {
+      console.error("Error fetching predefined skills:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Get skill suggestions based on user's positions
+  app.get("/api/skills/suggestions", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Get user's current positions from experiences
+      const experiences = await storage.getUserExperiences(userId);
+      const positions = experiences.map(exp => exp.position);
+      
+      const suggestions = await storage.getSuggestedSkills(positions);
+      res.json(suggestions);
+    } catch (error) {
+      console.error("Error fetching skill suggestions:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Add skill
+  app.post("/api/profile/skills", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      
+      // Check skill limit (max 10 skills per user)
+      const currentSkills = await storage.getUserSkills(userId);
+      if (currentSkills.length >= 10) {
+        return res.status(400).json({ 
+          error: "Você pode ter no máximo 10 competências no seu perfil" 
+        });
+      }
+      
+      const skillData = {
+        ...req.body,
+        userId,
+      };
+      
+      const newSkill = await storage.createSkill(skillData);
+      res.json(newSkill);
+    } catch (error) {
+      console.error("Error creating skill:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Delete skill
+  app.delete("/api/profile/skills/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const skillId = req.params.id;
+      
+      const success = await storage.deleteSkill(skillId, userId);
+      
+      if (!success) {
+        return res.status(404).json({ error: "Skill not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting skill:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
       const { 

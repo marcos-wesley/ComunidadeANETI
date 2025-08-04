@@ -56,6 +56,15 @@ const educationSchema = z.object({
 });
 
 type EducationFormData = z.infer<typeof educationSchema>;
+
+// Skill form schema
+const skillSchema = z.object({
+  name: z.string().min(1, "Nome da competência é obrigatório"),
+  isCustom: z.boolean().default(false)
+});
+
+type SkillFormData = z.infer<typeof skillSchema>;
+
 import { 
   User,
   MapPin, 
@@ -73,11 +82,12 @@ import {
   Briefcase,
   Languages,
   Camera,
+  Plus,
+  X,
+  Search,
   Upload,
   Pencil,
-  Check,
-  X,
-  Plus
+  Check
 } from "lucide-react";
 
 type UserProfile = {
@@ -153,8 +163,14 @@ type Project = {
 type Skill = {
   id: string;
   name: string;
-  category?: string;
-  proficiencyLevel?: string;
+  isCustom: boolean;
+  endorsements: number;
+};
+
+type PredefinedSkill = {
+  id: string;
+  name: string;
+  category: string;
 };
 
 type Recommendation = {
@@ -1812,46 +1828,268 @@ function ProjectsSection({ projects, isOwnProfile }: { projects: Project[]; isOw
 }
 
 function SkillsSection({ skills, isOwnProfile }: { skills: Skill[]; isOwnProfile: boolean }) {
-  if (skills.length === 0 && !isOwnProfile) return null;
+  const [isAddingSkill, setIsAddingSkill] = useState(false);
+  const [skillSearch, setSkillSearch] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const groupedSkills = skills.reduce((acc, skill) => {
-    const category = skill.category || 'Outras';
-    if (!acc[category]) acc[category] = [];
-    acc[category].push(skill);
-    return acc;
-  }, {} as Record<string, Skill[]>);
+  // Fetch predefined skills
+  const { data: predefinedSkills = [] } = useQuery<PredefinedSkill[]>({
+    queryKey: ['/api/skills/predefined'],
+    enabled: isOwnProfile
+  });
+
+  // Fetch skill suggestions based on user's positions
+  const { data: suggestedSkills = [] } = useQuery<PredefinedSkill[]>({
+    queryKey: ['/api/skills/suggestions'],
+    enabled: isOwnProfile
+  });
+
+  // Filter skills based on search and exclude already selected ones
+  const filteredSkills = predefinedSkills.filter(predefined => 
+    predefined.name.toLowerCase().includes(skillSearch.toLowerCase()) &&
+    !skills.some(userSkill => userSkill.name.toLowerCase() === predefined.name.toLowerCase())
+  );
+
+  // Mutation to add skill
+  const addSkillMutation = useMutation({
+    mutationFn: async (skillData: SkillFormData) => {
+      const response = await fetch('/api/profile/skills', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(skillData)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add skill');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setSkillSearch('');
+      setIsAddingSkill(false);
+      setShowSuggestions(false);
+      toast({
+        title: "Competência adicionada",
+        description: "A competência foi adicionada ao seu perfil com sucesso."
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  });
+
+  // Mutation to delete skill
+  const deleteSkillMutation = useMutation({
+    mutationFn: async (skillId: string) => {
+      const response = await fetch(`/api/profile/skills/${skillId}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete skill');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "Competência removida",
+        description: "A competência foi removida do seu perfil."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover a competência.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleAddSkill = (skillName: string, isCustom = false) => {
+    if (skills.length >= 10) {
+      toast({
+        title: "Limite atingido",
+        description: "Você pode ter no máximo 10 competências no seu perfil.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    addSkillMutation.mutate({ name: skillName, isCustom });
+  };
+
+  const handleDeleteSkill = (skillId: string) => {
+    deleteSkillMutation.mutate(skillId);
+  };
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && skillSearch.trim()) {
+      // Check if it's a predefined skill first
+      const predefinedMatch = predefinedSkills.find(
+        skill => skill.name.toLowerCase() === skillSearch.trim().toLowerCase()
+      );
+      
+      if (predefinedMatch) {
+        handleAddSkill(predefinedMatch.name, false);
+      } else {
+        // Add as custom skill
+        handleAddSkill(skillSearch.trim(), true);
+      }
+    }
+  };
+
+  if (skills.length === 0 && !isOwnProfile) return null;
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Competências</CardTitle>
         {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => setIsAddingSkill(true)}
+            disabled={skills.length >= 10}
+          >
+            <Plus className="h-4 w-4" />
           </Button>
         )}
       </CardHeader>
       <CardContent>
-        {skills.length > 0 ? (
-          <div className="space-y-4">
-            {Object.entries(groupedSkills).map(([category, categorySkills]) => (
-              <div key={category}>
-                <h4 className="font-medium text-sm text-gray-700 dark:text-gray-300 mb-2">
-                  {category}
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {categorySkills.map((skill) => (
-                    <Badge key={skill.id} variant="secondary">
-                      {skill.name}
-                    </Badge>
-                  ))}
+        {/* Add Skill Interface */}
+        {isAddingSkill && isOwnProfile && (
+          <div className="mb-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-800">
+            <div className="space-y-4">
+              <div className="relative">
+                <Input
+                  placeholder="Competência (ex.: Gestão de projetos)"
+                  value={skillSearch}
+                  onChange={(e) => {
+                    setSkillSearch(e.target.value);
+                    setShowSuggestions(e.target.value.length > 0);
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  className="pr-10"
+                />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* Suggestions based on profile */}
+              {suggestedSkills.length > 0 && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Sugestões com base no seu perfil
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedSkills.slice(0, 8).map((skill) => (
+                      <button
+                        key={skill.id}
+                        onClick={() => handleAddSkill(skill.name, false)}
+                        className="px-3 py-1.5 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                        disabled={addSkillMutation.isPending}
+                      >
+                        {skill.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+
+              {/* Search results */}
+              {showSuggestions && skillSearch && (
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    Competências disponíveis
+                  </p>
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {filteredSkills.slice(0, 10).map((skill) => (
+                      <button
+                        key={skill.id}
+                        onClick={() => handleAddSkill(skill.name, false)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded border border-gray-200 dark:border-gray-600"
+                        disabled={addSkillMutation.isPending}
+                      >
+                        {skill.name}
+                      </button>
+                    ))}
+                    {filteredSkills.length === 0 && skillSearch.length > 0 && (
+                      <button
+                        onClick={() => handleAddSkill(skillSearch.trim(), true)}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700 rounded border border-gray-200 dark:border-gray-600 text-green-600 dark:text-green-400"
+                        disabled={addSkillMutation.isPending}
+                      >
+                        + Adicionar "{skillSearch}" como competência personalizada
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setIsAddingSkill(false);
+                    setSkillSearch('');
+                    setShowSuggestions(false);
+                  }}
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Skills Display */}
+        {skills.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <div
+                key={skill.id}
+                className="inline-flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 px-3 py-1.5 rounded-full text-sm border border-blue-200 dark:border-blue-800"
+              >
+                <span>{skill.name}</span>
+                {skill.endorsements > 0 && (
+                  <span className="text-xs bg-blue-100 dark:bg-blue-800 px-1.5 py-0.5 rounded-full">
+                    {skill.endorsements}
+                  </span>
+                )}
+                {isOwnProfile && (
+                  <button 
+                    onClick={() => handleDeleteSkill(skill.id)}
+                    className="text-blue-500 hover:text-red-500 ml-1"
+                    disabled={deleteSkillMutation.isPending}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
         ) : (
           <p className="text-gray-500 italic">
             {isOwnProfile ? "Adicione suas competências" : "Nenhuma competência disponível"}
+          </p>
+        )}
+        
+        {isOwnProfile && skills.length < 10 && skills.length > 0 && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-3">
+            Você pode adicionar até {10 - skills.length} competências adicionais.
           </p>
         )}
       </CardContent>
