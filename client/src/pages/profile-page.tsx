@@ -2134,7 +2134,6 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
     type: z.enum(["curso", "certificacao"]),
     credentialId: z.string().optional(),
     credentialUrl: z.string().url("URL inválida").optional().or(z.literal("")),
-    credentialImageUrl: z.string().optional(),
     description: z.string().optional()
   });
 
@@ -2410,65 +2409,7 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="credentialImageUrl"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Imagem da Credencial</FormLabel>
-                      <FormControl>
-                        <div className="space-y-2">
-                          {field.value && (
-                            <div className="relative">
-                              <img 
-                                src={field.value} 
-                                alt="Credencial" 
-                                className="w-full max-w-xs rounded border"
-                              />
-                              <Button
-                                type="button"
-                                variant="destructive"
-                                size="sm"
-                                className="absolute top-1 right-1"
-                                onClick={() => field.onChange('')}
-                              >
-                                ×
-                              </Button>
-                            </div>
-                          )}
-                          <ObjectUploader
-                            maxNumberOfFiles={1}
-                            maxFileSize={5242880} // 5MB
-                            onGetUploadParameters={async () => {
-                              const response = await fetch('/api/objects/upload', {
-                                method: 'POST',
-                                headers: {
-                                  'Content-Type': 'application/json',
-                                },
-                              });
-                              const data = await response.json();
-                              return {
-                                method: 'PUT' as const,
-                                url: data.uploadURL,
-                              };
-                            }}
-                            onComplete={(result) => {
-                              if (result.successful && result.successful[0]) {
-                                const uploadUrl = result.successful[0].uploadURL;
-                                // Convert the upload URL to our object URL format
-                                const objectPath = uploadUrl?.replace('https://storage.googleapis.com/', '/objects/');
-                                field.onChange(objectPath || uploadUrl);
-                              }
-                            }}
-                          >
-                            📸 Enviar Imagem da Credencial
-                          </ObjectUploader>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
               </div>
 
               <FormField

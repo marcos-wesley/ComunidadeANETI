@@ -182,7 +182,7 @@ export const certifications = pgTable("certifications", {
   type: text("type").notNull().default("certificacao"), // 'curso' ou 'certificacao'
   credentialId: text("credential_id"),
   credentialUrl: text("credential_url"), // URL da credencial para validar
-  credentialImageUrl: text("credential_image_url"), // Mídia para anexar foto da credencial
+
   description: text("description"), // Descrição opcional
   createdAt: timestamp("created_at").defaultNow(),
 });
