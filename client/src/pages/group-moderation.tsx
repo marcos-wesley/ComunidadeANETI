@@ -496,17 +496,12 @@ function ForumManagement({ groupId, isModerator }: ForumManagementProps) {
   // Fetch forums for this group
   const { data: forums = [], isLoading: forumsLoading } = useQuery({
     queryKey: [`/api/groups/${groupId}/forums`],
-    queryFn: async () => {
-      const response = await apiRequest("GET", `/api/groups/${groupId}/forums`);
-      return response.json();
-    }
   });
 
   // Create forum mutation
   const createForumMutation = useMutation({
     mutationFn: async (forumData: typeof newForum) => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/forums`, forumData);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/forums`, forumData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/forums`] });
@@ -529,8 +524,7 @@ function ForumManagement({ groupId, isModerator }: ForumManagementProps) {
   // Delete forum mutation
   const deleteForumMutation = useMutation({
     mutationFn: async (forumId: string) => {
-      const response = await apiRequest("DELETE", `/api/forums/${forumId}`);
-      return response.json();
+      return await apiRequest("DELETE", `/api/forums/${forumId}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [`/api/groups/${groupId}/forums`] });

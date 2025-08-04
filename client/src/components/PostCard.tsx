@@ -79,8 +79,7 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
   // Like/Unlike mutation
   const likeMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/posts/${post.id}/like`);
-      return response.json();
+      return await apiRequest("POST", `/api/posts/${post.id}/like`);
     },
     onSuccess: (data) => {
       setIsLiked(data.liked);
@@ -99,8 +98,7 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", `/api/posts/${post.id}`);
-      return response.json();
+      return await apiRequest("DELETE", `/api/posts/${post.id}`);
     },
     onSuccess: () => {
       toast({
@@ -122,10 +120,9 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
   // Report post mutation
   const reportPostMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/posts/${post.id}/report`, {
+      return await apiRequest("POST", `/api/posts/${post.id}/report`, {
         reason: "Conteúdo inadequado"
       });
-      return response.json();
     },
     onSuccess: () => {
       toast({

@@ -87,20 +87,7 @@ export function CreateMemberModal({ trigger }: CreateMemberModalProps) {
 
   const createMemberMutation = useMutation({
     mutationFn: async (data: CreateMemberFormData) => {
-      const response = await fetch("/api/admin/members", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-      
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(error || "Erro ao criar membro");
-      }
-      
-      return response.json();
+      return await apiRequest("POST", "/api/admin/members", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/admin/members"] });

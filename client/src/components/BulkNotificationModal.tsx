@@ -85,21 +85,7 @@ export function BulkNotificationModal({ trigger }: BulkNotificationModalProps) {
 
   const bulkNotificationMutation = useMutation({
     mutationFn: async (data: BulkNotificationFormData) => {
-      const response = await fetch("/api/admin/notifications/bulk", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Erro ao enviar notificações");
-      }
-
-      return response.json();
+      return await apiRequest("POST", "/api/admin/notifications/bulk", data);
     },
     onSuccess: (response) => {
       toast({

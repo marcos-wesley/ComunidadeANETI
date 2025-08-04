@@ -88,8 +88,7 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
   // Like/Unlike mutation
   const likeMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/groups/${groupId}/posts/${post.id}/like`);
-      return response.json();
+      return await apiRequest("POST", `/api/groups/${groupId}/posts/${post.id}/like`);
     },
     onSuccess: (data) => {
       setIsLiked(data.liked);
@@ -108,10 +107,9 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
   // Edit post mutation
   const editPostMutation = useMutation({
     mutationFn: async (newContent: string) => {
-      const response = await apiRequest("PUT", `/api/groups/${groupId}/posts/${post.id}`, {
+      return await apiRequest("PUT", `/api/groups/${groupId}/posts/${post.id}`, {
         content: newContent.trim()
       });
-      return response.json();
     },
     onSuccess: () => {
       setIsEditing(false);
@@ -135,8 +133,7 @@ export function GroupPostCard({ post, groupId, isGroupModerator = false, groupMo
   // Delete post mutation
   const deletePostMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("DELETE", `/api/groups/${groupId}/posts/${post.id}`);
-      return response.json();
+      return await apiRequest("DELETE", `/api/groups/${groupId}/posts/${post.id}`);
     },
     onSuccess: () => {
       setShowDeleteDialog(false);

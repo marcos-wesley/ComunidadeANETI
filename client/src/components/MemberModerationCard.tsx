@@ -84,11 +84,9 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
   const removeFromGroupMutation = useMutation({
     mutationFn: async () => {
       if (isGroupContext && groupId) {
-        const response = await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/remove`);
-        return response.json();
+        return await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/remove`);
       } else {
-        const response = await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
-        return response.json();
+        return await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
       }
     },
     onSuccess: () => {
@@ -120,11 +118,9 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
   const banFromGroupMutation = useMutation({
     mutationFn: async () => {
       if (isGroupContext && groupId) {
-        const response = await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/ban`);
-        return response.json();
+        return await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/ban`);
       } else {
-        const response = await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
-        return response.json();
+        return await apiRequest("POST", `/api/admin/members/${member.id}/ban`);
       }
     },
     onSuccess: () => {
@@ -156,15 +152,13 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
   const notifyMemberMutation = useMutation({
     mutationFn: async (message: string) => {
       if (isGroupContext && groupId) {
-        const response = await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/notify`, {
+        return await apiRequest("POST", `/api/groups/${groupId}/members/${member.id}/notify`, {
           message: message.trim()
         });
-        return response.json();
       } else {
-        const response = await apiRequest("POST", `/api/admin/members/${member.id}/notify`, {
+        return await apiRequest("POST", `/api/admin/members/${member.id}/notify`, {
           message: message.trim()
         });
-        return response.json();
       }
     },
     onSuccess: () => {
