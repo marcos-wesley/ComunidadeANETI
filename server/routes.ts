@@ -907,13 +907,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/profile/:userId", isAuthenticated, async (req, res) => {
     try {
       const { userId } = req.params;
+      const currentUserId = req.user!.id;
       const profile = await storage.getUserProfile(userId);
       
       if (!profile) {
         return res.status(404).json({ error: "Profile not found" });
       }
       
-      res.json(profile);
+      // Check if current user is connected to this profile user
+      let isConnected = false;
+      if (currentUserId !== userId) {
+        const connection = await db
+          .select()
+          .from(connections)
+          .where(and(
+            or(
+              and(eq(connections.requesterId, currentUserId), eq(connections.receiverId, userId)),
+              and(eq(connections.requesterId, userId), eq(connections.receiverId, currentUserId))
+            ),
+            eq(connections.status, 'accepted')
+          ))
+          .limit(1);
+        
+        isConnected = connection.length > 0;
+      }
+      
+      res.json({ ...profile, isConnected });
     } catch (error) {
       console.error("Error fetching profile:", error);
       res.status(500).json({ error: "Internal server error" });
@@ -1581,6 +1600,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           eq(connections.status, 'accepted')
         ))
         .limit(1);
+
+      console.log('Connection check:', { recommenderId, recommendeeId, connectionFound: connection.length > 0 });
 
       if (connection.length === 0) {
         return res.status(403).json({ error: "Você deve estar conectado com este usuário para enviar uma recomendação" });
