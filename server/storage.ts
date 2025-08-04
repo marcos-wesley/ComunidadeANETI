@@ -1930,6 +1930,7 @@ export class DatabaseStorage implements IStorage {
     const educations = await this.getUserEducations(user.id);
     const certifications = await this.getUserCertifications(user.id);
     const skills = await this.getUserSkills(user.id);
+    const recommendations = await this.getUserRecommendations(user.id);
 
     return {
       ...user,
@@ -1938,7 +1939,7 @@ export class DatabaseStorage implements IStorage {
       certifications,
       projects: [],
       skills,
-      recommendations: [],
+      recommendations,
       languages: await this.getUserLanguages(user.id),
       highlights: [],
     };
