@@ -1021,6 +1021,7 @@ export class DatabaseStorage implements IStorage {
           id: likes.id,
           userId: likes.userId,
           postId: likes.postId,
+          reactionType: likes.reactionType,
           createdAt: likes.createdAt,
           userName: users.fullName,
           username: users.username,
@@ -1058,6 +1059,7 @@ export class DatabaseStorage implements IStorage {
           id: like.id,
           userId: like.userId,
           postId: like.postId,
+          reactionType: like.reactionType,
           createdAt: like.createdAt,
           user: {
             id: like.userId,
@@ -1084,6 +1086,8 @@ export class DatabaseStorage implements IStorage {
           likes: postLikes.length,
           comments: postComments.length,
         },
+        isLiked: postLikes.some(like => like.userId === userId),
+        userReaction: postLikes.find(like => like.userId === userId)?.reactionType,
       });
     }
 
@@ -1191,23 +1195,31 @@ export class DatabaseStorage implements IStorage {
     };
   }
 
-  async toggleLike(userId: string, postId: string): Promise<{ liked: boolean; likesCount: number }> {
-    // Check if user already liked the post
-    const [existingLike] = await db
+  async toggleLike(userId: string, postId: string, reactionType: string = "like"): Promise<{ liked: boolean; likesCount: number; reactionType?: string }> {
+    // Check if user already reacted to the post
+    const [existingReaction] = await db
       .select()
       .from(likes)
       .where(and(eq(likes.userId, userId), eq(likes.postId, postId)));
 
-    if (existingLike) {
-      // Unlike the post
-      await db
-        .delete(likes)
-        .where(and(eq(likes.userId, userId), eq(likes.postId, postId)));
+    if (existingReaction) {
+      if (existingReaction.reactionType === reactionType) {
+        // Same reaction - remove it (unlike)
+        await db
+          .delete(likes)
+          .where(and(eq(likes.userId, userId), eq(likes.postId, postId)));
+      } else {
+        // Different reaction - update it
+        await db
+          .update(likes)
+          .set({ reactionType })
+          .where(and(eq(likes.userId, userId), eq(likes.postId, postId)));
+      }
     } else {
-      // Like the post
+      // New reaction - insert it
       await db
         .insert(likes)
-        .values({ userId, postId });
+        .values({ userId, postId, reactionType });
     }
 
     // Get updated likes count
@@ -1216,9 +1228,14 @@ export class DatabaseStorage implements IStorage {
       .from(likes)
       .where(eq(likes.postId, postId));
 
+    const isNowLiked = existingReaction 
+      ? (existingReaction.reactionType !== reactionType) // true if changed reaction, false if removed
+      : true; // true if new reaction
+
     return {
-      liked: !existingLike,
+      liked: isNowLiked,
       likesCount: likesCount[0]?.count || 0,
+      reactionType: isNowLiked ? reactionType : undefined,
     };
   }
 
@@ -1228,6 +1245,7 @@ export class DatabaseStorage implements IStorage {
         id: likes.id,
         userId: likes.userId,
         postId: likes.postId,
+        reactionType: likes.reactionType,
         createdAt: likes.createdAt,
         user: {
           id: users.id,

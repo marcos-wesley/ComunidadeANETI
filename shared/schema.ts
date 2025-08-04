@@ -130,6 +130,7 @@ export const likes = pgTable("likes", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
   postId: varchar("post_id").references(() => posts.id).notNull(),
+  reactionType: text("reaction_type").default("like"), // like, love, laugh, celebrate, sad, angry
   createdAt: timestamp("created_at").defaultNow(),
 });
 
