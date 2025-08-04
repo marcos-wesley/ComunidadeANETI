@@ -48,7 +48,7 @@ export function ConnectionBell() {
   // Accept connection mutation
   const acceptMutation = useMutation({
     mutationFn: (connectionId: string) =>
-      apiRequest(`/api/connections/${connectionId}/accept`, "POST"),
+      apiRequest("POST", `/api/connections/${connectionId}/accept`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
@@ -56,6 +56,7 @@ export function ConnectionBell() {
         title: "Conexão aceita",
         description: "Você agora está conectado com este membro.",
       });
+      setIsOpen(false);
     },
     onError: () => {
       toast({
@@ -69,7 +70,7 @@ export function ConnectionBell() {
   // Reject connection mutation
   const rejectMutation = useMutation({
     mutationFn: (connectionId: string) =>
-      apiRequest(`/api/connections/${connectionId}/reject`, "POST"),
+      apiRequest("POST", `/api/connections/${connectionId}/reject`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
@@ -77,6 +78,7 @@ export function ConnectionBell() {
         title: "Conexão recusada",
         description: "O pedido de conexão foi recusado.",
       });
+      setIsOpen(false);
     },
     onError: () => {
       toast({
@@ -107,16 +109,6 @@ export function ConnectionBell() {
   };
 
   const pendingCount = pendingRequests.length;
-
-  // Temporary debug logging
-  console.log('[DEBUG] ConnectionBell Render State:', {
-    pendingCount,
-    isLoading,
-    pendingRequestsLength: pendingRequests?.length,
-    firstRequest: pendingRequests?.[0],
-    hasData: !!pendingRequests,
-    arrayType: Array.isArray(pendingRequests)
-  });
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

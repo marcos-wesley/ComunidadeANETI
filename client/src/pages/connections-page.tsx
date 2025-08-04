@@ -37,14 +37,6 @@ export function ConnectionsPage() {
     refetchInterval: 30000,
   });
 
-  // Debug logging
-  console.log('[DEBUG] Connections Page:', {
-    pendingRequestsCount: pendingRequests?.length,
-    isLoadingPending,
-    pendingRequests: pendingRequests,
-    firstRequest: pendingRequests?.[0]
-  });
-
   // Fetch all connections
   const { data: allConnections = [], isLoading: isLoadingAll } = useQuery({
     queryKey: ["/api/connections"],
@@ -54,7 +46,7 @@ export function ConnectionsPage() {
   // Accept connection mutation
   const acceptMutation = useMutation({
     mutationFn: (connectionId: string) =>
-      apiRequest(`/api/connections/${connectionId}/accept`, "POST"),
+      apiRequest("POST", `/api/connections/${connectionId}/accept`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
@@ -75,7 +67,7 @@ export function ConnectionsPage() {
   // Reject connection mutation
   const rejectMutation = useMutation({
     mutationFn: (connectionId: string) =>
-      apiRequest(`/api/connections/${connectionId}/reject`, "POST"),
+      apiRequest("POST", `/api/connections/${connectionId}/reject`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/connections"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
