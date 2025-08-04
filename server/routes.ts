@@ -1571,7 +1571,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               targetType: targetType,
               groupId: groupId || null,
               planId: planId || null,
-              sentByAdmin: req.adminUser.adminUserId
+              sentByAdmin: req.user!.id
             }
           })
         );
@@ -2098,8 +2098,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         adminAlerts,
         filterData,
         adminUser: {
-          username: req.adminUser.username,
-          role: req.adminUser.role,
+          username: req.user?.username || 'admin',
+          role: req.user?.role || 'admin',
         },
       });
     } catch (error) {
@@ -2440,7 +2440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       await storage.updateApplication(applicationId, { 
         status: "approved",
         reviewedAt: new Date(),
-        reviewedBy: req.adminUser.adminUserId,
+        reviewedBy: req.user!.id,
       });
 
       res.json({ 
@@ -2475,7 +2475,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedApplication = await storage.rejectApplication(
         applicationId, 
         reason, 
-        req.adminUser.adminUserId,
+        req.user!.id,
         requestDocuments
       );
 
@@ -2692,7 +2692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const newGroup = await storage.createGroup({
         ...groupData,
-        createdBy: req.adminUser.adminUserId
+        createdBy: req.user!.id
       });
 
       res.json({
