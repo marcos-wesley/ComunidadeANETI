@@ -918,24 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get current user's profile
-  app.get("/api/profile", isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user!.id;
-      const profile = await storage.getUserProfile(userId);
-      
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
-      }
-      
-      res.json(profile);
-    } catch (error) {
-      console.error("Error fetching profile:", error);
-      res.status(500).json({ error: "Internal server error" });
-    }
-  });
-
-  // Get current user's professional profile
+  // Get current user's professional profile (must come before /api/profile)
   app.get('/api/profile/professional', isAuthenticated, async (req, res) => {
     try {
       const userId = req.user?.id;
@@ -1020,6 +1003,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching professional profile:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // Get current user's profile
+  app.get("/api/profile", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const profile = await storage.getUserProfile(userId);
+      
+      if (!profile) {
+        return res.status(404).json({ error: "Profile not found" });
+      }
+      
+      res.json(profile);
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 
