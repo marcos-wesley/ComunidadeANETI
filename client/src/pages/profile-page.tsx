@@ -537,19 +537,36 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
 function AboutSection({ profile, isOwnProfile }: { profile: UserProfile; isOwnProfile: boolean }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [editedAbout, setEditedAbout] = useState(profile.aboutMe || '');
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const MAX_CHARS = 2600;
+  const MAX_LINES_PREVIEW = 4;
+
+  // Check if text should be truncated
+  const shouldTruncate = profile.aboutMe && profile.aboutMe.length > 0;
+  const lines = profile.aboutMe ? profile.aboutMe.split('\n') : [];
+  const shouldShowMore = lines.length > MAX_LINES_PREVIEW;
+  const previewText = shouldShowMore && !isExpanded 
+    ? lines.slice(0, MAX_LINES_PREVIEW).join('\n') 
+    : profile.aboutMe;
+
   // Mutation to update about section
   const updateAboutMutation = useMutation({
     mutationFn: async (newAbout: string) => {
+      // Limit to MAX_CHARS
+      const truncatedAbout = newAbout.length > MAX_CHARS 
+        ? newAbout.substring(0, MAX_CHARS) 
+        : newAbout;
+        
       const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ aboutMe: newAbout })
+        body: JSON.stringify({ aboutMe: truncatedAbout })
       });
       
       if (!response.ok) {
@@ -626,33 +643,51 @@ function AboutSection({ profile, isOwnProfile }: { profile: UserProfile; isOwnPr
               placeholder="Descreva suas principais qualificações, experiência e objetivos profissionais..."
               className="min-h-[120px] resize-y"
               autoFocus
+              maxLength={MAX_CHARS}
             />
-            <div className="flex gap-2">
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={updateAboutMutation.isPending}
-              >
-                <Check className="h-4 w-4 mr-1" />
-                Salvar
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={updateAboutMutation.isPending}
-              >
-                <X className="h-4 w-4 mr-1" />
-                Cancelar
-              </Button>
+            <div className="flex justify-between items-center">
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={updateAboutMutation.isPending}
+                >
+                  <Check className="h-4 w-4 mr-1" />
+                  Salvar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={updateAboutMutation.isPending}
+                >
+                  <X className="h-4 w-4 mr-1" />
+                  Cancelar
+                </Button>
+              </div>
+              <p className="text-xs text-gray-500">
+                {editedAbout.length}/{MAX_CHARS} caracteres
+              </p>
             </div>
             <p className="text-xs text-gray-500">
               Dica: Use Ctrl+Enter para salvar ou Escape para cancelar
             </p>
           </div>
         ) : profile.aboutMe ? (
-          <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-            {profile.aboutMe}
+          <div className="space-y-3">
+            <div className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+              {previewText}
+            </div>
+            {shouldShowMore && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="text-blue-600 hover:text-blue-700 p-0 h-auto font-normal"
+              >
+                {isExpanded ? 'Ver menos' : 'Ver mais'}
+              </Button>
+            )}
           </div>
         ) : (
           isOwnProfile && (
@@ -1164,23 +1199,17 @@ export default function ProfilePage() {
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <ProfileHeader profile={profile} isOwnProfile={isOwnProfile} />
         
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column */}
-          <div className="space-y-6">
-            <AboutSection profile={profile} isOwnProfile={isOwnProfile} />
-            <SkillsSection skills={profile.skills} isOwnProfile={isOwnProfile} />
-            <LanguagesSection languages={profile.languages} isOwnProfile={isOwnProfile} />
-          </div>
-
-          {/* Right Column */}
-          <div className="lg:col-span-2 space-y-6">
-            <HighlightsSection highlights={profile.highlights} isOwnProfile={isOwnProfile} />
-            <ExperienceSection experiences={profile.experiences} isOwnProfile={isOwnProfile} />
-            <EducationSection educations={profile.educations} isOwnProfile={isOwnProfile} />
-            <CertificationSection certifications={profile.certifications} isOwnProfile={isOwnProfile} />
-            <ProjectsSection projects={profile.projects} isOwnProfile={isOwnProfile} />
-            <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} />
-          </div>
+        {/* Single Column Layout */}
+        <div className="space-y-6">
+          <AboutSection profile={profile} isOwnProfile={isOwnProfile} />
+          <HighlightsSection highlights={profile.highlights} isOwnProfile={isOwnProfile} />
+          <ExperienceSection experiences={profile.experiences} isOwnProfile={isOwnProfile} />
+          <EducationSection educations={profile.educations} isOwnProfile={isOwnProfile} />
+          <CertificationSection certifications={profile.certifications} isOwnProfile={isOwnProfile} />
+          <ProjectsSection projects={profile.projects} isOwnProfile={isOwnProfile} />
+          <SkillsSection skills={profile.skills} isOwnProfile={isOwnProfile} />
+          <LanguagesSection languages={profile.languages} isOwnProfile={isOwnProfile} />
+          <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} />
         </div>
       </div>
     </div>
