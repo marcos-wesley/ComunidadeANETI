@@ -90,48 +90,67 @@ function LikesModalContent({ postId, likesCount }: { postId: string; likesCount:
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-4">
+      <div className="flex items-center justify-center py-8">
         <Loader2 className="h-6 w-6 animate-spin" />
       </div>
     );
   }
 
-  if (error) {
+  if (error || likes.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground py-4">
         {likesCount} pessoa{likesCount > 1 ? 's' : ''} reagiu{likesCount > 1 ? 'ram' : ''} a este post
       </p>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {likes.length > 0 ? (
-        <div className="space-y-3">
-          {likes.map((like) => (
-            <div key={like.id} className="flex items-center gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+    <div className="space-y-1">
+      {/* Tabs de reações no estilo LinkedIn */}
+      <div className="flex items-center gap-4 border-b pb-3 mb-4">
+        <button className="flex items-center gap-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 pb-1">
+          <span>Todas {likesCount}</span>
+        </button>
+        <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-blue-600">
+          <span>👍</span>
+          <span>{likes.filter(l => true).length}</span>
+        </button>
+      </div>
+
+      {/* Lista de usuários que reagiram */}
+      <div className="space-y-3 max-h-80 overflow-y-auto">
+        {likes.map((like) => (
+          <div key={like.id} className="flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 p-2 rounded-lg transition-colors">
+            <div className="flex items-center gap-3">
+              <Avatar className="h-12 w-12">
+                <AvatarFallback className="text-sm bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                   {like.user.fullName?.charAt(0) || like.user.username.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <div>
-                <p className="text-sm font-medium">{like.user.fullName}</p>
-                <p className="text-xs text-muted-foreground">@{like.user.username}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold hover:text-blue-600 cursor-pointer">
+                    {like.user.fullName}
+                  </p>
+                  <span className="text-lg">👍</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-muted-foreground">
+                    {like.user.planName || 'Membro'}
+                  </p>
+                  <span className="text-xs text-muted-foreground">•</span>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(like.createdAt), { addSuffix: true, locale: ptBR })}
+                  </p>
+                </div>
               </div>
-              {like.user.planName && (
-                <Badge variant="secondary" className="ml-auto text-xs">
-                  {like.user.planName}
-                </Badge>
-              )}
             </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          {likesCount} pessoa{likesCount > 1 ? 's' : ''} reagiu{likesCount > 1 ? 'ram' : ''} a este post
-        </p>
-      )}
+            <Button variant="outline" size="sm" className="text-xs">
+              Conectar
+            </Button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -378,9 +397,9 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
                     {likesCount} reações
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Quem reagiu</DialogTitle>
+                    <DialogTitle>Reações</DialogTitle>
                   </DialogHeader>
                   <LikesModalContent postId={post.id} likesCount={likesCount} />
                 </DialogContent>
@@ -393,11 +412,14 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
                     {post._count.comments} comentário{post._count.comments > 1 ? 's' : ''}
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[80vh]">
                   <DialogHeader>
-                    <DialogTitle>Comentários</DialogTitle>
+                    <DialogTitle className="flex items-center gap-2">
+                      <MessageCircle className="h-5 w-5" />
+                      Comentários ({post._count.comments})
+                    </DialogTitle>
                   </DialogHeader>
-                  <div className="max-h-96 overflow-y-auto">
+                  <div className="overflow-y-auto flex-1">
                     <CommentSection postId={post.id} onUpdate={onUpdate} />
                   </div>
                 </DialogContent>

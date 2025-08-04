@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Clock } from "lucide-react";
+import { Loader2, Send, Clock, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -38,8 +38,9 @@ export function CommentSection({ postId, onUpdate }: CommentSectionProps): JSX.E
   const [newComment, setNewComment] = useState("");
 
   // Fetch comments
-  const { data: comments = [], isLoading } = useQuery<Comment[]>({
-    queryKey: ["/api/comments", postId],
+  const { data: comments = [], isLoading, error } = useQuery<Comment[]>({
+    queryKey: ["/api/posts", postId, "comments"],
+    queryFn: () => apiRequest(`/api/posts/${postId}/comments`),
   });
 
   // Create comment mutation
@@ -49,7 +50,7 @@ export function CommentSection({ postId, onUpdate }: CommentSectionProps): JSX.E
     },
     onSuccess: () => {
       setNewComment("");
-      queryClient.invalidateQueries({ queryKey: ["/api/comments", postId] });
+      queryClient.invalidateQueries({ queryKey: ["/api/posts", postId, "comments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/posts"] });
       onUpdate();
       toast({
@@ -98,14 +99,17 @@ export function CommentSection({ postId, onUpdate }: CommentSectionProps): JSX.E
     return (
       <div className="flex items-center justify-center p-4">
         <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="ml-2 text-sm text-muted-foreground">Carregando comentários...</span>
       </div>
     );
   }
 
+  console.log("Comments data:", comments, "Error:", error);
+
   return (
     <div className="space-y-4">
       {/* Comments List */}
-      {comments.length > 0 && (
+      {comments.length > 0 ? (
         <div className="space-y-3">
           {comments.map((comment) => (
             <div key={comment.id} className="flex space-x-3">
@@ -136,6 +140,12 @@ export function CommentSection({ postId, onUpdate }: CommentSectionProps): JSX.E
               </div>
             </div>
           ))}
+        </div>
+      ) : (
+        <div className="text-center py-6">
+          <MessageCircle className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Nenhum comentário ainda</p>
+          <p className="text-xs text-muted-foreground">Seja o primeiro a comentar!</p>
         </div>
       )}
 
