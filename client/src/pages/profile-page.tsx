@@ -19,43 +19,6 @@ import { useForm } from "react-hook-form";
 import { ObjectUploader } from "@/components/ObjectUploader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
-  Check, 
-  X, 
-  Pencil, 
-  Users, 
-  MessageSquare, 
-  UserPlus, 
-  UserCheck, 
-  Clock,
-  Plus,
-  Building,
-  MapPin,
-  Calendar,
-  GraduationCap,
-  Award,
-  Languages,
-  Star,
-  Eye,
-  EyeOff,
-  Edit3,
-  Trash2,
-  Camera,
-  Mail,
-  Phone,
-  Globe,
-  Linkedin,
-  Github,
-  Twitter,
-  Instagram,
-  User,
-  Code,
-  Briefcase,
-  Search,
-  Upload,
-  ExternalLink,
-  Image
-} from "lucide-react";
 
 // Experience form schema
 const experienceSchema = z.object({
@@ -102,7 +65,33 @@ const skillSchema = z.object({
 
 type SkillFormData = z.infer<typeof skillSchema>;
 
-
+import { 
+  User,
+  MapPin, 
+  Calendar, 
+  Building, 
+  GraduationCap, 
+  Award, 
+  Code, 
+  Users, 
+  Globe, 
+  Edit3,
+  Mail,
+  MessageSquare,
+  Star,
+  Briefcase,
+  Languages,
+  Camera,
+  Plus,
+  X,
+  Search,
+  Upload,
+  Pencil,
+  Check,
+  ExternalLink,
+  Image,
+  Trash2
+} from "lucide-react";
 
 type UserProfile = {
   id: string;
@@ -120,7 +109,6 @@ type UserProfile = {
   planName?: string;
   createdAt: string;
   connectionsCount?: number;
-  isConnected?: boolean;
   experiences: Experience[];
   educations: Education[];
   certifications: Certification[];
@@ -649,28 +637,28 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
         <div className="ml-48">
           <div className="flex items-start justify-between">
-            <div className="flex-1 space-y-1">
+            <div className="flex-1">
               <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
                 {profile.fullName}
               </h1>
-              {getCurrentPosition() && (
-                <p className="text-lg text-gray-700 dark:text-gray-300">
-                  {getCurrentPosition()}
-                </p>
-              )}
               <ProfessionalTitleEditor 
                 profile={profile} 
                 isOwnProfile={isOwnProfile} 
               />
               
-              <div className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
+              {/* Current Position - subtly displayed */}
+              {getCurrentPosition() && (
+                <div className="text-lg text-gray-700 dark:text-gray-300 mt-1">
+                  {getCurrentPosition()}
+                </div>
+              )}
+              
+              <div className="flex items-center gap-1 mt-2 text-sm text-gray-600 dark:text-gray-400">
                 <MapPin className="h-4 w-4" />
-                <span>{profile.city}, {profile.state}</span>
-                <span>•</span>
-                <button className="text-blue-600 hover:underline">Informações de contato</button>
+                {profile.city}, {profile.state}
               </div>
 
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-4 mt-3">
                 <span className="text-sm text-blue-600 dark:text-blue-400 font-medium cursor-pointer hover:underline">
                   {isOwnProfile 
                     ? formatConnectionsCount(profile.connectionsCount || 0)
@@ -703,76 +691,23 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
             {!isOwnProfile && (
               <div className="flex gap-2 ml-4">
-                {connectionStatus?.status === 'accepted' ? (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                      onClick={handleMessageClick}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Enviar mensagem
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                      disabled
-                    >
-                      <UserCheck className="h-4 w-4 mr-2" />
-                      Conectado
-                    </Button>
-                  </>
-                ) : connectionStatus?.status === 'pending' ? (
-                  <>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-blue-600 text-blue-600 hover:bg-blue-50"
-                      onClick={handleMessageClick}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Enviar mensagem
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                      disabled
-                    >
-                      <Clock className="h-4 w-4 mr-2" />
-                      Pendente
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button 
-                      size="sm" 
-                      className="bg-blue-600 hover:bg-blue-700"
-                      onClick={handleConnectionClick}
-                      disabled={connectionMutation.isPending}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      {connectionMutation.isPending ? "Enviando..." : "Conectar"}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
-                      onClick={handleMessageClick}
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Enviar mensagem
-                    </Button>
-                  </>
-                )}
+                <Button 
+                  size="sm" 
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={handleMessageClick}
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Mensagem
+                </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  onClick={handleConnectionClick}
+                  disabled={connectionStatus?.status === 'accepted' || connectionStatus?.status === 'pending' || connectionMutation.isPending}
                 >
-                  Mais
+                  <Users className="h-4 w-4 mr-2" />
+                  {connectionMutation.isPending ? "Enviando..." : getConnectionButtonText()}
                 </Button>
               </div>
             )}
@@ -3055,7 +2990,7 @@ function RecommendationsSection({ recommendations, isOwnProfile, profile, isConn
         </CardHeader>
         <CardContent>
           {/* Pending recommendations for approval */}
-          {isOwnProfile && Array.isArray(pendingRecs) && pendingRecs.length > 0 && (
+          {isOwnProfile && pendingRecs.length > 0 && (
             <div className="mb-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
               <h4 className="font-medium text-sm mb-3">Recomendações pendentes de aprovação:</h4>
               <div className="space-y-3">
