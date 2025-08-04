@@ -80,6 +80,8 @@ export default function MembersPage(): JSX.Element {
 
   const { data: members = [], isLoading } = useQuery<Member[]>({
     queryKey: ["/api/members", currentPage, limit, sortBy, stateFilter, planFilter, genderFilter, areaFilter, searchQuery],
+    staleTime: 0,
+    cacheTime: 0, // Don't cache connection status data
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
@@ -254,7 +256,8 @@ export default function MembersPage(): JSX.Element {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      // Force refetch by removing all cached member data
+      queryClient.removeQueries({ queryKey: ["/api/members"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
       
       toast({
@@ -282,7 +285,8 @@ export default function MembersPage(): JSX.Element {
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/members"] });
+      // Force refetch by removing all cached member data
+      queryClient.removeQueries({ queryKey: ["/api/members"] });
       queryClient.invalidateQueries({ queryKey: ["/api/connections/pending"] });
       
       toast({
@@ -635,9 +639,9 @@ export default function MembersPage(): JSX.Element {
 
                   <div className="flex gap-2 pt-3">
                     {member.connectionStatus === "connected" ? (
-                      <Button size="sm" variant="outline" className="flex-1" disabled>
-                        <UserCheck className="h-4 w-4 mr-1" />
-                        Conectado
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Mail className="h-4 w-4 mr-1" />
+                        Mensagem
                       </Button>
                     ) : member.connectionStatus === "pending" ? (
                       <Button size="sm" variant="outline" className="flex-1" disabled>
