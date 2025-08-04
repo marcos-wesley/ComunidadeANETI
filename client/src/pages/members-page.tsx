@@ -27,7 +27,10 @@ import {
   Mail,
   Filter,
   Star,
-  Eye
+  Eye,
+  Clock,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
@@ -138,7 +141,28 @@ export default function MembersPage(): JSX.Element {
       console.log('connectMutation called with:', memberId);
       const res = await apiRequest("POST", "/api/connections", { receiverId: memberId });
       console.log('connectMutation response:', res.status);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to send connection request');
+      }
       return res.json();
+    },
+    onMutate: async (memberId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/members"] });
+      
+      // Optimistically update the cache
+      const previousMembers = queryClient.getQueryData(["/api/members"]);
+      queryClient.setQueryData(["/api/members"], (old: any) => {
+        if (!old) return old;
+        return old.map((member: any) => 
+          member.id === memberId 
+            ? { ...member, connectionStatus: "pending" }
+            : member
+        );
+      });
+      
+      return { previousMembers };
     },
     onSuccess: (data) => {
       console.log('connectMutation success:', data);
@@ -148,11 +172,17 @@ export default function MembersPage(): JSX.Element {
         description: "Sua solicitação de conexão foi enviada!",
       });
     },
-    onError: (error) => {
+    onError: (error, memberId, context) => {
       console.error('connectMutation error:', error);
+      
+      // Rollback the optimistic update
+      if (context?.previousMembers) {
+        queryClient.setQueryData(["/api/members"], context.previousMembers);
+      }
+      
       toast({
         title: "Erro",
-        description: "Não foi possível enviar a solicitação de conexão.",
+        description: error instanceof Error ? error.message : "Não foi possível enviar a solicitação de conexão.",
         variant: "destructive",
       });
     },
@@ -498,7 +528,7 @@ export default function MembersPage(): JSX.Element {
                       </Button>
                     ) : member.connectionStatus === "pending" ? (
                       <Button size="sm" variant="outline" className="flex-1" disabled>
-                        <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        <UserX className="h-4 w-4 mr-1" />
                         Pendente
                       </Button>
                     ) : (
@@ -514,8 +544,12 @@ export default function MembersPage(): JSX.Element {
                         disabled={!canConnect || connectMutation.isPending}
                         style={{ pointerEvents: 'auto' }}
                       >
-                        <UserPlus className="h-4 w-4 mr-1" />
-                        Conectar
+                        {connectMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                        ) : (
+                          <UserPlus className="h-4 w-4 mr-1" />
+                        )}
+                        {connectMutation.isPending ? "Enviando..." : "Conectar"}
                       </Button>
                     )}
 
