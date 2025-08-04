@@ -144,6 +144,7 @@ export default function ProfessionalProfile() {
   // Get profile data
   const { data: profileData, isLoading } = useQuery<ProfileData>({
     queryKey: ['/api/profile/professional'],
+    queryFn: () => apiRequest('/api/profile/professional'),
   });
 
   useEffect(() => {

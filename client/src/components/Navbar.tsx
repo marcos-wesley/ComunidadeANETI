@@ -219,7 +219,7 @@ export function Navbar(): JSX.Element {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href="/profile" className="flex items-center gap-2 cursor-pointer">
+                  <Link href="/professional-profile" className="flex items-center gap-2 cursor-pointer">
                     <User className="h-4 w-4" />
                     Ver perfil
                   </Link>
