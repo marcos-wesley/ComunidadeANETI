@@ -1388,6 +1388,49 @@ export class DatabaseStorage implements IStorage {
     return searchResults;
   }
 
+  async getPendingConnectionRequests(userId: string) {
+    const pendingRequests = await db
+      .select({
+        id: connections.id,
+        requesterId: connections.requesterId,
+        receiverId: connections.receiverId,
+        status: connections.status,
+        createdAt: connections.createdAt,
+        requesterName: users.fullName,
+        requesterUsername: users.username,
+        requesterPlanName: users.planName,
+        requesterProfilePicture: users.profilePicture,
+        requesterArea: users.area,
+        requesterPosition: users.position,
+      })
+      .from(connections)
+      .innerJoin(users, eq(connections.requesterId, users.id))
+      .where(
+        and(
+          eq(connections.receiverId, userId),
+          eq(connections.status, "pending")
+        )
+      )
+      .orderBy(desc(connections.createdAt));
+
+    return pendingRequests.map(req => ({
+      id: req.id,
+      requesterId: req.requesterId,
+      receiverId: req.receiverId,
+      status: req.status,
+      createdAt: req.createdAt,
+      requester: {
+        id: req.requesterId,
+        fullName: req.requesterName,
+        username: req.requesterUsername,
+        planName: req.requesterPlanName,
+        profilePicture: req.requesterProfilePicture,
+        area: req.requesterArea,
+        position: req.requesterPosition,
+      },
+    }));
+  }
+
   async editMessage(messageId: string, userId: string, content: string): Promise<Message> {
     // First check if the message belongs to the user
     const [message] = await db

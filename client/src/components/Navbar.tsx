@@ -42,6 +42,7 @@ import anetiLogo from "@/assets/aneti-logo.png";
 import { FloatingChat } from "./FloatingChat";
 import { NotificationBell } from "./NotificationBell";
 import { MessageNotificationBell } from "./MessageNotificationBell";
+import { ConnectionBell } from "./ConnectionBell";
 
 const navItems = [
   { path: "/feed", icon: Home, label: "Feed", key: "feed" },
@@ -182,6 +183,9 @@ export function Navbar(): JSX.Element {
 
             {/* Messages */}
             <MessageNotificationBell onToggleChat={() => setShowFloatingChat(!showFloatingChat)} />
+
+            {/* Connection Requests */}
+            <ConnectionBell />
 
             {/* Notifications */}
             <NotificationBell />

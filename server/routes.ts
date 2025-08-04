@@ -733,6 +733,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get pending connection requests for current user
+  app.get("/api/connections/pending", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const pendingRequests = await storage.getPendingConnectionRequests(userId!);
+      res.json(pendingRequests);
+    } catch (error) {
+      console.error("Error fetching pending connection requests:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   // Send connection request
   app.post("/api/connections", isAuthenticated, async (req, res) => {
     try {
@@ -764,7 +776,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Accept/Reject connection request
+  // Accept connection request
+  app.post("/api/connections/:connectionId/accept", isAuthenticated, async (req, res) => {
+    try {
+      const { connectionId } = req.params;
+      const userId = req.user?.id;
+      
+      const connection = await storage.updateConnectionStatus(connectionId, "accepted", userId!);
+      if (!connection) {
+        return res.status(404).json({ error: "Connection request not found or you don't have permission to accept it" });
+      }
+      
+      res.json({ success: true, connection });
+    } catch (error) {
+      console.error("Error accepting connection:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Reject connection request
+  app.post("/api/connections/:connectionId/reject", isAuthenticated, async (req, res) => {
+    try {
+      const { connectionId } = req.params;
+      const userId = req.user?.id;
+      
+      const connection = await storage.updateConnectionStatus(connectionId, "rejected", userId!);
+      if (!connection) {
+        return res.status(404).json({ error: "Connection request not found or you don't have permission to reject it" });
+      }
+      
+      res.json({ success: true, connection });
+    } catch (error) {
+      console.error("Error rejecting connection:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Accept/Reject connection request (PUT method for backward compatibility)
   app.put("/api/connections/:connectionId", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user?.id;
