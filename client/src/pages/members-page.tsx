@@ -193,7 +193,28 @@ export default function MembersPage(): JSX.Element {
       console.log('followMutation called with:', memberId);
       const res = await apiRequest("POST", "/api/follows", { followingId: memberId });
       console.log('followMutation response:', res.status);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to follow member');
+      }
       return res.json();
+    },
+    onMutate: async (memberId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/members"] });
+      
+      // Optimistically update the cache
+      const previousMembers = queryClient.getQueryData(["/api/members"]);
+      queryClient.setQueryData(["/api/members"], (old: any) => {
+        if (!old) return old;
+        return old.map((member: any) => 
+          member.id === memberId 
+            ? { ...member, isFollowing: true }
+            : member
+        );
+      });
+      
+      return { previousMembers };
     },
     onSuccess: (data) => {
       console.log('followMutation success:', data);
@@ -203,11 +224,17 @@ export default function MembersPage(): JSX.Element {
         description: "Você agora está seguindo este membro!",
       });
     },
-    onError: (error) => {
+    onError: (error, memberId, context) => {
       console.error('followMutation error:', error);
+      
+      // Rollback the optimistic update
+      if (context?.previousMembers) {
+        queryClient.setQueryData(["/api/members"], context.previousMembers);
+      }
+      
       toast({
         title: "Erro",
-        description: "Não foi possível seguir este membro.",
+        description: error instanceof Error ? error.message : "Não foi possível seguir este membro.",
         variant: "destructive",
       });
     },
@@ -218,7 +245,28 @@ export default function MembersPage(): JSX.Element {
       console.log('unfollowMutation called with:', memberId);
       const res = await apiRequest("DELETE", `/api/follows/${memberId}`);
       console.log('unfollowMutation response:', res.status);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Failed to unfollow member');
+      }
       return res.json();
+    },
+    onMutate: async (memberId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["/api/members"] });
+      
+      // Optimistically update the cache
+      const previousMembers = queryClient.getQueryData(["/api/members"]);
+      queryClient.setQueryData(["/api/members"], (old: any) => {
+        if (!old) return old;
+        return old.map((member: any) => 
+          member.id === memberId 
+            ? { ...member, isFollowing: false }
+            : member
+        );
+      });
+      
+      return { previousMembers };
     },
     onSuccess: (data) => {
       console.log('unfollowMutation success:', data);
@@ -228,11 +276,17 @@ export default function MembersPage(): JSX.Element {
         description: "Você não está mais seguindo este membro.",
       });
     },
-    onError: (error) => {
+    onError: (error, memberId, context) => {
       console.error('unfollowMutation error:', error);
+      
+      // Rollback the optimistic update
+      if (context?.previousMembers) {
+        queryClient.setQueryData(["/api/members"], context.previousMembers);
+      }
+      
       toast({
         title: "Erro",
-        description: "Não foi possível deixar de seguir este membro.",
+        description: error instanceof Error ? error.message : "Não foi possível deixar de seguir este membro.",
         variant: "destructive",
       });
     },
