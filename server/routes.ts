@@ -18,7 +18,8 @@ import {
   recommendations 
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { users, applications, documents, subscriptions, notifications, posts, postReactions, experiences, educations, skills, userSkills, certifications, projects, languages, recommendations, connections } from "../shared/schema";
+import { eq, and, or } from "drizzle-orm";
 import express from "express";
 import path from "path";
 import fs from "fs/promises";
