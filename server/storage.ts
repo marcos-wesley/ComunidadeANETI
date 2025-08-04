@@ -1939,7 +1939,7 @@ export class DatabaseStorage implements IStorage {
       projects: [],
       skills,
       recommendations: [],
-      languages: [],
+      languages: await this.getUserLanguages(user.id),
       highlights: [],
     };
   }
@@ -2206,9 +2206,62 @@ export class DatabaseStorage implements IStorage {
     return [];
   }
 
-  async getUserLanguages(userId: string): Promise<any[]> {
-    // Portfolio tables will be implemented later
-    return [];
+  async getUserLanguages(userId: string): Promise<Language[]> {
+    try {
+      const userLanguages = await db
+        .select()
+        .from(languages)
+        .where(eq(languages.userId, userId))
+        .orderBy(languages.language);
+      
+      return userLanguages;
+    } catch (error) {
+      console.error("Error fetching user languages:", error);
+      return [];
+    }
+  }
+
+  async createLanguage(languageData: InsertLanguage): Promise<Language> {
+    try {
+      const [newLanguage] = await db
+        .insert(languages)
+        .values(languageData)
+        .returning();
+      
+      return newLanguage;
+    } catch (error) {
+      console.error("Error creating language:", error);
+      throw error;
+    }
+  }
+
+  async updateLanguage(id: string, userId: string, languageData: Partial<InsertLanguage>): Promise<Language | null> {
+    try {
+      const [updatedLanguage] = await db
+        .update(languages)
+        .set(languageData)
+        .where(and(eq(languages.id, id), eq(languages.userId, userId)))
+        .returning();
+      
+      return updatedLanguage || null;
+    } catch (error) {
+      console.error("Error updating language:", error);
+      throw error;
+    }
+  }
+
+  async deleteLanguage(id: string, userId: string): Promise<boolean> {
+    try {
+      const [deletedLanguage] = await db
+        .delete(languages)
+        .where(and(eq(languages.id, id), eq(languages.userId, userId)))
+        .returning();
+      
+      return !!deletedLanguage;
+    } catch (error) {
+      console.error("Error deleting language:", error);
+      throw error;
+    }
   }
 
   async getUserHighlights(userId: string): Promise<any[]> {

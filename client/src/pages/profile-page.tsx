@@ -2044,7 +2044,106 @@ function SkillsSection({ skills, isOwnProfile }: { skills: Skill[]; isOwnProfile
 }
 
 function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; isOwnProfile: boolean }) {
+  const [isAddingLanguage, setIsAddingLanguage] = useState(false);
+  const [editingLanguageId, setEditingLanguageId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
   if (languages.length === 0 && !isOwnProfile) return null;
+
+  const languageSchema = z.object({
+    language: z.string().min(1, "Idioma é obrigatório"),
+    proficiency: z.enum(["Nível básico", "Nível básico a intermediário", "Nível intermediário", "Nível avançado", "Fluente ou nativo"])
+  });
+
+  type LanguageFormData = z.infer<typeof languageSchema>;
+
+  const form = useForm<LanguageFormData>({
+    resolver: zodResolver(languageSchema),
+    defaultValues: {
+      language: '',
+      proficiency: 'Nível básico'
+    }
+  });
+
+  // Mutation to add/update language
+  const languageMutation = useMutation({
+    mutationFn: async (data: LanguageFormData) => {
+      const url = editingLanguageId ? '/api/profile/languages' : '/api/profile/languages';
+      const method = editingLanguageId ? 'PUT' : 'POST';
+      const body = editingLanguageId ? { id: editingLanguageId, ...data } : data;
+      
+      return apiRequest(url, {
+        method,
+        body: JSON.stringify(body),
+        headers: { 'Content-Type': 'application/json' }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsAddingLanguage(false);
+      setEditingLanguageId(null);
+      form.reset();
+      toast({
+        title: "Sucesso",
+        description: editingLanguageId ? "Idioma atualizado com sucesso!" : "Idioma adicionado com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error saving language:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar idioma. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Mutation to delete language
+  const deleteLanguageMutation = useMutation({
+    mutationFn: async (languageId: string) => {
+      return apiRequest(`/api/profile/languages/${languageId}`, {
+        method: 'DELETE'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      toast({
+        title: "Sucesso",
+        description: "Idioma removido com sucesso!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting language:', error);
+      toast({
+        title: "Erro", 
+        description: "Erro ao remover idioma. Tente novamente.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const handleEdit = (language: Language) => {
+    const editingLang = languages.find(l => l.id === language.id);
+    if (!editingLang) return;
+    
+    setEditingLanguageId(language.id);
+    form.reset({
+      language: editingLang.language,
+      proficiency: editingLang.proficiency as "Nível básico" | "Nível básico a intermediário" | "Nível intermediário" | "Nível avançado" | "Fluente ou nativo"
+    });
+    setIsAddingLanguage(true);
+  };
+
+  const onSubmit = (data: LanguageFormData) => {
+    languageMutation.mutate(data);
+  };
+
+  const handleDelete = (languageId: string) => {
+    if (confirm('Tem certeza que deseja remover este idioma?')) {
+      deleteLanguageMutation.mutate(languageId);
+    }
+  };
 
   return (
     <Card>
@@ -2054,8 +2153,16 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
           Idiomas
         </CardTitle>
         {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={() => {
+              setEditingLanguageId(null);
+              form.reset();
+              setIsAddingLanguage(true);
+            }}
+          >
+            <Plus className="h-4 w-4" />
           </Button>
         )}
       </CardHeader>
@@ -2063,9 +2170,30 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
         {languages.length > 0 ? (
           <div className="space-y-3">
             {languages.map((lang) => (
-              <div key={lang.id} className="flex items-center justify-between">
-                <span className="font-medium">{lang.language}</span>
-                <Badge variant="outline">{lang.proficiency}</Badge>
+              <div key={lang.id} className="flex items-center justify-between group">
+                <div className="flex items-center gap-3">
+                  <span className="font-medium">{lang.language}</span>
+                  <Badge variant="outline">{lang.proficiency}</Badge>
+                </div>
+                {isOwnProfile && (
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEdit(lang)}
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(lang.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -2075,6 +2203,80 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
           </p>
         )}
       </CardContent>
+
+      {/* Add/Edit Language Modal */}
+      <Dialog open={isAddingLanguage} onOpenChange={setIsAddingLanguage}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {editingLanguageId ? 'Editar idioma' : 'Adicionar idioma'}
+            </DialogTitle>
+            <DialogDescription>
+              * Indica item obrigatório
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="language"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Idioma*</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Ex: Inglês, Espanhol, Francês..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="proficiency"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Proficiência</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="Nível básico">Nível básico</SelectItem>
+                        <SelectItem value="Nível básico a intermediário">Nível básico a intermediário</SelectItem>
+                        <SelectItem value="Nível intermediário">Nível intermediário</SelectItem>
+                        <SelectItem value="Nível avançado">Nível avançado</SelectItem>
+                        <SelectItem value="Fluente ou nativo">Fluente ou nativo</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsAddingLanguage(false);
+                    setEditingLanguageId(null);
+                    form.reset();
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={languageMutation.isPending}>
+                  {languageMutation.isPending ? "Salvando..." : "Salvar"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

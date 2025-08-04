@@ -1457,6 +1457,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Language CRUD routes
+  
+  // Get user's languages
+  app.get("/api/profile/languages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const languages = await storage.getUserLanguages(userId);
+      res.json(languages);
+    } catch (error) {
+      console.error("Error fetching languages:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Add language
+  app.post("/api/profile/languages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const languageData = { ...req.body, userId };
+      
+      const newLanguage = await storage.createLanguage(languageData);
+      res.status(201).json(newLanguage);
+    } catch (error) {
+      console.error("Error creating language:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Update language
+  app.put("/api/profile/languages", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { id, ...languageData } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ error: "Language ID is required" });
+      }
+      
+      const updatedLanguage = await storage.updateLanguage(id, userId, languageData);
+      
+      if (!updatedLanguage) {
+        return res.status(404).json({ error: "Language not found" });
+      }
+      
+      res.json(updatedLanguage);
+    } catch (error) {
+      console.error("Error updating language:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Delete language
+  app.delete("/api/profile/languages/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const languageId = req.params.id;
+      
+      const deleted = await storage.deleteLanguage(languageId, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Language not found" });
+      }
+      
+      res.json({ message: "Language deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting language:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
       const { 

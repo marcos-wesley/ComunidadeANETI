@@ -702,6 +702,8 @@ export const insertLikeSchema = createInsertSchema(likes).omit({
 
 
 
+
+
 // Social Feed Types
 export type Post = typeof posts.$inferSelect;
 export type InsertPost = z.infer<typeof insertPostSchema>;
@@ -713,6 +715,10 @@ export type Follow = typeof follows.$inferSelect;
 export type InsertFollow = z.infer<typeof insertFollowSchema>;
 export type Like = typeof likes.$inferSelect;
 export type InsertLike = z.infer<typeof insertLikeSchema>;
+export type Certification = typeof certifications.$inferSelect;
+export type InsertCertification = z.infer<typeof insertCertificationSchema>;
+export type Language = typeof languages.$inferSelect;
+export type InsertLanguage = z.infer<typeof insertLanguageSchema>;
 
 // Extended types with relations
 export type PostWithDetails = Post & {
