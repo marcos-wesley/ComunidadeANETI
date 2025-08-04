@@ -1569,6 +1569,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Você não pode recomendar a si mesmo" });
       }
 
+      // Check if users are connected
+      const connection = await db
+        .select()
+        .from(connections)
+        .where(and(
+          or(
+            and(eq(connections.requesterId, recommenderId), eq(connections.receiverId, recommendeeId)),
+            and(eq(connections.requesterId, recommendeeId), eq(connections.receiverId, recommenderId))
+          ),
+          eq(connections.status, 'accepted')
+        ))
+        .limit(1);
+
+      if (connection.length === 0) {
+        return res.status(403).json({ error: "Você deve estar conectado com este usuário para enviar uma recomendação" });
+      }
+
       // Check if recommendation already exists
       const existingRecommendation = await db
         .select()
@@ -1586,7 +1603,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const recommendationData = {
         recommenderId,
         recommendeeId,
-        text,
+        recommendationText: text,
         position,
         company,
         relationship,

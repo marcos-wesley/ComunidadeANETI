@@ -2754,7 +2754,7 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
   );
 }
 
-function RecommendationsSection({ recommendations, isOwnProfile, profile }: { recommendations: any[]; isOwnProfile: boolean; profile?: any }) {
+function RecommendationsSection({ recommendations, isOwnProfile, profile, isConnected }: { recommendations: any[]; isOwnProfile: boolean; profile?: any; isConnected?: boolean }) {
   const [isAddingRecommendation, setIsAddingRecommendation] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
@@ -2865,11 +2865,16 @@ function RecommendationsSection({ recommendations, isOwnProfile, profile }: { re
             <Star className="h-4 w-4" />
             <CardTitle className="text-base">Recomendações</CardTitle>
           </div>
-          {!isOwnProfile && (
+          {!isOwnProfile && isConnected && (
             <Button variant="outline" size="sm" onClick={() => setIsAddingRecommendation(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Recomendar profissional
             </Button>
+          )}
+          {!isOwnProfile && !isConnected && (
+            <div className="text-sm text-muted-foreground">
+              Conecte-se para recomendar este profissional
+            </div>
           )}
         </CardHeader>
         <CardContent>
@@ -3117,7 +3122,7 @@ export default function ProfilePage() {
           <ProjectsSection projects={profile.projects} isOwnProfile={isOwnProfile} />
           <SkillsSection skills={profile.skills} isOwnProfile={isOwnProfile} />
           <LanguagesSection languages={profile.languages} isOwnProfile={isOwnProfile} />
-          <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} profile={profile} />
+          <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} profile={profile} isConnected={profile.isConnected} />
         </div>
       </div>
     </div>
