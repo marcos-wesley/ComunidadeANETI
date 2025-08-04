@@ -1246,6 +1246,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Education CRUD routes
+  app.post("/api/profile/educations", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const educationData = { ...req.body, userId };
+      
+      const newEducation = await storage.createEducation(educationData);
+      res.status(201).json(newEducation);
+    } catch (error) {
+      console.error("Error creating education:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.put("/api/profile/educations", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { id, ...educationData } = req.body;
+      
+      if (!id) {
+        return res.status(400).json({ error: "Education ID is required" });
+      }
+      
+      const updatedEducation = await storage.updateEducation(id, userId, educationData);
+      
+      if (!updatedEducation) {
+        return res.status(404).json({ error: "Education not found" });
+      }
+      
+      res.json(updatedEducation);
+    } catch (error) {
+      console.error("Error updating education:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  app.delete("/api/profile/educations/:id", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const educationId = req.params.id;
+      
+      const deleted = await storage.deleteEducation(educationId, userId);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Education not found" });
+      }
+      
+      res.json({ message: "Education deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/members", isAuthenticated, async (req, res) => {
     try {
       const { 

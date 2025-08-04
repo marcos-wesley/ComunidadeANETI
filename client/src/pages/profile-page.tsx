@@ -44,6 +44,18 @@ const experienceSchema = z.object({
 });
 
 type ExperienceFormData = z.infer<typeof experienceSchema>;
+
+// Education form schema
+const educationSchema = z.object({
+  institution: z.string().min(1, "Instituição é obrigatória"),
+  course: z.string().min(1, "Área de estudo é obrigatória"),
+  degree: z.string().optional(),
+  startDate: z.string().min(1, "Data de início é obrigatória"),
+  endDate: z.string().optional(),
+  description: z.string().optional()
+});
+
+type EducationFormData = z.infer<typeof educationSchema>;
 import { 
   User,
   MapPin, 
@@ -1283,10 +1295,125 @@ function ExperienceSection({ experiences, isOwnProfile }: { experiences: Experie
 }
 
 function EducationSection({ educations, isOwnProfile }: { educations: Education[]; isOwnProfile: boolean }) {
+  const [isAddingEducation, setIsAddingEducation] = useState(false);
+  const [editingEducationId, setEditingEducationId] = useState<string | null>(null);
+  const [showAllEducations, setShowAllEducations] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Sort educations chronologically (most recent first)
+  const sortedEducations = [...educations].sort((a, b) => {
+    const aDate = a.endDate || '9999-12'; // Current educations go first
+    const bDate = b.endDate || '9999-12';
+    if (aDate !== bDate) {
+      return bDate.localeCompare(aDate);
+    }
+    // If end dates are same, sort by start date (most recent first)
+    return b.startDate.localeCompare(a.startDate);
+  });
+
+  // Show only first 3 educations unless "Ver mais" is clicked
+  const displayedEducations = showAllEducations ? sortedEducations : sortedEducations.slice(0, 3);
+
+  const toggleDescription = (eduId: string) => {
+    const newExpanded = new Set(expandedDescriptions);
+    if (newExpanded.has(eduId)) {
+      newExpanded.delete(eduId);
+    } else {
+      newExpanded.add(eduId);
+    }
+    setExpandedDescriptions(newExpanded);
+  };
+
+  const truncateDescription = (description: string, eduId: string) => {
+    if (!description) return '';
+    
+    const lines = description.split('\n');
+    const isExpanded = expandedDescriptions.has(eduId);
+    
+    if (lines.length <= 2 || isExpanded) {
+      return description;
+    }
+    
+    return lines.slice(0, 2).join('\n');
+  };
+
   const formatDate = (dateStr: string) => {
     const [year, month] = dateStr.split('-');
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     return `${months[parseInt(month) - 1]} ${year}`;
+  };
+
+  const form = useForm<EducationFormData>({
+    resolver: zodResolver(educationSchema),
+    defaultValues: {
+      institution: '',
+      course: '',
+      degree: '',
+      startDate: '',
+      endDate: '',
+      description: ''
+    }
+  });
+
+  // Mutation to add/update education
+  const educationMutation = useMutation({
+    mutationFn: async (data: EducationFormData) => {
+      const response = await fetch('/api/profile/educations', {
+        method: editingEducationId ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editingEducationId ? { ...data, id: editingEducationId } : data)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save education');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/profile'] });
+      setIsAddingEducation(false);
+      setEditingEducationId(null);
+      form.reset();
+      toast({
+        title: "Formação salva",
+        description: "Sua formação acadêmica foi salva com sucesso."
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar a formação acadêmica.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const handleSubmit = (data: EducationFormData) => {
+    educationMutation.mutate(data);
+  };
+
+  const handleCancel = () => {
+    setIsAddingEducation(false);
+    setEditingEducationId(null);
+    form.reset();
+  };
+
+  const startEditing = (education: Education) => {
+    setEditingEducationId(education.id);
+    setIsAddingEducation(true);
+    form.reset({
+      institution: education.institution,
+      course: education.course,
+      degree: education.degree || '',
+      startDate: education.startDate,
+      endDate: education.endDate || '',
+      description: education.description || ''
+    });
   };
 
   if (educations.length === 0 && !isOwnProfile) return null;
@@ -1299,44 +1426,246 @@ function EducationSection({ educations, isOwnProfile }: { educations: Education[
           Formação Acadêmica
         </CardTitle>
         {isOwnProfile && (
-          <Button variant="ghost" size="sm">
-            <Edit3 className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="ghost" 
+              size="sm"
+              onClick={() => setIsAddingEducation(true)}
+              title="Adicionar formação"
+            >
+              <Plus className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="sm">
+              <Edit3 className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </CardHeader>
       <CardContent>
-        {educations.length > 0 ? (
+        {/* Education Modal */}
+        <Dialog open={isAddingEducation} onOpenChange={(open) => !open && handleCancel()}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                {editingEducationId ? 'Editar Formação' : 'Adicionar Formação'}
+              </DialogTitle>
+            </DialogHeader>
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+                {/* Institution */}
+                <FormField
+                  control={form.control}
+                  name="institution"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Instituição de Ensino *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Universidade de São Paulo" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Course */}
+                <FormField
+                  control={form.control}
+                  name="course"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Área de Estudo *</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ex: Ciência da Computação" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Degree */}
+                <FormField
+                  control={form.control}
+                  name="degree"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Diploma</FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione o tipo de diploma" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Tecnólogo">Tecnólogo</SelectItem>
+                            <SelectItem value="Bacharelado">Bacharelado</SelectItem>
+                            <SelectItem value="Licenciatura">Licenciatura</SelectItem>
+                            <SelectItem value="Especialização">Especialização</SelectItem>
+                            <SelectItem value="MBA">MBA</SelectItem>
+                            <SelectItem value="Mestrado">Mestrado</SelectItem>
+                            <SelectItem value="Doutorado">Doutorado</SelectItem>
+                            <SelectItem value="Pós-Doutorado">Pós-Doutorado</SelectItem>
+                            <SelectItem value="Curso Técnico">Curso Técnico</SelectItem>
+                            <SelectItem value="Curso Livre">Curso Livre</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Date Range */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="startDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Início *</FormLabel>
+                        <FormControl>
+                          <Input type="month" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="endDate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Fim</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="month" 
+                            {...field} 
+                            placeholder="Deixe vazio se em andamento"
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* Description */}
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Descrição</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="Descreva atividades relevantes, projetos acadêmicos, notas importantes..."
+                          className="min-h-[100px]"
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* Form Actions */}
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    type="submit"
+                    disabled={educationMutation.isPending}
+                  >
+                    {educationMutation.isPending ? 'Salvando...' : 'Salvar'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={educationMutation.isPending}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Education List */}
+        {sortedEducations.length > 0 ? (
           <div className="space-y-6">
-            {educations.map((edu, index) => (
+            {displayedEducations.map((edu, index) => (
               <div key={edu.id}>
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
                     <GraduationCap className="h-6 w-6 text-gray-600 dark:text-gray-400" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-semibold text-lg">{edu.course}</h4>
-                    <p className="text-gray-600 dark:text-gray-400 font-medium">{edu.institution}</p>
-                    {edu.degree && (
-                      <p className="text-gray-500 text-sm">{edu.degree}</p>
-                    )}
-                    <p className="text-sm text-gray-500 mt-1">
-                      {formatDate(edu.startDate)} - {edu.endDate ? formatDate(edu.endDate) : 'Em andamento'}
-                    </p>
-                    {edu.description && (
-                      <p className="text-gray-700 dark:text-gray-300 mt-3 whitespace-pre-wrap">
-                        {edu.description}
-                      </p>
-                    )}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-semibold text-lg">{edu.course}</h4>
+                        <p className="text-gray-600 dark:text-gray-400 font-medium">{edu.institution}</p>
+                        {edu.degree && (
+                          <p className="text-gray-500 text-sm">{edu.degree}</p>
+                        )}
+                        <p className="text-sm text-gray-500 mt-1">
+                          {formatDate(edu.startDate)} - {edu.endDate ? formatDate(edu.endDate) : 'Em andamento'}
+                        </p>
+                        {edu.description && (
+                          <div className="mt-3">
+                            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                              {truncateDescription(edu.description, edu.id)}
+                            </p>
+                            {edu.description.split('\n').length > 2 && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                onClick={() => toggleDescription(edu.id)}
+                                className="p-0 h-auto text-blue-600 hover:text-blue-800"
+                              >
+                                {expandedDescriptions.has(edu.id) ? 'Ver menos' : 'Ver mais'}
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      {isOwnProfile && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditing(edu)}
+                          className="ml-2"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
-                {index < educations.length - 1 && <Separator className="mt-6" />}
+                {index < displayedEducations.length - 1 && <Separator className="mt-6" />}
               </div>
             ))}
+            
+            {/* Show More Educations Button */}
+            {sortedEducations.length > 3 && (
+              <div className="pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAllEducations(!showAllEducations)}
+                  className="w-full"
+                >
+                  {showAllEducations 
+                    ? `Ver menos formações` 
+                    : `Ver mais formações (${sortedEducations.length - 3} restantes)`
+                  }
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
-          <p className="text-gray-500 italic">
-            {isOwnProfile ? "Adicione sua formação acadêmica" : "Nenhuma formação disponível"}
-          </p>
+          !isAddingEducation && (
+            <p className="text-gray-500 italic">
+              {isOwnProfile ? "Adicione sua formação acadêmica" : "Nenhuma formação disponível"}
+            </p>
+          )
         )}
       </CardContent>
     </Card>

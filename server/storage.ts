@@ -1923,10 +1923,12 @@ export class DatabaseStorage implements IStorage {
     // Portfolio items will be populated when tables are created
     const experiences = await this.getUserExperiences(userId);
 
+    const educations = await this.getUserEducations(user.id);
+
     return {
       ...user,
       experiences,
-      educations: [],
+      educations,
       certifications: [],
       projects: [],
       skills: [],
@@ -1994,9 +1996,62 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getUserEducations(userId: string): Promise<any[]> {
-    // Portfolio tables will be implemented later
-    return [];
+  async getUserEducations(userId: string): Promise<Education[]> {
+    try {
+      const userEducations = await db
+        .select()
+        .from(educations)
+        .where(eq(educations.userId, userId))
+        .orderBy(educations.startDate);
+      
+      return userEducations;
+    } catch (error) {
+      console.error("Error fetching user educations:", error);
+      return [];
+    }
+  }
+
+  async createEducation(educationData: InsertEducation): Promise<Education> {
+    try {
+      const [newEducation] = await db
+        .insert(educations)
+        .values(educationData)
+        .returning();
+      
+      return newEducation;
+    } catch (error) {
+      console.error("Error creating education:", error);
+      throw error;
+    }
+  }
+
+  async updateEducation(id: string, userId: string, educationData: Partial<InsertEducation>): Promise<Education | null> {
+    try {
+      const [updatedEducation] = await db
+        .update(educations)
+        .set(educationData)
+        .where(and(eq(educations.id, id), eq(educations.userId, userId)))
+        .returning();
+      
+      return updatedEducation || null;
+    } catch (error) {
+      console.error("Error updating education:", error);
+      throw error;
+    }
+  }
+
+  async deleteEducation(id: string, userId: string): Promise<boolean> {
+    try {
+      const [deletedEducation] = await db
+        .delete(educations)
+        .where(and(eq(educations.id, id), eq(educations.userId, userId)))
+        .returning();
+      
+      return !!deletedEducation;
+    } catch (error) {
+      console.error("Error deleting education:", error);
+      throw error;
+    }
   }
 
   async getUserCertifications(userId: string): Promise<any[]> {
