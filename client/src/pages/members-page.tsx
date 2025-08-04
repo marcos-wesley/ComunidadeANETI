@@ -79,11 +79,12 @@ export default function MembersPage(): JSX.Element {
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
-  const { data: members = [], isLoading } = useQuery<Member[]>({
+  const { data: members = [], isLoading, refetch } = useQuery<Member[]>({
     queryKey: ["/api/members", currentPage, limit, sortBy, stateFilter, planFilter, genderFilter, areaFilter, searchQuery],
     staleTime: 0,
-    cacheTime: 0, // Don't cache connection status data
+    gcTime: 0, // Don't cache connection status data
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
     queryFn: async () => {
       const params = new URLSearchParams({
         page: currentPage.toString(),
