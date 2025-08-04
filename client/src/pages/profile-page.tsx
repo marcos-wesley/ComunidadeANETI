@@ -2865,19 +2865,16 @@ function RecommendationsSection({ recommendations, isOwnProfile, profile, isConn
             <Star className="h-4 w-4" />
             <CardTitle className="text-base">Recomendações</CardTitle>
           </div>
-          {!isOwnProfile && (
-            <>
-              {(isConnected || profile?.isConnected) ? (
-                <Button variant="outline" size="sm" onClick={() => setIsAddingRecommendation(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Recomendar profissional
-                </Button>
-              ) : (
-                <div className="text-sm text-muted-foreground">
-                  Conecte-se para recomendar este profissional
-                </div>
-              )}
-            </>
+          {!isOwnProfile && isConnected && (
+            <Button variant="outline" size="sm" onClick={() => setIsAddingRecommendation(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Recomendar profissional
+            </Button>
+          )}
+          {!isOwnProfile && !isConnected && (
+            <div className="text-sm text-muted-foreground">
+              Conecte-se para recomendar este profissional
+            </div>
           )}
         </CardHeader>
         <CardContent>
