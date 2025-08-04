@@ -106,6 +106,10 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
   const createConversationMutation = useMutation({
     mutationFn: async (userId: string) => {
       const response = await apiRequest("POST", "/api/conversations/direct", { userId });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Falha ao criar conversa');
+      }
       return response.json();
     },
     onSuccess: (newConversation) => {
@@ -117,7 +121,7 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
     onError: (error: Error) => {
       toast({
         title: "Erro",
-        description: "Falha ao criar conversa",
+        description: error.message || "Falha ao criar conversa",
         variant: "destructive",
       });
     },
@@ -536,24 +540,35 @@ export function FloatingChat({ isOpen, onToggle }: FloatingChatProps) {
                   </div>
                 </ScrollArea>
 
-                <form onSubmit={handleSendMessage} className="p-2 border-t">
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Digite sua mensagem..."
-                      value={messageText}
-                      onChange={(e) => setMessageText(e.target.value)}
-                      className="flex-1 h-8 text-sm"
-                    />
-                    <Button
-                      type="submit"
-                      size="sm"
-                      className="h-8 w-8 p-0"
-                      disabled={!messageText.trim() || sendMessageMutation.isPending}
-                    >
-                      <Send className="h-3 w-3" />
-                    </Button>
+                {user?.planName === "Público" ? (
+                  <div className="p-2 border-t text-center">
+                    <p className="text-xs text-muted-foreground mb-1">
+                      Recursos de mensagem disponíveis apenas para membros com planos pagos.
+                    </p>
+                    <Badge variant="outline" className="text-xs">
+                      Plano Público
+                    </Badge>
                   </div>
-                </form>
+                ) : (
+                  <form onSubmit={handleSendMessage} className="p-2 border-t">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Digite sua mensagem..."
+                        value={messageText}
+                        onChange={(e) => setMessageText(e.target.value)}
+                        className="flex-1 h-8 text-sm"
+                      />
+                      <Button
+                        type="submit"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        disabled={!messageText.trim() || sendMessageMutation.isPending}
+                      >
+                        <Send className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </form>
+                )}
               </div>
             )}
           </CardContent>

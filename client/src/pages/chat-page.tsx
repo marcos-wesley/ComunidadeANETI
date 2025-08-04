@@ -244,6 +244,10 @@ export default function ChatPage() {
         : { name: data.name, description: data.description };
 
       const response = await apiRequest("POST", endpoint, payload);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Não foi possível criar a conversa');
+      }
       return response.json();
     },
     onSuccess: (newConversation) => {
@@ -263,7 +267,7 @@ export default function ChatPage() {
     onError: (error: any) => {
       toast({
         title: "Erro",
-        description: "Não foi possível criar a conversa",
+        description: error.message || "Não foi possível criar a conversa",
         variant: "destructive",
       });
     },
@@ -449,7 +453,12 @@ export default function ChatPage() {
             </h1>
             <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
               <DialogTrigger asChild>
-                <Button size="sm" className="h-8 w-8 p-0">
+                <Button 
+                  size="sm" 
+                  className="h-8 w-8 p-0"
+                  disabled={user?.planName === "Público"}
+                  title={user?.planName === "Público" ? "Recurso disponível apenas para planos pagos" : "Nova conversa"}
+                >
                   <Plus className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -817,28 +826,39 @@ export default function ChatPage() {
 
             {/* Message Input */}
             <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
-              <div className="flex items-end gap-2">
-                <Textarea
-                  placeholder="Digite sua mensagem..."
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  className="flex-1 resize-none"
-                  rows={1}
-                />
-                <Button 
-                  onClick={handleSendMessage}
-                  disabled={!messageText.trim() || sendMessageMutation.isPending}
-                  size="sm"
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
+              {user?.planName === "Público" ? (
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Recursos de mensagem disponíveis apenas para membros com planos Júnior, Pleno, Sênior, Honra ou Diretivo.
+                  </p>
+                  <Badge variant="outline" className="text-xs">
+                    Plano Público - Faça upgrade para enviar mensagens
+                  </Badge>
+                </div>
+              ) : (
+                <div className="flex items-end gap-2">
+                  <Textarea
+                    placeholder="Digite sua mensagem..."
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    className="flex-1 resize-none"
+                    rows={1}
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!messageText.trim() || sendMessageMutation.isPending}
+                    size="sm"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           </>
         ) : (

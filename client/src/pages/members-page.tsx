@@ -573,10 +573,12 @@ export default function MembersPage(): JSX.Element {
                             Ver Detalhes
                           </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Mail className="h-4 w-4 mr-2" />
-                          Enviar mensagem
-                        </DropdownMenuItem>
+                        {user?.planName !== "Público" && (
+                          <DropdownMenuItem>
+                            <Mail className="h-4 w-4 mr-2" />
+                            Enviar mensagem
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -640,10 +642,17 @@ export default function MembersPage(): JSX.Element {
 
                   <div className="flex gap-2 pt-3">
                     {member.connectionStatus === "connected" ? (
-                      <Button size="sm" variant="outline" className="flex-1">
-                        <Mail className="h-4 w-4 mr-1" />
-                        Mensagem
-                      </Button>
+                      user?.planName === "Público" ? (
+                        <Button size="sm" variant="outline" className="flex-1" disabled>
+                          <Mail className="h-4 w-4 mr-1" />
+                          Mensagem (Premium)
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="flex-1">
+                          <Mail className="h-4 w-4 mr-1" />
+                          Mensagem
+                        </Button>
+                      )
                     ) : member.connectionStatus === "pending" ? (
                       <Button size="sm" variant="outline" className="flex-1" disabled>
                         <UserX className="h-4 w-4 mr-1" />

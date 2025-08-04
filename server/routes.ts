@@ -1227,6 +1227,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "User ID is required" });
       }
 
+      // Check if user has a membership plan that allows messaging
+      const user = await storage.getUserById(req.user!.id);
+      if (!user || user.planName === "Público") {
+        return res.status(403).json({ 
+          error: "Apenas membros com planos Júnior, Pleno, Sênior, Honra ou Diretivo podem enviar mensagens." 
+        });
+      }
+
       const conversation = await storage.createDirectConversation(req.user!.id, userId);
       res.json(conversation);
     } catch (error) {
@@ -1241,6 +1249,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { name, description } = req.body;
       if (!name) {
         return res.status(400).json({ error: "Group name is required" });
+      }
+
+      // Check if user has a membership plan that allows messaging
+      const user = await storage.getUserById(req.user!.id);
+      if (!user || user.planName === "Público") {
+        return res.status(403).json({ 
+          error: "Apenas membros com planos Júnior, Pleno, Sênior, Honra ou Diretivo podem criar conversas." 
+        });
       }
 
       const conversation = await storage.createGroupConversation(req.user!.id, name, description);
@@ -1290,6 +1306,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { content, replyToId } = req.body;
       if (!content || content.trim() === '') {
         return res.status(400).json({ error: "Message content is required" });
+      }
+
+      // Check if user has a membership plan that allows messaging
+      const user = await storage.getUserById(req.user!.id);
+      if (!user || user.planName === "Público") {
+        return res.status(403).json({ 
+          error: "Apenas membros com planos Júnior, Pleno, Sênior, Honra ou Diretivo podem enviar mensagens." 
+        });
       }
 
       const message = await storage.sendMessage(req.params.id, req.user!.id, content.trim(), replyToId);
