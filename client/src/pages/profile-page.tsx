@@ -656,10 +656,18 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                 </div>
               )}
               
-              {/* Location */}
-              <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
-                <MapPin className="h-4 w-4" />
-                {profile.city}, {profile.state}
+              {/* Location and Area */}
+              <div className="flex flex-col gap-1 text-sm text-gray-500 dark:text-gray-400 mb-3">
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  {profile.city}, {profile.state}
+                </div>
+                {profile.area && (
+                  <div className="flex items-center gap-1">
+                    <Briefcase className="h-4 w-4" />
+                    {profile.area}
+                  </div>
+                )}
               </div>
 
               {/* Connections and Plan Badge */}
