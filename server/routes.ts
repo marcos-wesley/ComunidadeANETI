@@ -2547,6 +2547,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       delete updateData.id;
       delete updateData.createdAt;
       
+      // If planName is being updated, find the corresponding plan ID
+      if (updateData.planName) {
+        const plans = await storage.getMembershipPlans();
+        const matchingPlan = plans.find(plan => plan.name === updateData.planName);
+        if (matchingPlan) {
+          updateData.currentPlanId = matchingPlan.id;
+        } else {
+          // If no matching plan found, set to null (for custom plan names)
+          updateData.currentPlanId = null;
+        }
+      }
+      
       const updatedUser = await storage.updateUser(userId, {
         ...updateData,
         updatedAt: new Date()
