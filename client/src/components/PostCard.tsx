@@ -67,6 +67,7 @@ type Post = {
 interface PostCardProps {
   post: Post;
   onUpdate: () => void;
+  groupId?: string; // Para identificar se é post de grupo
 }
 
 type PostLike = {
@@ -84,10 +85,14 @@ type PostLike = {
   };
 };
 
-function LikesModalContent({ postId, likesCount }: { postId: string; likesCount: number }) {
+function LikesModalContent({ postId, likesCount, groupId }: { postId: string; likesCount: number; groupId?: string }) {
+  const likesEndpoint = groupId 
+    ? `/api/groups/${groupId}/posts/${postId}/likes`
+    : `/api/posts/${postId}/likes`;
+    
   const { data: likes = [], isLoading, error } = useQuery<PostLike[]>({
-    queryKey: ["/api/posts", postId, "likes"],
-    queryFn: () => apiRequest(`/api/posts/${postId}/likes`)
+    queryKey: groupId ? ["/api/groups", groupId, "posts", postId, "likes"] : ["/api/posts", postId, "likes"],
+    queryFn: () => apiRequest(likesEndpoint)
   });
 
   if (isLoading) {
@@ -171,7 +176,7 @@ function LikesModalContent({ postId, likesCount }: { postId: string; likesCount:
   );
 }
 
-export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
+export function PostCard({ post, onUpdate, groupId }: PostCardProps): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showComments, setShowComments] = useState(false);
@@ -417,7 +422,7 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
                   <DialogHeader className="pb-0">
                     <DialogTitle className="text-lg font-semibold">Reações</DialogTitle>
                   </DialogHeader>
-                  <LikesModalContent postId={post.id} likesCount={likesCount} />
+                  <LikesModalContent postId={post.id} likesCount={likesCount} groupId={groupId} />
                 </DialogContent>
               </Dialog>
             </div>
@@ -485,3 +490,5 @@ export function PostCard({ post, onUpdate }: PostCardProps): JSX.Element {
     </Card>
   );
 }
+
+export default PostCard;

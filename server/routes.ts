@@ -648,7 +648,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/posts/:postId/likes", isAuthenticated, async (req, res) => {
     try {
       const { postId } = req.params;
+      console.log("Fetching likes for post:", postId);
       const likes = await storage.getPostLikes(postId);
+      console.log("Public post likes found:", likes.length);
       res.json(likes);
     } catch (error) {
       console.error("Error fetching post likes:", error);
@@ -3382,6 +3384,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Failed to delete post" 
       });
+    }
+  });
+
+  // Get users who liked a group post
+  app.get("/api/groups/:groupId/posts/:postId/likes", isAuthenticated, async (req, res) => {
+    try {
+      const { groupId, postId } = req.params;
+      const userId = req.user.id;
+      
+      console.log("Fetching group post likes for:", postId, "group:", groupId, "user:", userId);
+      
+      // Check if user is member of this group
+      const membership = await storage.getGroupMembership(groupId, userId);
+      const isModerator = await storage.isGroupModerator(groupId, userId);
+      
+      console.log("Membership:", membership, "isModerator:", isModerator);
+      
+      if (!isModerator && (!membership || !membership.isActive || membership.status !== 'approved')) {
+        return res.status(403).json({
+          success: false,
+          message: "Você precisa ser membro do grupo para ver as curtidas"
+        });
+      }
+      
+      const likes = await storage.getGroupPostLikes(postId);
+      console.log("Group post likes found:", likes.length);
+      res.json(likes);
+    } catch (error) {
+      console.error("Error fetching group post likes:", error);
+      res.status(500).json({ error: "Internal server error" });
     }
   });
 

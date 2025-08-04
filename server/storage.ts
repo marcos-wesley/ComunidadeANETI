@@ -1248,6 +1248,32 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(likes.createdAt));
   }
 
+  async getGroupPostLikes(postId: string) {
+    return await db
+      .select({
+        id: groupPostLikes.id,
+        userId: groupPostLikes.userId,
+        postId: groupPostLikes.postId,
+        createdAt: groupPostLikes.createdAt,
+        user: {
+          id: users.id,
+          fullName: users.fullName,
+          username: users.username,
+          professionalArea: users.area,
+          position: users.position,
+          planName: sql<string>`CASE 
+            WHEN ${users.currentPlanId} IS NOT NULL THEN ${membershipPlans.name}
+            ELSE NULL
+          END`.as('planName')
+        }
+      })
+      .from(groupPostLikes)
+      .innerJoin(users, eq(groupPostLikes.userId, users.id))
+      .leftJoin(membershipPlans, eq(users.currentPlanId, membershipPlans.id))
+      .where(eq(groupPostLikes.postId, postId))
+      .orderBy(desc(groupPostLikes.createdAt));
+  }
+
   async getPostById(postId: string): Promise<Post | undefined> {
     const [post] = await db
       .select()
