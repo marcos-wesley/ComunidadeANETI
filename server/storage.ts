@@ -340,9 +340,46 @@ export class DatabaseStorage implements IStorage {
   async getUserById(id: string): Promise<User | undefined> {
     console.log("DatabaseStorage.getUserById called with id:", id);
     try {
-      const [user] = await db.select().from(users).where(eq(users.id, id));
-      console.log("User found:", user ? user.username : "not found");
-      return user || undefined;
+      const [userWithPlan] = await db
+        .select({
+          id: users.id,
+          username: users.username,
+          email: users.email,
+          password: users.password,
+          fullName: users.fullName,
+          city: users.city,
+          state: users.state,
+          area: users.area,
+          position: users.position,
+          company: users.company,
+          phone: users.phone,
+          linkedin: users.linkedin,
+          github: users.github,
+          website: users.website,
+          bio: users.bio,
+          gender: users.gender,
+          profilePicture: users.profilePicture,
+          coverPhoto: users.coverPhoto,
+          aboutMe: users.aboutMe,
+          professionalTitle: users.professionalTitle,
+          isApproved: users.isApproved,
+          isActive: users.isActive,
+          role: users.role,
+          currentPlanId: users.currentPlanId,
+          planName: membershipPlans.name,
+          stripeCustomerId: users.stripeCustomerId,
+          stripeSubscriptionId: users.stripeSubscriptionId,
+          subscriptionStatus: users.subscriptionStatus,
+          connectionsCount: users.connectionsCount,
+          createdAt: users.createdAt,
+          updatedAt: users.updatedAt,
+        })
+        .from(users)
+        .leftJoin(membershipPlans, eq(users.currentPlanId, membershipPlans.id))
+        .where(eq(users.id, id));
+      
+      console.log("User found:", userWithPlan ? userWithPlan.username : "not found");
+      return userWithPlan || undefined;
     } catch (error) {
       console.error("Error in getUserById:", error);
       return undefined;

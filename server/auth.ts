@@ -112,9 +112,21 @@ export function setupAuth(app: Express) {
     });
   });
 
-  app.get("/api/user", (req, res) => {
+  app.get("/api/user", async (req, res) => {
     if (!req.isAuthenticated()) return res.sendStatus(401);
-    res.json(req.user);
+    
+    try {
+      // Get user with plan information
+      const userWithPlan = await storage.getUserById(req.user!.id);
+      if (!userWithPlan) {
+        return res.sendStatus(404);
+      }
+      
+      res.json(userWithPlan);
+    } catch (error) {
+      console.error("Error fetching user with plan:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
   });
 
   app.get("/api/user/application", async (req, res) => {
