@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useParams, Link } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { ObjectUploader } from "@/components/ObjectUploader";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
+import { ObjectUploader } from "@/components/ObjectUploader";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -2134,7 +2134,7 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
     type: z.enum(["curso", "certificacao"]),
     credentialId: z.string().optional(),
     credentialUrl: z.string().url("URL inválida").optional().or(z.literal("")),
-    credentialImageUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+    credentialImageUrl: z.string().optional(),
     description: z.string().optional()
   });
 
@@ -2415,9 +2415,55 @@ function CertificationsSection({ certifications, isOwnProfile }: { certification
                   name="credentialImageUrl"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>URL da Imagem da Credencial</FormLabel>
+                      <FormLabel>Imagem da Credencial</FormLabel>
                       <FormControl>
-                        <Input placeholder="https://..." {...field} />
+                        <div className="space-y-2">
+                          {field.value && (
+                            <div className="relative">
+                              <img 
+                                src={field.value} 
+                                alt="Credencial" 
+                                className="w-full max-w-xs rounded border"
+                              />
+                              <Button
+                                type="button"
+                                variant="destructive"
+                                size="sm"
+                                className="absolute top-1 right-1"
+                                onClick={() => field.onChange('')}
+                              >
+                                ×
+                              </Button>
+                            </div>
+                          )}
+                          <ObjectUploader
+                            maxNumberOfFiles={1}
+                            maxFileSize={5242880} // 5MB
+                            onGetUploadParameters={async () => {
+                              const response = await fetch('/api/objects/upload', {
+                                method: 'POST',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                },
+                              });
+                              const data = await response.json();
+                              return {
+                                method: 'PUT' as const,
+                                url: data.uploadURL,
+                              };
+                            }}
+                            onComplete={(result) => {
+                              if (result.successful && result.successful[0]) {
+                                const uploadUrl = result.successful[0].uploadURL;
+                                // Convert the upload URL to our object URL format
+                                const objectPath = uploadUrl?.replace('https://storage.googleapis.com/', '/objects/');
+                                field.onChange(objectPath || uploadUrl);
+                              }
+                            }}
+                          >
+                            📸 Enviar Imagem da Credencial
+                          </ObjectUploader>
+                        </div>
                       </FormControl>
                       <FormMessage />
                     </FormItem>

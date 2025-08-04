@@ -1,165 +1,100 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
+import type { ReactNode } from "react";
+import Uppy from "@uppy/core";
+import { DashboardModal } from "@uppy/react";
+import "@uppy/core/dist/style.min.css";
+import "@uppy/dashboard/dist/style.min.css";
+import AwsS3 from "@uppy/aws-s3";
+import type { UploadResult } from "@uppy/core";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, FileText } from "lucide-react";
 
 interface ObjectUploaderProps {
-  getUploadParameters: () => Promise<{ method: string; url: string; }>;
-  onUploadComplete: (result: any) => void;
-  allowedFileTypes?: string[];
-  maxFiles?: number;
-  restrictions?: {
-    maxFileSize: number;
-  };
+  maxNumberOfFiles?: number;
+  maxFileSize?: number;
+  onGetUploadParameters: () => Promise<{
+    method: "PUT";
+    url: string;
+  }>;
+  onComplete?: (
+    result: UploadResult<Record<string, unknown>, Record<string, unknown>>
+  ) => void;
+  buttonClassName?: string;
+  children: ReactNode;
 }
 
 /**
- * Document upload component for PDF and image files
+ * A file upload component that renders as a button and provides a modal interface for
+ * file management.
+ * 
+ * Features:
+ * - Renders as a customizable button that opens a file upload modal
+ * - Provides a modal interface for:
+ *   - File selection
+ *   - File preview
+ *   - Upload progress tracking
+ *   - Upload status display
+ * 
+ * The component uses Uppy under the hood to handle all file upload functionality.
+ * All file management features are automatically handled by the Uppy dashboard modal.
+ * 
+ * @param props - Component props
+ * @param props.maxNumberOfFiles - Maximum number of files allowed to be uploaded
+ *   (default: 1)
+ * @param props.maxFileSize - Maximum file size in bytes (default: 10MB)
+ * @param props.onGetUploadParameters - Function to get upload parameters (method and URL).
+ *   Typically used to fetch a presigned URL from the backend server for direct-to-S3
+ *   uploads.
+ * @param props.onComplete - Callback function called when upload is complete. Typically
+ *   used to make post-upload API calls to update server state and set object ACL
+ *   policies.
+ * @param props.buttonClassName - Optional CSS class name for the button
+ * @param props.children - Content to be rendered inside the button
  */
 export function ObjectUploader({
-  getUploadParameters,
-  onUploadComplete,
-  allowedFileTypes = ['image/*'],
-  maxFiles = 1,
-  restrictions = { maxFileSize: 5 * 1024 * 1024 }
+  maxNumberOfFiles = 1,
+  maxFileSize = 10485760, // 10MB default
+  onGetUploadParameters,
+  onComplete,
+  buttonClassName,
+  children,
 }: ObjectUploaderProps) {
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleButtonClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (!files.length) return;
-
-    // Check if we can add more files
-    if (uploadedFiles.length + files.length > maxFiles) {
-      alert(`Máximo de ${maxFiles} arquivo(s) permitido(s)`);
-      return;
-    }
-
-    setIsUploading(true);
-    
-    try {
-      for (const file of files) {
-        // Check file size
-        const maxSize = restrictions?.maxFileSize || (5 * 1024 * 1024); // Default 5MB
-        if (file.size > maxSize) {
-          alert(`Arquivo ${file.name} é muito grande. Máximo: ${(maxSize / (1024 * 1024)).toFixed(1)}MB`);
-          continue;
-        }
-
-        // Check file type
-        const isValidType = allowedFileTypes?.some(type => {
-          if (type === 'image/*') return file.type.startsWith('image/');
-          if (type === 'application/pdf') return file.type === 'application/pdf';
-          return file.type === type;
-        });
-
-        if (!isValidType) {
-          alert(`Tipo de arquivo ${file.name} não permitido. Tipos aceitos: ${allowedFileTypes.join(', ')}`);
-          continue;
-        }
-
-        // Upload each file using the provided parameters
-        const { method, url } = await getUploadParameters();
-        
-        const formData = new FormData();
-        formData.append('image', file);
-        
-        const response = await fetch(url, {
-          method: method,
-          body: formData,
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        
-        // Add to uploaded files list
-        setUploadedFiles(prev => [...prev, result.fileName]);
-        
-        // Call completion callback
-        onUploadComplete(result);
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      alert('Erro no upload. Tente novamente.');
-    } finally {
-      setIsUploading(false);
-      // Reset the input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  };
+  const [showModal, setShowModal] = useState(false);
+  const [uppy] = useState(() =>
+    new Uppy({
+      restrictions: {
+        maxNumberOfFiles,
+        maxFileSize,
+        allowedFileTypes: ['image/*'], // Only allow images for credentials
+      },
+      autoProceed: false,
+    })
+      .use(AwsS3, {
+        shouldUseMultipart: false,
+        getUploadParameters: onGetUploadParameters,
+      })
+      .on("complete", (result) => {
+        onComplete?.(result);
+        setShowModal(false);
+      })
+  );
 
   return (
-    <div className="space-y-4">
-      <input
-        type="file"
-        ref={fileInputRef}
-        onChange={handleFileChange}
-        accept={allowedFileTypes?.join(',') || '*'}
-        multiple={maxFiles > 1}
-        style={{ display: 'none' }}
-      />
-      
-      <div 
-        className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary cursor-pointer transition-colors"
-        onClick={handleButtonClick}
+    <div>
+      <Button 
+        type="button"
+        onClick={() => setShowModal(true)} 
+        className={buttonClassName}
+        variant="outline"
       >
-        {isUploading ? (
-          <div className="flex flex-col items-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
-            <span className="text-sm text-muted-foreground">Enviando arquivo...</span>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            <div className="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-lg mb-3">
-              <Upload className="h-6 w-6 text-primary" />
-            </div>
-            <span className="text-sm font-medium text-gray-900 mb-1">
-              Clique para selecionar arquivo
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {allowedFileTypes?.includes('application/pdf') ? 'PDF ou imagem' : 'Imagem'} • 
-              Máx. {((restrictions?.maxFileSize || (5 * 1024 * 1024)) / (1024 * 1024)).toFixed(0)}MB •
-              {maxFiles > 1 ? ` Até ${maxFiles} arquivos` : ' 1 arquivo'}
-            </span>
-          </div>
-        )}
-      </div>
+        {children}
+      </Button>
 
-      {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
-          <span className="text-sm font-medium">Arquivos enviados:</span>
-          {uploadedFiles.map((file, index) => (
-            <div key={index} className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded">
-              <FileText className="h-4 w-4 text-green-600" />
-              <span className="text-sm text-green-700 flex-1">Arquivo {index + 1}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setUploadedFiles(prev => prev.filter((_, i) => i !== index));
-                }}
-                className="text-red-600 hover:text-red-700 h-6 w-6 p-0"
-              >
-                ×
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
+      <DashboardModal
+        uppy={uppy}
+        open={showModal}
+        onRequestClose={() => setShowModal(false)}
+        proudlyDisplayPoweredByUppy={false}
+      />
     </div>
   );
 }
