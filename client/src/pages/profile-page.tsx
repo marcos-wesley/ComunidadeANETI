@@ -605,13 +605,13 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             }}
           />
         )}
-        {/* Plan Badge Seal - Upper Right */}
+        {/* Plan Badge Seal - Bottom Right of Cover */}
         {profile.planBadgeImageUrl && (
-          <div className={`absolute top-4 z-30 ${isOwnProfile ? 'right-80' : 'right-4'}`}>
+          <div className="absolute bottom-4 right-4 z-30">
             <img 
               src={profile.planBadgeImageUrl}
               alt={`Selo ${profile.planName}`}
-              className="w-16 h-16 object-contain drop-shadow-lg"
+              className="w-24 h-24 object-contain drop-shadow-2xl"
               onError={(e) => {
                 console.error('Error loading badge image:', profile.planBadgeImageUrl);
                 e.currentTarget.style.display = 'none';
@@ -620,7 +620,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           </div>
         )}
         {isOwnProfile && (
-          <div className="absolute top-4 right-4 flex gap-2 z-20">
+          <div className="absolute top-4 left-4 flex gap-2 z-20">
             <CoverPhotoUploader />
             <Button 
               variant="secondary" 
