@@ -39,6 +39,7 @@ import {
   Bell,
   Shield,
   Crown,
+  Award,
   Calendar,
   MapPin,
   Mail
@@ -207,28 +208,26 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
       .slice(0, 2);
   };
 
-  const getPlanColor = (planName: string) => {
-    switch (planName) {
-      case "Diretivo":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "Premium":
-        return "bg-gold-100 text-gold-800 border-gold-200";
-      case "Básico":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+  const getPlanBadgeColor = (plan: string) => {
+    const planLower = plan?.toLowerCase() || '';
+    if (planLower.includes('honra')) return '#F59E0B';
+    if (planLower.includes('diretivo')) return '#DC2626';
+    if (planLower.includes('sênior') || planLower.includes('senior')) return '#8B5CF6';
+    if (planLower.includes('pleno')) return '#3B82F6';
+    if (planLower.includes('júnior') || planLower.includes('junior')) return '#10B981';
+    return '#6B7280';
+  };
+
+  const getPlanDisplayName = (plan: string) => {
+    return plan?.replace('Plano ', '') || '';
   };
 
   const getPlanIcon = (planName: string) => {
-    switch (planName) {
-      case "Diretivo":
-        return <Crown className="h-3 w-3" />;
-      case "Premium":
-        return <Shield className="h-3 w-3" />;
-      default:
-        return null;
-    }
+    const planLower = planName?.toLowerCase() || '';
+    if (planLower.includes('honra')) return <Award className="h-3 w-3" />;
+    if (planLower.includes('diretivo')) return <Crown className="h-3 w-3" />;
+    if (planLower.includes('sênior') || planLower.includes('senior')) return <Shield className="h-3 w-3" />;
+    return null;
   };
 
   return (
@@ -248,9 +247,13 @@ export function MemberModerationCard({ member, canModerate, isGroupContext, grou
                 <h4 className="font-semibold text-gray-900 dark:text-white">
                   {member.fullName}
                 </h4>
-                <Badge variant="outline" className={`text-xs ${getPlanColor(member.planName)}`}>
+                <Badge 
+                  variant="outline" 
+                  className="text-xs font-medium"
+                  style={{ backgroundColor: getPlanBadgeColor(member.planName), color: 'white', border: 'none' }}
+                >
                   {getPlanIcon(member.planName)}
-                  <span className="ml-1">{member.planName}</span>
+                  <span className="ml-1">{getPlanDisplayName(member.planName)}</span>
                 </Badge>
                 {!member.isActive && (
                   <Badge variant="destructive" className="text-xs">

@@ -360,13 +360,27 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
   };
 
   const getPlanBadgeVariant = (plan: string) => {
-    switch (plan?.toLowerCase()) {
-      case 'honra': return 'default';
-      case 'sênior': return 'secondary';
-      case 'pleno': return 'outline';
-      case 'júnior': return 'outline';
-      default: return 'outline';
-    }
+    const planLower = plan?.toLowerCase() || '';
+    if (planLower.includes('honra')) return 'default';
+    if (planLower.includes('diretivo')) return 'default';
+    if (planLower.includes('sênior') || planLower.includes('senior')) return 'secondary';
+    if (planLower.includes('pleno')) return 'outline';
+    if (planLower.includes('júnior') || planLower.includes('junior')) return 'outline';
+    return 'outline';
+  };
+
+  const getPlanBadgeColor = (plan: string) => {
+    const planLower = plan?.toLowerCase() || '';
+    if (planLower.includes('honra')) return '#F59E0B';
+    if (planLower.includes('diretivo')) return '#DC2626';
+    if (planLower.includes('sênior') || planLower.includes('senior')) return '#8B5CF6';
+    if (planLower.includes('pleno')) return '#3B82F6';
+    if (planLower.includes('júnior') || planLower.includes('junior')) return '#10B981';
+    return '#6B7280';
+  };
+
+  const getPlanDisplayName = (plan: string) => {
+    return plan?.replace('Plano ', '') || '';
   };
 
   // Get current position from most recent experience
@@ -716,10 +730,10 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                 {profile.planName && (
                   <Badge 
                     variant={getPlanBadgeVariant(profile.planName)} 
-                    className="text-xs"
-                    style={profile.planBadgeColor ? { backgroundColor: profile.planBadgeColor, color: 'white' } : {}}
+                    className="text-xs font-medium"
+                    style={{ backgroundColor: getPlanBadgeColor(profile.planName), color: 'white', border: 'none' }}
                   >
-                    Membro {profile.planName}
+                    {getPlanDisplayName(profile.planName)}
                   </Badge>
                 )}
               </div>
