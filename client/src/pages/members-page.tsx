@@ -670,30 +670,30 @@ export default function MembersPage(): JSX.Element {
                         <Button 
                           size="sm" 
                           variant="default" 
-                          className="flex-1 bg-green-600 hover:bg-green-700"
+                          className="flex-1 bg-green-600 hover:bg-green-700 px-2"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             acceptConnectionMutation.mutate(member.connectionId!);
                           }}
                           disabled={!canConnect}
+                          title="Aceitar conexão"
                         >
-                          <Check className="h-3 w-3 mr-1" />
-                          Aceitar
+                          <Check className="h-4 w-4" />
                         </Button>
                         <Button 
                           size="sm" 
                           variant="outline" 
-                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50"
+                          className="flex-1 border-red-300 text-red-600 hover:bg-red-50 px-2"
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             rejectConnectionMutation.mutate(member.connectionId!);
                           }}
                           disabled={!canConnect}
+                          title="Recusar conexão"
                         >
-                          <X className="h-3 w-3 mr-1" />
-                          Recusar
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : (
