@@ -39,7 +39,12 @@ import {
   AlertTriangle,
   Info,
   Filter,
-  X
+  X,
+  Search,
+  CreditCard,
+  ChevronLeft,
+  ChevronRight,
+  Download
 } from "lucide-react";
 import { EditMemberModal } from "@/components/EditMemberModal";
 import { RejectApplicationModal } from "@/components/RejectApplicationModal";
@@ -51,6 +56,16 @@ import AdminMembershipPlans from "./admin-membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface AdminUser {
   id: string;
@@ -61,6 +76,25 @@ interface AdminUser {
 interface AdminAuthResponse {
   isAuthenticated: boolean;
   user?: AdminUser;
+}
+
+interface Order {
+  id: string;
+  orderCode: string;
+  userName?: string;
+  planName?: string;
+  total: number;
+  status: string;
+  paymentType: string;
+  cardType?: string;
+  accountNumber?: string;
+  createdAt: string;
+  timestamp?: string;
+  billingName?: string;
+  billingCity?: string;
+  billingState?: string;
+  gateway?: string;
+  notes?: string;
 }
 
 interface AdminStats {
@@ -151,7 +185,7 @@ interface AdminStats {
 export default function AdminPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members' | 'groups' | 'membership-plans'>('overview');
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'applications' | 'members' | 'orders' | 'plan-changes' | 'groups' | 'membership-plans'>('overview');
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -188,6 +222,14 @@ export default function AdminPage() {
     state: 'all',
     area: 'all',
     timeRange: '30' // days
+  });
+
+  // Orders filters state
+  const [orderFilters, setOrderFilters] = useState({
+    search: '',
+    status: '',
+    page: 0,
+    limit: 25
   });
 
   // Check admin authentication
@@ -271,6 +313,22 @@ export default function AdminPage() {
         credentials: "include",
       });
       if (!response.ok) throw new Error("Failed to fetch members");
+      return response.json();
+    },
+    enabled: !!adminUser,
+    retry: 1,
+  });
+
+  // Fetch orders with filters
+  const { data: orders, isLoading: loadingOrders, error: ordersError } = useQuery<Order[]>({
+    queryKey: ["/api/admin/orders", orderFilters],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/orders?limit=${orderFilters.limit}&offset=${orderFilters.page * orderFilters.limit}`, {
+        credentials: "include"
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
       return response.json();
     },
     enabled: !!adminUser,
@@ -397,6 +455,23 @@ export default function AdminPage() {
   };
 
 
+
+  // Helper functions and computed values for orders
+  const filteredOrders = orders?.filter(order => {
+    const matchesSearch = !orderFilters.search || 
+      order.orderCode.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
+      order.userName?.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
+      order.planName?.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
+      order.billingName?.toLowerCase().includes(orderFilters.search.toLowerCase());
+    
+    const matchesStatus = !orderFilters.status || orderFilters.status === "all" || order.status === orderFilters.status;
+    
+    return matchesSearch && matchesStatus;
+  }) || [];
+
+  const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
+  const completedOrders = filteredOrders.filter(order => order.status === 'completed').length;
+  const freeOrders = filteredOrders.filter(order => order.status === 'free').length;
 
   // Loading state
   if (isLoading) {
@@ -2265,28 +2340,200 @@ export default function AdminPage() {
           </TabsContent>
 
           <TabsContent value="orders" className="mt-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Receipt className="h-5 w-5" />
-                  Gerenciamento de Pedidos
-                </CardTitle>
-                <CardDescription>
-                  Visualize todos os pedidos e histórico de pagamentos dos membros
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center">
-                  <Button 
-                    onClick={() => window.open('/admin/orders', '_blank')}
-                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Receipt className="h-4 w-4" />
-                    Ver Todos os Pedidos
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
+                    <Receipt className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{filteredOrders.length}</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pedidos Pagos</CardTitle>
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{completedOrders}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pedidos Gratuitos</CardTitle>
+                    <Badge className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{freeOrders}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {totalRevenue ? new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(totalRevenue / 100) : 'R$ 0,00'}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Filters */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="h-5 w-5" />
+                    Filtros
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Buscar por código, usuário, plano..."
+                          value={orderFilters.search}
+                          onChange={(e) => setOrderFilters(prev => ({ ...prev, search: e.target.value }))}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={orderFilters.status || undefined} onValueChange={(value) => setOrderFilters(prev => ({ ...prev, status: value || "" }))}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Filtrar por status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os status</SelectItem>
+                        <SelectItem value="completed">Concluído</SelectItem>
+                        <SelectItem value="free">Gratuito</SelectItem>
+                        <SelectItem value="pending">Pendente</SelectItem>
+                        <SelectItem value="failed">Falhou</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Orders Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Lista de Pedidos</CardTitle>
+                  <CardDescription>
+                    {loadingOrders ? "Carregando..." : `${filteredOrders.length} pedidos encontrados`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {loadingOrders ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-muted-foreground">Carregando pedidos...</div>
+                    </div>
+                  ) : ordersError ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-red-600">Erro ao carregar pedidos</div>
+                    </div>
+                  ) : filteredOrders.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-muted-foreground">Nenhum pedido encontrado</div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Código</TableHead>
+                            <TableHead>Usuário</TableHead>
+                            <TableHead>Plano</TableHead>
+                            <TableHead>Valor</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Pagamento</TableHead>
+                            <TableHead>Data</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredOrders.map((order) => (
+                            <TableRow key={order.id}>
+                              <TableCell className="font-mono text-sm">
+                                {order.orderCode}
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  {order.userName && (
+                                    <div className="font-medium">{order.userName}</div>
+                                  )}
+                                  {order.billingName && order.billingName !== order.userName && (
+                                    <div className="text-sm text-muted-foreground">{order.billingName}</div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {order.planName || 'N/A'}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="font-medium">
+                                  {new Intl.NumberFormat('pt-BR', {
+                                    style: 'currency',
+                                    currency: 'BRL'
+                                  }).format(order.total / 100)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={`border ${
+                                  order.status === 'completed' ? 'bg-green-100 text-green-800 border-green-200' :
+                                  order.status === 'free' ? 'bg-blue-100 text-blue-800 border-blue-200' :
+                                  order.status === 'pending' ? 'bg-yellow-100 text-yellow-800 border-yellow-200' :
+                                  order.status === 'failed' ? 'bg-red-100 text-red-800 border-red-200' :
+                                  'bg-gray-100 text-gray-800 border-gray-200'
+                                }`}>
+                                  {order.status === 'completed' ? 'Concluído' :
+                                   order.status === 'free' ? 'Gratuito' :
+                                   order.status === 'pending' ? 'Pendente' :
+                                   order.status === 'failed' ? 'Falhou' :
+                                   order.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {order.paymentType && (
+                                    <div className="font-medium capitalize">{order.paymentType}</div>
+                                  )}
+                                  {order.cardType && (
+                                    <div className="text-muted-foreground">{order.cardType}</div>
+                                  )}
+                                  {order.gateway && (
+                                    <div className="text-muted-foreground text-xs">{order.gateway}</div>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {order.createdAt ? format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: ptBR }) : 
+                                   order.timestamp ? format(new Date(order.timestamp), "dd/MM/yyyy HH:mm", { locale: ptBR }) : 
+                                   'N/A'}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           <TabsContent value="plan-changes" className="mt-6">
