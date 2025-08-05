@@ -2188,8 +2188,6 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  if (languages.length === 0 && !isOwnProfile) return null;
-
   const form = useForm<LanguageFormData>({
     resolver: zodResolver(languageSchema),
     defaultValues: {
@@ -2197,6 +2195,8 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
       proficiency: 'Nível básico'
     }
   });
+
+  if (languages.length === 0 && !isOwnProfile) return null;
 
   // Mutation to add/update language
   const languageMutation = useMutation({

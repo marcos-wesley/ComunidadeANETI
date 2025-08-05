@@ -1949,6 +1949,7 @@ export class DatabaseStorage implements IStorage {
     // Get plan information if user has a plan
     let planBadgeImageUrl = null;
     let planBadgeColor = null;
+    console.log("User currentPlanId:", user.currentPlanId);
     if (user.currentPlanId) {
       try {
         const plan = await db
@@ -1960,9 +1961,11 @@ export class DatabaseStorage implements IStorage {
           .where(eq(membershipPlans.id, user.currentPlanId))
           .limit(1);
         
+        console.log("Plan query result:", plan);
         if (plan.length > 0) {
           planBadgeImageUrl = plan[0].badgeImageUrl;
           planBadgeColor = plan[0].badgeColor;
+          console.log("Badge data:", { planBadgeImageUrl, planBadgeColor });
         }
       } catch (error) {
         console.error("Error fetching plan badge info:", error);
