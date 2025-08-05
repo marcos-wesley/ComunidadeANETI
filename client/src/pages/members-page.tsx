@@ -544,11 +544,25 @@ export default function MembersPage(): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredMembers.map((member) => (
               <Card key={member.id} className="hover:shadow-lg transition-all duration-200 group">
-                <CardHeader className="relative pb-4">
-                  <div className="absolute top-4 right-4">
+                <CardHeader className="relative pb-4 overflow-hidden">
+                  {/* Cover Photo Background */}
+                  <div className="absolute inset-0 h-24">
+                    {member.coverPhoto ? (
+                      <img 
+                        src={member.coverPhoto} 
+                        alt={`Capa de ${member.fullName}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-800"></div>
+                    )}
+                    <div className="absolute inset-0 bg-black/20"></div>
+                  </div>
+
+                  <div className="absolute top-4 right-4 z-10">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-white hover:bg-white/20">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -569,36 +583,38 @@ export default function MembersPage(): JSX.Element {
                     </DropdownMenu>
                   </div>
 
-                  <div className="relative h-20 w-20 mx-auto">
-                    {member.profilePicture ? (
-                      <img 
-                        src={member.profilePicture} 
-                        alt={member.fullName}
-                        className="h-20 w-20 rounded-full border-4 border-background shadow-lg object-cover"
-                      />
-                    ) : (
-                      <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
-                          {getInitials(member.fullName)}
-                        </AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
+                  <div className="relative z-10 mt-8">
+                    <div className="relative h-20 w-20 mx-auto">
+                      {member.profilePicture ? (
+                        <img 
+                          src={member.profilePicture} 
+                          alt={member.fullName}
+                          className="h-20 w-20 rounded-full border-4 border-white shadow-lg object-cover"
+                        />
+                      ) : (
+                        <Avatar className="h-20 w-20 border-4 border-white shadow-lg">
+                          <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
+                            {getInitials(member.fullName)}
+                          </AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
                   
-                  <div className="text-center mt-3">
-                    <Link href={`/profile/${member.id}`}>
-                      <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
-                    </Link>
-                    <p className="text-sm text-muted-foreground">@{member.username}</p>
-                    
-                    {member.planName && (
-                      <Badge 
-                        variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
-                        className="mt-2"
-                      >
-                        {member.planName}
-                      </Badge>
-                    )}
+                    <div className="text-center mt-3">
+                      <Link href={`/profile/${member.id}`}>
+                        <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer text-white">{member.fullName}</CardTitle>
+                      </Link>
+                      <p className="text-sm text-white/80">@{member.username}</p>
+                      
+                      {member.planName && (
+                        <Badge 
+                          variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
+                          className="mt-2"
+                        >
+                          {member.planName}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
 
