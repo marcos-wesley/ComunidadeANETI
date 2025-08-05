@@ -77,6 +77,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ uploadURL });
   });
 
+  // Get upload URL for registration documents (no auth required)
+  app.post("/api/documents/upload-registration-url", async (req, res) => {
+    try {
+      const objectStorageService = new ObjectStorageService();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      res.json({ uploadURL });
+    } catch (error) {
+      console.error("Error getting upload URL for registration:", error);
+      res.status(500).json({ error: "Failed to get upload URL" });
+    }
+  });
+
   // Temporary file upload during registration using multer
   const registrationUpload = multer({ 
     dest: 'public/uploads/temp/',

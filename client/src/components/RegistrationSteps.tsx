@@ -250,10 +250,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     return true;
   };
 
-  // Get upload parameters from object storage service
+  // Get upload parameters from object storage service for registration
   const handleGetUploadParameters = async () => {
     try {
-      const response = await apiRequest("POST", "/api/documents/upload");
+      const response = await apiRequest("POST", "/api/documents/upload-registration-url");
       return {
         method: "PUT" as const,
         url: response.uploadURL,
