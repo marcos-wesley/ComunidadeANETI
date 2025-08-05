@@ -2,9 +2,18 @@
 
 This is a membership platform for ANETI (Associação Nacional dos Especialistas em TI) - a Brazilian IT professionals association. The platform provides member registration, payment processing, document management, and administrative approval workflows. Built as a full-stack web application with React frontend and Express backend, it features membership tier management, document upload capabilities, and admin dashboard functionality.
 
+## Mobile App Status (August 5, 2025)
+**SUSPENDED DUE TO EXPO INSTABILITY**
+- React Native mobile app development attempted but abandoned due to persistent Expo tunnel connection issues
+- Expo server requires constant restarts and QR code rescanning, making development impractical
+- User decision: Focus on web platform stability instead of mobile development
+- Mobile folder remains but is not actively maintained
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language.
+Mobile development: User frustrated with Expo instability - focus on web platform only.
+Deployment preference: Prioritize stable web application over mobile features.
 
 # System Architecture
 
