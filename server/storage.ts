@@ -1946,6 +1946,29 @@ export class DatabaseStorage implements IStorage {
     const user = await this.getUser(userId);
     if (!user) return null;
 
+    // Get plan information if user has a plan
+    let planBadgeImageUrl = null;
+    let planBadgeColor = null;
+    if (user.currentPlanId) {
+      try {
+        const plan = await db
+          .select({
+            badgeImageUrl: membershipPlans.badgeImageUrl,
+            badgeColor: membershipPlans.badgeColor
+          })
+          .from(membershipPlans)
+          .where(eq(membershipPlans.id, user.currentPlanId))
+          .limit(1);
+        
+        if (plan.length > 0) {
+          planBadgeImageUrl = plan[0].badgeImageUrl;
+          planBadgeColor = plan[0].badgeColor;
+        }
+      } catch (error) {
+        console.error("Error fetching plan badge info:", error);
+      }
+    }
+
     // Get all profile data including certifications
     const experiences = await this.getUserExperiences(userId);
     const educations = await this.getUserEducations(user.id);
@@ -1958,6 +1981,8 @@ export class DatabaseStorage implements IStorage {
 
     return {
       ...user,
+      planBadgeImageUrl,
+      planBadgeColor,
       experiences,
       educations,
       certifications,

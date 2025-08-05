@@ -107,6 +107,8 @@ type UserProfile = {
   aboutMe?: string;
   professionalTitle?: string;
   planName?: string;
+  planBadgeImageUrl?: string;
+  planBadgeColor?: string;
   createdAt: string;
   connectionsCount?: number;
   experiences: Experience[];
@@ -681,9 +683,25 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                   }
                 </span>
                 {profile.planName && (
-                  <Badge variant={getPlanBadgeVariant(profile.planName)} className="text-xs">
-                    Membro {profile.planName}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {profile.planBadgeImageUrl && (
+                      <img 
+                        src={`http://localhost:5000${profile.planBadgeImageUrl}`}
+                        alt={`Selo ${profile.planName}`}
+                        className="w-6 h-6 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <Badge 
+                      variant={getPlanBadgeVariant(profile.planName)} 
+                      className="text-xs"
+                      style={profile.planBadgeColor ? { backgroundColor: profile.planBadgeColor, color: 'white' } : {}}
+                    >
+                      Membro {profile.planName}
+                    </Badge>
+                  </div>
                 )}
               </div>
 
