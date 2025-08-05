@@ -152,10 +152,21 @@ export function ConnectionBell() {
             <p className="mt-2 text-sm">Carregando pedidos...</p>
           </div>
         ) : pendingRequests.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-            <p className="text-sm">Nenhum pedido de conexão pendente</p>
-          </div>
+          <>
+            <div className="p-4 text-center text-gray-500">
+              <Users className="h-8 w-8 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm">Nenhum pedido de conexão pendente</p>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/connections">
+                <div className="flex items-center justify-center gap-2 py-2 text-blue-600 hover:text-blue-700 cursor-pointer w-full">
+                  <span className="text-sm font-medium">Ver página de conexões</span>
+                  <ExternalLink className="h-4 w-4" />
+                </div>
+              </Link>
+            </DropdownMenuItem>
+          </>
         ) : (
           <>
             {pendingRequests.slice(0, 10).map((request: ConnectionRequest) => (
