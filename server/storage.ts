@@ -2153,8 +2153,39 @@ export class DatabaseStorage implements IStorage {
     };
   } = {}) {
     const { page = 1, limit = 20, sortBy = 'recent', filters = {} } = options;
-    // Get all members except current user
-    // Include users who are directly approved OR have approved applications
+    // Build the base query conditions
+    const baseConditions = and(
+      eq(users.isActive, true),
+      ne(users.id, currentUserId),
+      // Include users who are directly approved (migrated users have isApproved = true)
+      eq(users.isApproved, true),
+      // Apply filters
+      filters.state ? eq(users.state, filters.state) : undefined,
+      filters.plan ? or(
+        eq(membershipPlans.name, filters.plan),
+        eq(users.planName, filters.plan)
+      ) : undefined,
+      filters.gender ? eq(users.gender, filters.gender) : undefined,
+      filters.area ? like(users.area, `%${filters.area}%`) : undefined,
+      filters.search ? or(
+        ilike(users.fullName, `%${filters.search}%`),
+        ilike(users.area, `%${filters.search}%`),
+        ilike(users.position, `%${filters.search}%`),
+        ilike(users.username, `%${filters.search}%`)
+      ) : undefined
+    );
+
+    // Get total count with same filters
+    const [totalResult] = await db
+      .select({ count: count() })
+      .from(users)
+      .leftJoin(memberApplications, eq(users.id, memberApplications.userId))
+      .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
+      .where(baseConditions);
+
+    const totalMembers = totalResult?.count || 0;
+
+    // Get paginated members
     const allMembers = await db
       .select({
         id: users.id,
@@ -2173,26 +2204,7 @@ export class DatabaseStorage implements IStorage {
       .from(users)
       .leftJoin(memberApplications, eq(users.id, memberApplications.userId))
       .leftJoin(membershipPlans, eq(memberApplications.planId, membershipPlans.id))
-      .where(and(
-        eq(users.isActive, true),
-        ne(users.id, currentUserId),
-        // Include users who are directly approved (migrated users have isApproved = true)
-        eq(users.isApproved, true),
-        // Apply filters
-        filters.state ? eq(users.state, filters.state) : undefined,
-        filters.plan ? or(
-          eq(membershipPlans.name, filters.plan),
-          eq(users.planName, filters.plan)
-        ) : undefined,
-        filters.gender ? eq(users.gender, filters.gender) : undefined,
-        filters.area ? like(users.area, `%${filters.area}%`) : undefined,
-        filters.search ? or(
-          ilike(users.fullName, `%${filters.search}%`),
-          ilike(users.area, `%${filters.search}%`),
-          ilike(users.position, `%${filters.search}%`),
-          ilike(users.username, `%${filters.search}%`)
-        ) : undefined
-      ))
+      .where(baseConditions)
       .orderBy(
         sortBy === 'alphabetical' ? asc(users.fullName) :
         sortBy === 'newest' ? desc(users.createdAt) :
@@ -2205,7 +2217,7 @@ export class DatabaseStorage implements IStorage {
     const memberIds = allMembers.map(m => m.id);
     
     if (memberIds.length === 0) {
-      return [];
+      return { members: [], total: totalMembers };
     }
 
     const userConnections = await db
@@ -2263,7 +2275,7 @@ export class DatabaseStorage implements IStorage {
       .groupBy(follows.followingId);
 
     // Map the data together
-    return allMembers.map(member => {
+    const membersWithStatus = allMembers.map(member => {
       const connection = userConnections.find(c => 
         (c.requesterId === currentUserId && c.receiverId === member.id) ||
         (c.receiverId === currentUserId && c.requesterId === member.id)
@@ -2302,6 +2314,14 @@ export class DatabaseStorage implements IStorage {
         followingCount: 0, // Temporary for now
       };
     });
+
+    return {
+      members: membersWithStatus,
+      total: totalMembers,
+      page,
+      limit,
+      totalPages: Math.ceil(totalMembers / limit)
+    };
   }
 
   async createFollow(followerId: string, followingId: string) {

@@ -59,6 +59,14 @@ type Member = {
   professionalTitle?: string;
 };
 
+type MembersResponse = {
+  members: Member[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 export default function MembersPage(): JSX.Element {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -82,10 +90,10 @@ export default function MembersPage(): JSX.Element {
     return () => clearTimeout(timeoutId);
   }, [searchInput]);
 
-  const { data: members = [], isLoading } = useQuery<Member[]>({
+  const { data: membersData, isLoading } = useQuery<MembersResponse>({
     queryKey: ["/api/members", currentPage, limit, sortBy, stateFilter, planFilter, genderFilter, areaFilter, searchQuery],
     staleTime: 0,
-    cacheTime: 0, // Don't cache connection status data
+    gcTime: 0, // Don't cache connection status data
     refetchOnMount: true,
     queryFn: async () => {
       const params = new URLSearchParams({
@@ -111,6 +119,9 @@ export default function MembersPage(): JSX.Element {
     },
   });
 
+  const members = membersData?.members || [];
+  const totalMembers = membersData?.total || 0;
+
   // Check if user can connect/follow (Junior, Pleno, Sênior only)
   const canConnect = user?.planName && ['Júnior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'].includes(user.planName);
   
@@ -125,16 +136,18 @@ export default function MembersPage(): JSX.Element {
   const filteredMembers = members;
 
   // Get unique values for filters from all members (for filter dropdowns)
-  const { data: allMembersForFilters = [] } = useQuery<Member[]>({
+  const { data: allMembersDataForFilters } = useQuery<MembersResponse>({
     queryKey: ["/api/members-for-filters"],
     queryFn: async () => {
       const res = await fetch('/api/members?limit=1000', {
         credentials: 'include',
       });
-      if (!res.ok) return [];
+      if (!res.ok) throw new Error('Failed to fetch filter data');
       return res.json();
     },
   });
+
+  const allMembersForFilters = allMembersDataForFilters?.members || [];
 
   const states = Array.from(new Set(allMembersForFilters.map(m => m.state))).sort();
   const plans = Array.from(new Set(allMembersForFilters.map(m => m.planName).filter(Boolean))).sort();
@@ -436,7 +449,7 @@ export default function MembersPage(): JSX.Element {
                 Profissionais Disponíveis
               </h2>
               <Badge variant="secondary" className="text-sm">
-                {filteredMembers.length} {filteredMembers.length === 1 ? 'membro' : 'membros'}
+                {totalMembers} {totalMembers === 1 ? 'membro' : 'membros'}
               </Badge>
             </div>
           </div>
@@ -451,7 +464,7 @@ export default function MembersPage(): JSX.Element {
             </div>
             
             <div className="flex flex-wrap gap-3">
-              <Select value={sortBy} onValueChange={(value: 'recent' | 'newest' | 'alphabetical') => setSortBy(value)}>
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'recent' | 'newest' | 'alphabetical')}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="Ordenar por" />
                 </SelectTrigger>
@@ -532,7 +545,7 @@ export default function MembersPage(): JSX.Element {
         </Card>
 
         {/* Members Grid */}
-        {filteredMembers.length === 0 && !isLoading ? (
+        {members.length === 0 && !isLoading ? (
           <div className="text-center py-12">
             <Users className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold mb-2">Nenhum membro encontrado</h3>
@@ -542,7 +555,7 @@ export default function MembersPage(): JSX.Element {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredMembers.map((member) => (
+            {members.map((member) => (
               <Card key={member.id} className="hover:shadow-lg transition-all duration-200 group">
                 <CardHeader className="relative pb-4 overflow-hidden">
                   {/* Cover Photo Background */}
