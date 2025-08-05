@@ -229,7 +229,7 @@ export default function AdminPage() {
     search: '',
     status: '',
     page: 0,
-    limit: 25
+    limit: 100 // Increased from 25 to show more orders
   });
 
   // Check admin authentication
@@ -2475,7 +2475,7 @@ export default function AdminPage() {
                     <div className="space-y-1">
                       <CardTitle>Lista de Pedidos</CardTitle>
                       <CardDescription>
-                        {loadingOrders ? "Carregando..." : `${filteredOrders.length} pedidos encontrados`}
+                        {loadingOrders ? "Carregando..." : `${filteredOrders.length} pedidos na página atual • Total: ~2.308 pedidos importados`}
                       </CardDescription>
                     </div>
                     <Button
@@ -2592,6 +2592,36 @@ export default function AdminPage() {
                           ))}
                         </TableBody>
                       </Table>
+                      
+                      {/* Pagination Controls */}
+                      <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                        <div className="text-sm text-muted-foreground">
+                          Mostrando {orderFilters.page * orderFilters.limit + 1} - {Math.min((orderFilters.page + 1) * orderFilters.limit, filteredOrders.length)} de ~2.308 pedidos
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOrderFilters(prev => ({ ...prev, page: Math.max(0, prev.page - 1) }))}
+                            disabled={orderFilters.page === 0}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                            Anterior
+                          </Button>
+                          <div className="text-sm px-3 py-1 bg-muted rounded">
+                            Página {orderFilters.page + 1}
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOrderFilters(prev => ({ ...prev, page: prev.page + 1 }))}
+                            disabled={filteredOrders.length < orderFilters.limit}
+                          >
+                            Próximo
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </CardContent>
