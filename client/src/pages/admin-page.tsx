@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -441,7 +441,7 @@ export default function AdminPage() {
           </div>
         </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -453,6 +453,10 @@ export default function AdminPage() {
             <TabsTrigger value="members" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Membros</span>
+            </TabsTrigger>
+            <TabsTrigger value="orders" className="flex items-center space-x-2">
+              <Receipt className="h-4 w-4" />
+              <span>Pedidos</span>
             </TabsTrigger>
             <TabsTrigger value="plan-changes" className="flex items-center space-x-2">
               <Receipt className="h-4 w-4" />
@@ -2256,6 +2260,31 @@ export default function AdminPage() {
                     )}
                   </>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="orders" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Receipt className="h-5 w-5" />
+                  Gerenciamento de Pedidos
+                </CardTitle>
+                <CardDescription>
+                  Visualize todos os pedidos e histórico de pagamentos dos membros
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-center">
+                  <Button 
+                    onClick={() => window.open('/admin/orders', '_blank')}
+                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Receipt className="h-4 w-4" />
+                    Ver Todos os Pedidos
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

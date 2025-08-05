@@ -5086,6 +5086,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Orders Routes
+  
+  // Get user's order history
+  app.get("/api/user/orders", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const orders = await storage.getUserOrders(userId);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching user orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
+  // Admin: Get all orders with pagination
+  app.get("/api/admin/orders", isAdminAuthenticated, async (req, res) => {
+    try {
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      
+      const orders = await storage.getAllOrders(limit, offset);
+      res.json(orders);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ error: "Failed to fetch orders" });
+    }
+  });
+
   // Object Storage routes for image uploads
   app.post("/api/objects/upload", isAuthenticated, async (req, res) => {
     try {

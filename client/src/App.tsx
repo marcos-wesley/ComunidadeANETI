@@ -13,6 +13,7 @@ import RegisterPage from "./pages/register-page";
 import AdminPage from "./pages/admin-page";
 import AdminLogin from "./pages/admin-login";
 import AdminApplicationDetails from "./pages/admin-application-details";
+import AdminOrdersPage from "./pages/admin-orders";
 import PendingApprovalDashboard from "./pages/pending-approval-dashboard";
 import ApplicationAppeal from "./pages/application-appeal";
 import SocialFeedPage from "./pages/social-feed-page";
@@ -84,6 +85,7 @@ function App() {
             {/* Admin routes - outside main layout */}
             <Route path="/admin/login" component={AdminLogin} />
             <Route path="/admin/applications/:id" component={AdminApplicationDetails} />
+            <Route path="/admin/orders" component={AdminOrdersPage} />
             <Route path="/admin" component={AdminPage} />
             {/* Pending approval dashboard - outside main layout */}
             <Route path="/pending-approval" component={PendingApprovalDashboard} />

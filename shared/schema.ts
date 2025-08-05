@@ -122,6 +122,53 @@ export const planChangeRequests = pgTable("plan_change_requests", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const membershipOrders = pgTable("membership_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  legacyOrderId: integer("legacy_order_id"), // ID do sistema antigo
+  orderCode: text("order_code").notNull(),
+  sessionId: text("session_id"),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  membershipId: integer("membership_id"), // ID do membership do sistema antigo
+  planId: varchar("plan_id").references(() => membershipPlans.id),
+  paypalToken: text("paypal_token"),
+  billingName: text("billing_name"),
+  billingStreet: text("billing_street"),
+  billingCity: text("billing_city"),
+  billingState: text("billing_state"),
+  billingZip: text("billing_zip"),
+  billingCountry: text("billing_country"),
+  billingPhone: text("billing_phone"),
+  subtotal: integer("subtotal").default(0), // valor em centavos
+  tax: integer("tax").default(0),
+  couponAmount: integer("coupon_amount").default(0),
+  total: integer("total").default(0),
+  paymentType: text("payment_type"),
+  cardType: text("card_type"),
+  accountNumber: text("account_number"), // últimos dígitos mascarados
+  expirationMonth: text("expiration_month"),
+  expirationYear: text("expiration_year"),
+  status: text("status").default("pending"), // pending, completed, failed, refunded
+  gateway: text("gateway"), // stripe, mercadopago, etc.
+  gatewayTxnId: text("gateway_txn_id"),
+  timestamp: timestamp("timestamp"),
+  notes: text("notes"),
+  checkoutId: integer("checkout_id"),
+  certificateId: integer("certificate_id"),
+  certificateAmount: integer("certificate_amount"),
+  affiliateId: integer("affiliate_id"),
+  affiliateSubId: text("affiliate_sub_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const orderMeta = pgTable("order_meta", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderId: varchar("order_id").references(() => membershipOrders.id).notNull(),
+  metaKey: text("meta_key").notNull(),
+  metaValue: text("meta_value"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 // Social Feed Tables
 export const connections = pgTable("connections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1038,3 +1085,20 @@ export type InsertApplicationAppeal = z.infer<typeof insertApplicationAppealSche
 // Plan change request types
 export type PlanChangeRequest = typeof planChangeRequests.$inferSelect;
 export type InsertPlanChangeRequest = z.infer<typeof insertPlanChangeRequestSchema>;
+
+// Order types
+export const insertMembershipOrderSchema = createInsertSchema(membershipOrders).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertOrderMetaSchema = createInsertSchema(orderMeta).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type MembershipOrder = typeof membershipOrders.$inferSelect;
+export type InsertMembershipOrder = z.infer<typeof insertMembershipOrderSchema>;
+export type OrderMeta = typeof orderMeta.$inferSelect;
+export type InsertOrderMeta = z.infer<typeof insertOrderMetaSchema>;

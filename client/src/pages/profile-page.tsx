@@ -17,6 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useForm } from "react-hook-form";
 import { ObjectUploader } from "@/components/ObjectUploader";
+import { OrderHistory } from "@/components/OrderHistory";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
@@ -3282,6 +3283,7 @@ export default function ProfilePage() {
           <SkillsSection skills={profile.skills} isOwnProfile={isOwnProfile} />
           <LanguagesSection languages={profile.languages} isOwnProfile={isOwnProfile} />
           <RecommendationsSection recommendations={profile.recommendations} isOwnProfile={isOwnProfile} profile={profile} isConnected={profile.isConnected} />
+          {isOwnProfile && <OrderHistory />}
         </div>
       </div>
     </div>

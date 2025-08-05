@@ -4,6 +4,8 @@ import {
   memberApplications, 
   documents,
   planChangeRequests,
+  membershipOrders,
+  orderMeta,
   posts,
   comments,
   likes,
@@ -41,6 +43,10 @@ import {
   type InsertDocument,
   type PlanChangeRequest,
   type InsertPlanChangeRequest,
+  type MembershipOrder,
+  type InsertMembershipOrder,
+  type OrderMeta,
+  type InsertOrderMeta,
   type Post,
   type InsertPost,
   type Comment,
@@ -645,6 +651,129 @@ export class DatabaseStorage implements IStorage {
       return members;
     } catch (error) {
       console.error("Error in getAllMembers:", error);
+      return [];
+    }
+  }
+
+  async getUserOrders(userId: string): Promise<(MembershipOrder & { planName?: string; metaData?: OrderMeta[] })[]> {
+    try {
+      const ordersData = await db
+        .select({
+          id: membershipOrders.id,
+          legacyOrderId: membershipOrders.legacyOrderId,
+          orderCode: membershipOrders.orderCode,
+          sessionId: membershipOrders.sessionId,
+          userId: membershipOrders.userId,
+          membershipId: membershipOrders.membershipId,
+          planId: membershipOrders.planId,
+          paypalToken: membershipOrders.paypalToken,
+          billingName: membershipOrders.billingName,
+          billingStreet: membershipOrders.billingStreet,
+          billingCity: membershipOrders.billingCity,
+          billingState: membershipOrders.billingState,
+          billingZip: membershipOrders.billingZip,
+          billingCountry: membershipOrders.billingCountry,
+          billingPhone: membershipOrders.billingPhone,
+          subtotal: membershipOrders.subtotal,
+          tax: membershipOrders.tax,
+          couponAmount: membershipOrders.couponAmount,
+          total: membershipOrders.total,
+          paymentType: membershipOrders.paymentType,
+          cardType: membershipOrders.cardType,
+          accountNumber: membershipOrders.accountNumber,
+          expirationMonth: membershipOrders.expirationMonth,
+          expirationYear: membershipOrders.expirationYear,
+          status: membershipOrders.status,
+          gateway: membershipOrders.gateway,
+          gatewayTxnId: membershipOrders.gatewayTxnId,
+          timestamp: membershipOrders.timestamp,
+          notes: membershipOrders.notes,
+          checkoutId: membershipOrders.checkoutId,
+          certificateId: membershipOrders.certificateId,
+          certificateAmount: membershipOrders.certificateAmount,
+          affiliateId: membershipOrders.affiliateId,
+          affiliateSubId: membershipOrders.affiliateSubId,
+          createdAt: membershipOrders.createdAt,
+          updatedAt: membershipOrders.updatedAt,
+          planName: membershipPlans.name
+        })
+        .from(membershipOrders)
+        .leftJoin(membershipPlans, eq(membershipOrders.planId, membershipPlans.id))
+        .where(eq(membershipOrders.userId, userId))
+        .orderBy(desc(membershipOrders.createdAt));
+
+      // Buscar metadados para cada pedido
+      const ordersWithMeta = await Promise.all(
+        ordersData.map(async (order) => {
+          const metaData = await db
+            .select()
+            .from(orderMeta)
+            .where(eq(orderMeta.orderId, order.id));
+          
+          return { ...order, metaData };
+        })
+      );
+
+      return ordersWithMeta;
+    } catch (error) {
+      console.error("Error in getUserOrders:", error);
+      return [];
+    }
+  }
+
+  async getAllOrders(limit: number = 50, offset: number = 0): Promise<(MembershipOrder & { userName?: string; planName?: string })[]> {
+    try {
+      const ordersData = await db
+        .select({
+          id: membershipOrders.id,
+          legacyOrderId: membershipOrders.legacyOrderId,
+          orderCode: membershipOrders.orderCode,
+          sessionId: membershipOrders.sessionId,
+          userId: membershipOrders.userId,
+          membershipId: membershipOrders.membershipId,
+          planId: membershipOrders.planId,
+          paypalToken: membershipOrders.paypalToken,
+          billingName: membershipOrders.billingName,
+          billingStreet: membershipOrders.billingStreet,
+          billingCity: membershipOrders.billingCity,
+          billingState: membershipOrders.billingState,
+          billingZip: membershipOrders.billingZip,
+          billingCountry: membershipOrders.billingCountry,
+          billingPhone: membershipOrders.billingPhone,
+          subtotal: membershipOrders.subtotal,
+          tax: membershipOrders.tax,
+          couponAmount: membershipOrders.couponAmount,
+          total: membershipOrders.total,
+          paymentType: membershipOrders.paymentType,
+          cardType: membershipOrders.cardType,
+          accountNumber: membershipOrders.accountNumber,
+          expirationMonth: membershipOrders.expirationMonth,
+          expirationYear: membershipOrders.expirationYear,
+          status: membershipOrders.status,
+          gateway: membershipOrders.gateway,
+          gatewayTxnId: membershipOrders.gatewayTxnId,
+          timestamp: membershipOrders.timestamp,
+          notes: membershipOrders.notes,
+          checkoutId: membershipOrders.checkoutId,
+          certificateId: membershipOrders.certificateId,
+          certificateAmount: membershipOrders.certificateAmount,
+          affiliateId: membershipOrders.affiliateId,
+          affiliateSubId: membershipOrders.affiliateSubId,
+          createdAt: membershipOrders.createdAt,
+          updatedAt: membershipOrders.updatedAt,
+          userName: users.fullName,
+          planName: membershipPlans.name
+        })
+        .from(membershipOrders)
+        .leftJoin(users, eq(membershipOrders.userId, users.id))
+        .leftJoin(membershipPlans, eq(membershipOrders.planId, membershipPlans.id))
+        .orderBy(desc(membershipOrders.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      return ordersData;
+    } catch (error) {
+      console.error("Error in getAllOrders:", error);
       return [];
     }
   }
