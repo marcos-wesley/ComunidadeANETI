@@ -108,7 +108,7 @@ export default function AuthPage() {
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+            <div className="w-52 h-52 mx-auto mb-4 flex items-center justify-center">
               <img src={anetiLogo} alt="ANETI Logo" className="w-full h-full object-contain" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">ANETI</h1>
@@ -123,11 +123,11 @@ export default function AuthPage() {
               {isLogin ? (
                 <form onSubmit={loginForm.handleSubmit(onLogin)} className="space-y-4">
                   <div>
-                    <Label htmlFor="username">Nome de Usuário</Label>
+                    <Label htmlFor="username">Nome de Usuário ou E-mail</Label>
                     <Input
                       id="username"
                       {...loginForm.register("username")}
-                      placeholder="Digite seu nome de usuário"
+                      placeholder="Digite seu nome de usuário ou e-mail"
                     />
                     {loginForm.formState.errors.username && (
                       <p className="text-sm text-red-600 mt-1">
