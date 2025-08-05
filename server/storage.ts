@@ -145,6 +145,7 @@ export interface IStorage {
   updateMembershipPlan(planId: string, planData: Partial<InsertMembershipPlan>): Promise<MembershipPlan | null>;
   deleteMembershipPlan(planId: string): Promise<boolean>;
   toggleMembershipPlanStatus(planId: string, isActive: boolean): Promise<MembershipPlan | null>;
+  getAllMembershipPlans(): Promise<MembershipPlan[]>;
   getAllMembershipPlansWithCount(): Promise<any[]>;
   getMembershipPlanWithCount(planId: string): Promise<any | null>;
 
@@ -934,6 +935,11 @@ export class DatabaseStorage implements IStorage {
       .where(eq(membershipPlans.id, planId))
       .returning();
     return plan || null;
+  }
+
+  async getAllMembershipPlans(): Promise<MembershipPlan[]> {
+    const plans = await db.select().from(membershipPlans);
+    return plans;
   }
 
   async getAllMembershipPlansWithCount(): Promise<any[]> {

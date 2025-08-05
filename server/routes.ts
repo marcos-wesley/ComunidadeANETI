@@ -25,6 +25,7 @@ import express from "express";
 import path from "path";
 import fs from "fs/promises";
 import { randomUUID } from "crypto";
+import crypto from "crypto";
 import multer from "multer";
 import Stripe from "stripe";
 
@@ -544,10 +545,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🚀 Starting complete orders import...');
       
       const fs = await import('fs');
+      const { parse } = await import('csv-parse/sync');
       
-      // Load orders data from JSON files
-      const ordersData = JSON.parse(fs.readFileSync('./attached_assets/aneti_pmpro_membership_orders_1754416415728.csv', 'utf8'));
-      const orderMetaData = JSON.parse(fs.readFileSync('./attached_assets/aneti_pmpro_membership_ordermeta_1754416415727.csv', 'utf8'));
+      // Load orders data from CSV files
+      const ordersCSV = fs.readFileSync('./attached_assets/aneti_pmpro_membership_orders_1754416415728.csv', 'utf8');
+      const ordersData = parse(ordersCSV, {
+        columns: true,
+        skip_empty_lines: true
+      });
+      
+      const orderMetaCSV = fs.readFileSync('./attached_assets/aneti_pmpro_membership_ordermeta_1754416415727.csv', 'utf8');
+      const orderMetaData = parse(orderMetaCSV, {
+        columns: true,
+        skip_empty_lines: true
+      });
       
       console.log(`📊 Loaded ${ordersData.length} orders from main table`);
       console.log(`📊 Loaded ${orderMetaData.length} metadata records`);
@@ -622,17 +633,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create order record
           const order = {
             id: crypto.randomUUID(),
+            legacyOrderId: parseInt(orderData.id) || null,
             orderCode: orderData.code || `ORDER_${orderData.id}`,
+            sessionId: orderData.session_id || null,
             userId: userMapping[userId].id,
-            userName: userMapping[userId].username,
-            userFullName: userMapping[userId].fullName,
+            membershipId: parseInt(membershipId) || null,
             planId: plan ? plan.id : null,
-            planName: plan ? plan.name : `Plan ${membershipId}`,
-            total: Math.round(parseFloat(orderData.total || 0) * 100), // Convert to cents
-            status: mapOrderStatus(orderData.status, orderData.total, orderData.payment_type),
-            paymentType: getPaymentType(orderData.cardtype, orderData.payment_type, orderData.total),
-            cardType: orderData.cardtype || null,
-            accountNumber: orderData.accountnumber || null,
+            paypalToken: orderData.paypal_token || null,
             billingName: orderData.billing_name || null,
             billingStreet: orderData.billing_street || null,
             billingCity: orderData.billing_city || null,
@@ -640,8 +647,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             billingZip: orderData.billing_zip || null,
             billingCountry: orderData.billing_country || null,
             billingPhone: orderData.billing_phone || null,
+            subtotal: Math.round(parseFloat(orderData.subtotal || 0) * 100), // Convert to cents
+            tax: Math.round(parseFloat(orderData.tax || 0) * 100),
+            couponAmount: Math.round(parseFloat(orderData.coupon_amount || 0) * 100),
+            total: Math.round(parseFloat(orderData.total || 0) * 100), // Convert to cents
+            paymentType: getPaymentType(orderData.cardtype, orderData.payment_type, orderData.total),
+            cardType: orderData.cardtype || null,
+            accountNumber: orderData.accountnumber || null,
+            expirationMonth: orderData.expirationmonth || null,
+            expirationYear: orderData.expirationyear || null,
+            status: mapOrderStatus(orderData.status, orderData.total, orderData.payment_type),
             gateway: orderData.gateway || 'stripe',
+            gatewayTxnId: orderData.gateway_txn_id || null,
+            timestamp: orderData.timestamp ? new Date(orderData.timestamp) : new Date(),
             notes: orderData.notes || null,
+            checkoutId: orderData.checkout_id || null,
+            certificateId: orderData.certificate_id || null,
+            certificateAmount: orderData.certificate_amount ? Math.round(parseFloat(orderData.certificate_amount) * 100) : null,
+            affiliateId: orderData.affiliate_id || null,
+            affiliateSubId: orderData.affiliate_subid || null,
             createdAt: orderData.timestamp ? new Date(orderData.timestamp) : new Date(),
             updatedAt: new Date()
           };

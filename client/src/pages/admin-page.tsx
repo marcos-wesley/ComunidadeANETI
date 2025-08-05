@@ -457,13 +457,7 @@ export default function AdminPage() {
   // Import orders mutation
   const importOrdersMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('/api/admin/import-orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({}),
-      });
+      const response = await apiRequest('POST', '/api/admin/import-orders', {});
       return response;
     },
     onSuccess: (data) => {
