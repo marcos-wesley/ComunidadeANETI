@@ -12,16 +12,30 @@
 - **Comando**: `cd mobile && npx expo start --tunnel`
 - **QR Code**: Gerado automaticamente para teste em dispositivos
 
-## Evitando Conflitos de Porta
+## Evitando Conflitos de Porta - SOLUÇÃO DEFINITIVA
+
+### Para Evitar Problemas:
+1. **SEMPRE** reiniciar o workflow principal primeiro (servidor web porta 5000)
+2. **AGUARDAR** o servidor web estar 100% ativo 
+3. **SÓ ENTÃO** iniciar Expo: `cd mobile && npx expo start --tunnel --port 8081`
 
 ### Se der erro "EADDRINUSE":
-1. Parar todos os processos: `pkill -f "tsx server" && pkill -f "expo"`
-2. Reiniciar workflow principal no Replit
-3. Iniciar Expo: `cd mobile && npx expo start --tunnel`
+```bash
+# Parar TODOS os processos
+pkill -f "tsx server" && pkill -f "expo" && pkill -f "node"
 
-### Ordem de Inicialização:
-1. **Primeiro**: Workflow "Start application" (servidor web)
-2. **Segundo**: Servidor Expo (mobile)
+# Reiniciar workflow no Replit (botão restart)
+
+# Aguardar servidor web ficar ativo
+
+# Iniciar Expo
+cd mobile && npx expo start --tunnel --port 8081
+```
+
+### Ordem OBRIGATÓRIA:
+1. **Primeiro**: Workflow "Start application" (servidor web porta 5000)
+2. **Aguardar**: Logs mostrarem "serving on port 5000"
+3. **Segundo**: Expo server (porta 8081)
 
 ## Testando o App
 
