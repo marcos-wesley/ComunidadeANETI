@@ -56,7 +56,14 @@ export default function AdminOrdersPage() {
   const pageSize = 25;
 
   const { data: orders, isLoading, error } = useQuery<Order[]>({
-    queryKey: ["/api/admin/orders", { limit: pageSize, offset: currentPage * pageSize }],
+    queryKey: ["/api/admin/orders", currentPage, pageSize],
+    queryFn: async () => {
+      const response = await fetch(`/api/admin/orders?limit=${pageSize}&offset=${currentPage * pageSize}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      return response.json();
+    },
   });
 
   // Filter orders based on search and status

@@ -185,10 +185,17 @@ export const isAuthenticated = (req: any, res: any, next: any) => {
 
 // Middleware to check if user is admin
 export const isAdminAuthenticated = (req: any, res: any, next: any) => {
+  // Check if user is logged in via admin session
   if (req.session?.adminUser) {
     req.user = req.session.adminUser;
     return next();
   }
+  
+  // Also allow users with admin role who are logged in normally
+  if (req.isAuthenticated() && req.user?.role === 'admin') {
+    return next();
+  }
+  
   res.sendStatus(401);
 };
 

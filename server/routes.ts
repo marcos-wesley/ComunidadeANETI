@@ -5103,10 +5103,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Admin: Get all orders with pagination
   app.get("/api/admin/orders", isAdminAuthenticated, async (req, res) => {
     try {
+      console.log("Admin orders route accessed by user:", req.user?.username, "role:", req.user?.role);
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
       
+      console.log("Fetching orders with limit:", limit, "offset:", offset);
       const orders = await storage.getAllOrders(limit, offset);
+      console.log("Orders found:", orders.length);
       res.json(orders);
     } catch (error) {
       console.error("Error fetching orders:", error);
