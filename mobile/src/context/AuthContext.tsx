@@ -29,12 +29,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   const checkAuthStatus = async () => {
+    console.log('🔍 Verificando status de autenticação...');
     try {
       const userData = await ApiService.getCurrentUser();
+      console.log('✅ Usuário autenticado:', userData.username);
       setUser(userData);
     } catch (error) {
+      console.log('❌ Usuário não autenticado:', error.message);
       setUser(null);
     } finally {
+      console.log('✅ Carregamento inicial finalizado');
       setIsLoading(false);
     }
   };

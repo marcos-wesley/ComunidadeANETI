@@ -108,7 +108,6 @@ class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     
     console.log('🔗 API Request:', url);
-    console.log('📦 Request Options:', options);
     
     const defaultOptions: RequestInit = {
       credentials: 'include',
@@ -120,23 +119,28 @@ class ApiService {
       },
     };
 
-    const response = await fetch(url, { ...defaultOptions, ...options });
+    try {
+      const response = await fetch(url, { ...defaultOptions, ...options });
 
-    console.log('📱 Response Status:', response.status);
-    console.log('📱 Response Headers:', Object.fromEntries(response.headers.entries()));
+      console.log('📱 Response Status:', response.status);
 
-    if (!response.ok) {
-      if (response.status === 401) {
-        console.log('❌ Unauthorized request to:', endpoint);
+      if (!response.ok) {
+        if (response.status === 401) {
+          console.log('❌ Unauthorized request to:', endpoint);
+          throw new Error('Não autorizado');
+        }
+        const errorText = await response.text();
+        console.log('❌ Error Response:', errorText);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      const errorText = await response.text();
-      console.log('❌ Error Response:', errorText);
-      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
-    }
 
-    const data = await response.json();
-    console.log('✅ Response Data:', data);
-    return data;
+      const data = await response.json();
+      console.log('✅ Response Data received');
+      return data;
+    } catch (error) {
+      console.log('🚫 Network/Request Error:', error.message);
+      throw error;
+    }
   }
 
   // Auth
