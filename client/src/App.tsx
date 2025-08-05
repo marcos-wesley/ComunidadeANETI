@@ -67,6 +67,7 @@ function MainLayout(): JSX.Element {
 
         <Route path="/auth" component={AuthPage} />
         <Route path="/register" component={RegisterPage} />
+        <Route path="/pending-approval" component={PendingApprovalDashboard} />
         <Route component={NotFound} />
       </Switch>
     </div>
