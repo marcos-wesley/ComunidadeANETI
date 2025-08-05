@@ -36,6 +36,13 @@ async function comparePasswords(supplied: string, stored: string | null | undefi
     return false;
   }
   
+  // Check if it's a bcrypt hash (from migration)
+  if (stored.startsWith('$2b$') || stored.startsWith('$2a$') || stored.startsWith('$2y$')) {
+    const bcrypt = await import('bcrypt');
+    return bcrypt.compare(supplied, stored);
+  }
+  
+  // Check if it's scrypt format (current system)
   if (!stored.includes('.')) {
     // Invalid password format
     return false;
