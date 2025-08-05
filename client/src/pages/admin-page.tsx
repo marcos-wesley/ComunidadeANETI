@@ -454,6 +454,42 @@ export default function AdminPage() {
     }
   };
 
+  // Import orders mutation
+  const importOrdersMutation = useMutation({
+    mutationFn: async () => {
+      const response = await apiRequest('/api/admin/import-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      return response;
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Importação Concluída!",
+        description: `${data.imported} pedidos importados com sucesso. ${data.skipped} pedidos ignorados.`,
+      });
+      // Refresh orders data
+      queryClient.invalidateQueries({ queryKey: ["/api/admin/orders"] });
+    },
+    onError: (error: any) => {
+      console.error('Import error:', error);
+      toast({
+        title: "Erro na Importação",
+        description: error.message || "Falha ao importar pedidos",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleImportOrders = () => {
+    if (window.confirm('Deseja importar todos os pedidos da planilha CSV? Isso irá substituir todos os pedidos existentes na base de dados.')) {
+      importOrdersMutation.mutate();
+    }
+  };
+
 
 
   // Helper functions and computed values for orders
@@ -2429,10 +2465,31 @@ export default function AdminPage() {
               {/* Orders Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle>Lista de Pedidos</CardTitle>
-                  <CardDescription>
-                    {loadingOrders ? "Carregando..." : `${filteredOrders.length} pedidos encontrados`}
-                  </CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <CardTitle>Lista de Pedidos</CardTitle>
+                      <CardDescription>
+                        {loadingOrders ? "Carregando..." : `${filteredOrders.length} pedidos encontrados`}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      onClick={handleImportOrders}
+                      disabled={importOrdersMutation.isPending}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      {importOrdersMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Importando...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="h-4 w-4 mr-2" />
+                          Importar Todos os Pedidos
+                        </>
+                      )}
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {loadingOrders ? (

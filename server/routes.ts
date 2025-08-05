@@ -538,6 +538,144 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Import all orders from CSV data (admin only)
+  app.post('/api/admin/import-orders', isAdminAuthenticated, async (req, res) => {
+    try {
+      console.log('🚀 Starting complete orders import...');
+      
+      const fs = await import('fs');
+      
+      // Load orders data from JSON files
+      const ordersData = JSON.parse(fs.readFileSync('./attached_assets/aneti_pmpro_membership_orders_1754416415728.csv', 'utf8'));
+      const orderMetaData = JSON.parse(fs.readFileSync('./attached_assets/aneti_pmpro_membership_ordermeta_1754416415727.csv', 'utf8'));
+      
+      console.log(`📊 Loaded ${ordersData.length} orders from main table`);
+      console.log(`📊 Loaded ${orderMetaData.length} metadata records`);
+      
+      // Create metadata lookup
+      const metaLookup = {};
+      orderMetaData.forEach(meta => {
+        if (!metaLookup[meta.pmpro_membership_order_id]) {
+          metaLookup[meta.pmpro_membership_order_id] = {};
+        }
+        metaLookup[meta.pmpro_membership_order_id][meta.meta_key] = meta.meta_value;
+      });
+      
+      // Get existing users for mapping
+      const existingUsers = await storage.getAllUsers();
+      const userMapping = {};
+      existingUsers.forEach(user => {
+        if (user.legacyId) {
+          userMapping[user.legacyId] = user;
+        }
+      });
+      
+      // Get existing membership plans
+      const existingPlans = await storage.getAllMembershipPlans();
+      const planMapping = {};
+      existingPlans.forEach(plan => {
+        if (plan.legacyId) {
+          planMapping[plan.legacyId] = plan;
+        }
+      });
+      
+      console.log(`👥 Found ${Object.keys(userMapping).length} users for mapping`);
+      console.log(`📋 Found ${Object.keys(planMapping).length} plans for mapping`);
+      
+      // Clear existing orders first
+      console.log('🗑️ Clearing existing orders...');
+      await storage.clearAllOrders();
+      
+      let importedCount = 0;
+      let skippedCount = 0;
+      
+      console.log('📦 Processing orders...');
+      
+      function mapOrderStatus(status, total, paymentType) {
+        if (total === '0' || total === 0) return 'free';
+        if (status === 'success' || paymentType) return 'completed';
+        if (status === 'cancelled') return 'cancelled';
+        return 'pending';
+      }
+      
+      function getPaymentType(cardType, paymentType, total) {
+        if (total === '0' || total === 0) return 'free';
+        if (cardType) return 'card';
+        if (paymentType && paymentType !== '') return paymentType;
+        return 'unknown';
+      }
+      
+      for (const orderData of ordersData) {
+        try {
+          const userId = orderData.user_id;
+          const membershipId = orderData.membership_id;
+          
+          // Skip if no user mapping
+          if (!userMapping[userId]) {
+            skippedCount++;
+            continue;
+          }
+          
+          // Get plan info
+          const plan = planMapping[membershipId];
+          
+          // Create order record
+          const order = {
+            id: crypto.randomUUID(),
+            orderCode: orderData.code || `ORDER_${orderData.id}`,
+            userId: userMapping[userId].id,
+            userName: userMapping[userId].username,
+            userFullName: userMapping[userId].fullName,
+            planId: plan ? plan.id : null,
+            planName: plan ? plan.name : `Plan ${membershipId}`,
+            total: Math.round(parseFloat(orderData.total || 0) * 100), // Convert to cents
+            status: mapOrderStatus(orderData.status, orderData.total, orderData.payment_type),
+            paymentType: getPaymentType(orderData.cardtype, orderData.payment_type, orderData.total),
+            cardType: orderData.cardtype || null,
+            accountNumber: orderData.accountnumber || null,
+            billingName: orderData.billing_name || null,
+            billingStreet: orderData.billing_street || null,
+            billingCity: orderData.billing_city || null,
+            billingState: orderData.billing_state || null,
+            billingZip: orderData.billing_zip || null,
+            billingCountry: orderData.billing_country || null,
+            billingPhone: orderData.billing_phone || null,
+            gateway: orderData.gateway || 'stripe',
+            notes: orderData.notes || null,
+            createdAt: orderData.timestamp ? new Date(orderData.timestamp) : new Date(),
+            updatedAt: new Date()
+          };
+          
+          await storage.createOrder(order);
+          importedCount++;
+          
+          if (importedCount % 100 === 0) {
+            console.log(`✅ Processed ${importedCount} orders...`);
+          }
+          
+        } catch (error) {
+          console.error(`❌ Error processing order ${orderData.code}:`, error.message);
+          skippedCount++;
+        }
+      }
+      
+      console.log('\n🎉 Orders migration completed!');
+      console.log(`✅ ${importedCount} orders imported`);
+      console.log(`⚠️ ${skippedCount} orders skipped`);
+      
+      res.json({
+        success: true,
+        imported: importedCount,
+        skipped: skippedCount,
+        total: importedCount + skippedCount
+      });
+      
+    } catch (error) {
+      console.error('❌ Import error:', error);
+      res.status(500).json({ error: 'Import failed', details: error.message });
+    }
+  });
+
   // Reject application with notes (admin only)
   app.post("/api/admin/applications/:id/reject", isAdminAuthenticated, async (req, res) => {
     try {

@@ -195,6 +195,12 @@ export interface IStorage {
   createConnectionRequest(requesterId: string, receiverId: string): Promise<Connection>;
   updateConnectionStatus(connectionId: string, status: string, userId: string): Promise<Connection | undefined>;
   
+  // Orders
+  getAllOrders(limit?: number, offset?: number): Promise<(MembershipOrder & { userName?: string; planName?: string })[]>;
+  getUserOrders(userId: string): Promise<(MembershipOrder & { planName?: string; metaData?: OrderMeta[] })[]>;
+  createOrder(order: InsertMembershipOrder): Promise<MembershipOrder>;
+  clearAllOrders(): Promise<void>;
+
   // Users search
   searchUsers(query: string): Promise<Pick<User, 'id' | 'fullName' | 'username'>[]>;
   getAllMembers(): Promise<Pick<User, 'id' | 'fullName' | 'username' | 'planName'>[]>;
@@ -718,6 +724,30 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getUserOrders:", error);
       return [];
+    }
+  }
+
+  async createOrder(order: InsertMembershipOrder): Promise<MembershipOrder> {
+    try {
+      const [newOrder] = await db
+        .insert(membershipOrders)
+        .values(order)
+        .returning();
+      
+      return newOrder;
+    } catch (error) {
+      console.error("Error creating order:", error);
+      throw error;
+    }
+  }
+
+  async clearAllOrders(): Promise<void> {
+    try {
+      await db.delete(membershipOrders);
+      console.log("All orders cleared successfully");
+    } catch (error) {
+      console.error("Error clearing orders:", error);
+      throw error;
     }
   }
 
