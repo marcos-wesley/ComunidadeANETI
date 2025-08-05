@@ -694,10 +694,12 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                   <div className="flex items-center gap-2">
                     {profile.planBadgeImageUrl && (
                       <img 
-                        src={`http://localhost:5000${profile.planBadgeImageUrl}`}
+                        src={profile.planBadgeImageUrl}
                         alt={`Selo ${profile.planName}`}
                         className="w-6 h-6 object-contain"
+                        onLoad={() => console.log('Badge image loaded successfully:', profile.planBadgeImageUrl)}
                         onError={(e) => {
+                          console.error('Error loading badge image:', profile.planBadgeImageUrl);
                           e.currentTarget.style.display = 'none';
                         }}
                       />
@@ -3238,6 +3240,13 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  // Debug log for badge data
+  console.log('Profile badge data:', {
+    planName: profile.planName,
+    planBadgeImageUrl: profile.planBadgeImageUrl,
+    planBadgeColor: profile.planBadgeColor
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
