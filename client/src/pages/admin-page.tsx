@@ -320,10 +320,35 @@ export default function AdminPage() {
   });
 
   // Fetch orders with filters
-  const { data: orders, isLoading: loadingOrders, error: ordersError } = useQuery<Order[]>({
+  const { data: ordersResponse, isLoading: loadingOrders, error: ordersError } = useQuery<{
+    orders: Order[],
+    statistics: {
+      totalOrders: number,
+      completedOrders: number,
+      freeOrders: number,
+      pendingOrders: number,
+      failedOrders: number,
+      totalRevenue: number
+    },
+    pagination: {
+      limit: number,
+      offset: number,
+      hasMore: boolean
+    }
+  }>({
     queryKey: ["/api/admin/orders", orderFilters],
     queryFn: async () => {
-      const response = await fetch(`/api/admin/orders?limit=${orderFilters.limit}&offset=${orderFilters.page * orderFilters.limit}`, {
+      const searchParams = new URLSearchParams();
+      searchParams.append('limit', orderFilters.limit.toString());
+      searchParams.append('offset', (orderFilters.page * orderFilters.limit).toString());
+      if (orderFilters.status && orderFilters.status !== 'all') {
+        searchParams.append('status', orderFilters.status);
+      }
+      if (orderFilters.search.trim()) {
+        searchParams.append('search', orderFilters.search);
+      }
+      
+      const response = await fetch(`/api/admin/orders?${searchParams.toString()}`, {
         credentials: "include"
       });
       if (!response.ok) {
@@ -498,22 +523,23 @@ export default function AdminPage() {
 
 
 
-  // Helper functions and computed values for orders
-  const filteredOrders = orders?.filter(order => {
-    const matchesSearch = !orderFilters.search || 
-      order.orderCode.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
-      order.userName?.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
-      order.planName?.toLowerCase().includes(orderFilters.search.toLowerCase()) ||
-      order.billingName?.toLowerCase().includes(orderFilters.search.toLowerCase());
-    
-    const matchesStatus = !orderFilters.status || orderFilters.status === "all" || order.status === orderFilters.status;
-    
-    return matchesSearch && matchesStatus;
-  }) || [];
+  // Extract data from the new API response
+  const orders = ordersResponse?.orders || [];
+  const orderStats = ordersResponse?.statistics || {
+    totalOrders: 0,
+    completedOrders: 0,
+    freeOrders: 0,
+    pendingOrders: 0,
+    failedOrders: 0,
+    totalRevenue: 0
+  };
+  const pagination = ordersResponse?.pagination || { limit: 100, offset: 0, hasMore: false };
 
-  const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
-  const completedOrders = filteredOrders.filter(order => order.status === 'completed').length;
-  const freeOrders = filteredOrders.filter(order => order.status === 'free').length;
+  // Use the statistics from the API instead of calculating from filtered results
+  const totalRevenue = orderStats.totalRevenue;
+  const completedOrders = orderStats.completedOrders;
+  const freeOrders = orderStats.freeOrders;
+  const totalOrders = orderStats.totalOrders;
 
   // Loading state
   if (isLoading) {
@@ -2391,7 +2417,7 @@ export default function AdminPage() {
                     <Receipt className="h-4 w-4 text-muted-foreground" />
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl font-bold">{filteredOrders.length}</div>
+                    <div className="text-2xl font-bold">{totalOrders}</div>
                   </CardContent>
                 </Card>
                 
@@ -2447,23 +2473,58 @@ export default function AdminPage() {
                         <Input
                           placeholder="Buscar por código, usuário, plano..."
                           value={orderFilters.search}
-                          onChange={(e) => setOrderFilters(prev => ({ ...prev, search: e.target.value }))}
+                          onChange={(e) => setOrderFilters(prev => ({ ...prev, search: e.target.value, page: 0 }))}
                           className="pl-10"
                         />
                       </div>
                     </div>
-                    <Select value={orderFilters.status || undefined} onValueChange={(value) => setOrderFilters(prev => ({ ...prev, status: value || "" }))}>
-                      <SelectTrigger className="w-full sm:w-48">
+                    <Select value={orderFilters.status || undefined} onValueChange={(value) => setOrderFilters(prev => ({ ...prev, status: value || "", page: 0 }))}>
+                      <SelectTrigger className="w-full sm:w-60">
                         <SelectValue placeholder="Filtrar por status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="all">Todos os status</SelectItem>
-                        <SelectItem value="completed">Concluído</SelectItem>
-                        <SelectItem value="free">Gratuito</SelectItem>
-                        <SelectItem value="pending">Pendente</SelectItem>
-                        <SelectItem value="failed">Falhou</SelectItem>
+                        <SelectItem value="all">Todos ({orderStats.totalOrders})</SelectItem>
+                        <SelectItem value="completed">Concluído ({orderStats.completedOrders})</SelectItem>
+                        <SelectItem value="free">Gratuito ({orderStats.freeOrders})</SelectItem>
+                        <SelectItem value="pending">Pendente ({orderStats.pendingOrders})</SelectItem>
+                        <SelectItem value="failed">Falhou ({orderStats.failedOrders})</SelectItem>
                       </SelectContent>
                     </Select>
+                    
+                    {/* Active filters indicator */}
+                    {(orderFilters.search.trim() || (orderFilters.status && orderFilters.status !== 'all')) && (
+                      <div className="flex items-center gap-2 ml-4">
+                        <span className="text-sm text-muted-foreground">Filtros:</span>
+                        {orderFilters.search.trim() && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            "{orderFilters.search}"
+                            <X 
+                              className="h-3 w-3 cursor-pointer" 
+                              onClick={() => setOrderFilters(prev => ({ ...prev, search: "", page: 0 }))}
+                            />
+                          </Badge>
+                        )}
+                        {orderFilters.status && orderFilters.status !== 'all' && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            {orderFilters.status === 'completed' ? 'Concluído' : 
+                             orderFilters.status === 'free' ? 'Gratuito' : 
+                             orderFilters.status === 'pending' ? 'Pendente' : 'Falhou'}
+                            <X 
+                              className="h-3 w-3 cursor-pointer" 
+                              onClick={() => setOrderFilters(prev => ({ ...prev, status: "", page: 0 }))}
+                            />
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setOrderFilters(prev => ({ ...prev, search: "", status: "", page: 0 }))}
+                          className="text-xs"
+                        >
+                          Limpar
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -2475,7 +2536,7 @@ export default function AdminPage() {
                     <div className="space-y-1">
                       <CardTitle>Lista de Pedidos</CardTitle>
                       <CardDescription>
-                        {loadingOrders ? "Carregando..." : `${filteredOrders.length} pedidos na página atual • Total: ~2.308 pedidos importados`}
+                        {loadingOrders ? "Carregando..." : `${orders.length} pedidos na página atual • Total: ${totalOrders} pedidos importados`}
                       </CardDescription>
                     </div>
                     <Button
@@ -2506,7 +2567,7 @@ export default function AdminPage() {
                     <div className="flex items-center justify-center py-8">
                       <div className="text-red-600">Erro ao carregar pedidos</div>
                     </div>
-                  ) : filteredOrders.length === 0 ? (
+                  ) : orders.length === 0 ? (
                     <div className="flex items-center justify-center py-8">
                       <div className="text-muted-foreground">Nenhum pedido encontrado</div>
                     </div>
@@ -2525,7 +2586,7 @@ export default function AdminPage() {
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {filteredOrders.map((order) => (
+                          {orders.map((order) => (
                             <TableRow key={order.id}>
                               <TableCell className="font-mono text-sm">
                                 {order.orderCode}
@@ -2596,7 +2657,7 @@ export default function AdminPage() {
                       {/* Pagination Controls */}
                       <div className="flex items-center justify-between mt-4 pt-4 border-t">
                         <div className="text-sm text-muted-foreground">
-                          Mostrando {orderFilters.page * orderFilters.limit + 1} - {Math.min((orderFilters.page + 1) * orderFilters.limit, filteredOrders.length)} de ~2.308 pedidos
+                          Mostrando {orderFilters.page * orderFilters.limit + 1} - {Math.min((orderFilters.page + 1) * orderFilters.limit, orders.length)} de {totalOrders} pedidos
                         </div>
                         <div className="flex items-center space-x-2">
                           <Button
@@ -2615,7 +2676,7 @@ export default function AdminPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => setOrderFilters(prev => ({ ...prev, page: prev.page + 1 }))}
-                            disabled={filteredOrders.length < orderFilters.limit}
+                            disabled={!pagination.hasMore}
                           >
                             Próximo
                             <ChevronRight className="h-4 w-4" />

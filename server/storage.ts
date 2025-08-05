@@ -114,7 +114,7 @@ import {
   type SelectForumReplyLike,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc, isNotNull } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc, isNotNull, count, sum } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
@@ -757,9 +757,9 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllOrders(limit: number = 50, offset: number = 0): Promise<(MembershipOrder & { userName?: string; planName?: string })[]> {
+  async getAllOrders(limit: number = 50, offset: number = 0, statusFilter?: string, searchFilter?: string): Promise<(MembershipOrder & { userName?: string; planName?: string })[]> {
     try {
-      const ordersData = await db
+      let query = db
         .select({
           id: membershipOrders.id,
           legacyOrderId: membershipOrders.legacyOrderId,
@@ -802,7 +802,32 @@ export class DatabaseStorage implements IStorage {
         })
         .from(membershipOrders)
         .leftJoin(users, eq(membershipOrders.userId, users.id))
-        .leftJoin(membershipPlans, eq(membershipOrders.planId, membershipPlans.id))
+        .leftJoin(membershipPlans, eq(membershipOrders.planId, membershipPlans.id));
+
+      // Apply filters
+      const conditions = [];
+      
+      if (statusFilter && statusFilter !== 'all') {
+        conditions.push(eq(membershipOrders.status, statusFilter));
+      }
+      
+      if (searchFilter && searchFilter.trim()) {
+        const searchTerm = `%${searchFilter.toLowerCase()}%`;
+        conditions.push(
+          or(
+            ilike(membershipOrders.orderCode, searchTerm),
+            ilike(users.fullName, searchTerm),
+            ilike(membershipPlans.name, searchTerm),
+            ilike(membershipOrders.billingName, searchTerm)
+          )
+        );
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const ordersData = await query
         .orderBy(desc(membershipOrders.createdAt))
         .limit(limit)
         .offset(offset);
@@ -811,6 +836,63 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error("Error in getAllOrders:", error);
       return [];
+    }
+  }
+
+  async getOrdersStatistics(): Promise<{
+    totalOrders: number;
+    completedOrders: number;
+    freeOrders: number;
+    pendingOrders: number;
+    failedOrders: number;
+    totalRevenue: number;
+  }> {
+    try {
+      const [stats] = await db
+        .select({
+          totalOrders: count(),
+          totalRevenue: sum(membershipOrders.total),
+        })
+        .from(membershipOrders);
+
+      const [completedStats] = await db
+        .select({ count: count() })
+        .from(membershipOrders)
+        .where(eq(membershipOrders.status, 'completed'));
+
+      const [freeStats] = await db
+        .select({ count: count() })
+        .from(membershipOrders)
+        .where(eq(membershipOrders.status, 'free'));
+
+      const [pendingStats] = await db
+        .select({ count: count() })
+        .from(membershipOrders)
+        .where(eq(membershipOrders.status, 'pending'));
+
+      const [failedStats] = await db
+        .select({ count: count() })
+        .from(membershipOrders)
+        .where(eq(membershipOrders.status, 'failed'));
+
+      return {
+        totalOrders: stats.totalOrders || 0,
+        completedOrders: completedStats.count || 0,
+        freeOrders: freeStats.count || 0,
+        pendingOrders: pendingStats.count || 0,
+        failedOrders: failedStats.count || 0,
+        totalRevenue: Number(stats.totalRevenue) || 0,
+      };
+    } catch (error) {
+      console.error("Error in getOrdersStatistics:", error);
+      return {
+        totalOrders: 0,
+        completedOrders: 0,
+        freeOrders: 0,
+        pendingOrders: 0,
+        failedOrders: 0,
+        totalRevenue: 0,
+      };
     }
   }
 

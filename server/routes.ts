@@ -5281,17 +5281,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Admin: Get all orders with pagination
+  // Admin: Get all orders with pagination and statistics
   app.get("/api/admin/orders", isAdminAuthenticated, async (req, res) => {
     try {
       console.log("Admin orders route accessed by user:", req.user?.username, "role:", req.user?.role);
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = parseInt(req.query.offset as string) || 0;
+      const status = req.query.status as string;
+      const search = req.query.search as string;
       
       console.log("Fetching orders with limit:", limit, "offset:", offset);
-      const orders = await storage.getAllOrders(limit, offset);
+      const orders = await storage.getAllOrders(limit, offset, status, search);
+      const stats = await storage.getOrdersStatistics();
+      
       console.log("Orders found:", orders.length);
-      res.json(orders);
+      res.json({
+        orders,
+        statistics: stats,
+        pagination: {
+          limit,
+          offset,
+          hasMore: orders.length === limit
+        }
+      });
     } catch (error) {
       console.error("Error fetching orders:", error);
       res.status(500).json({ error: "Failed to fetch orders" });
