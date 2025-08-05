@@ -107,7 +107,7 @@ export default function AuthPage() {
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="text-center mb-2">
+          <div className="text-center" style={{ marginBottom: '16px' }}>
             <div className="w-64 h-64 mx-auto flex items-center justify-center">
               <img src={anetiLogo} alt="ANETI Logo" className="w-full h-full object-contain" />
             </div>
