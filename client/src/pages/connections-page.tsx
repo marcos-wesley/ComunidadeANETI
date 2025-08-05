@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Check, X, Clock, UserCheck } from "lucide-react";
+import { Users, Check, X, Clock, UserCheck, Eye, Mail } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -26,10 +26,45 @@ interface ConnectionRequest {
   };
 }
 
+interface Connection {
+  id: string;
+  requesterId: string;
+  receiverId: string;
+  status: "connected";
+  createdAt: string;
+  requester: {
+    id: string;
+    fullName: string;
+    username: string;
+    planName?: string;
+    profilePicture?: string;
+    area?: string;
+    professionalTitle?: string;
+    city?: string;
+    state?: string;
+  };
+  receiver: {
+    id: string;
+    fullName: string;
+    username: string;
+    planName?: string;
+    profilePicture?: string;
+    area?: string;
+    professionalTitle?: string;
+    city?: string;
+    state?: string;
+  };
+}
+
 export function ConnectionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("pending");
+
+  // Fetch current user
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+  });
 
   // Fetch pending connection requests
   const { data: pendingRequests = [], isLoading: isLoadingPending } = useQuery<ConnectionRequest[]>({
@@ -38,7 +73,7 @@ export function ConnectionsPage() {
   });
 
   // Fetch all connections
-  const { data: allConnections = [], isLoading: isLoadingAll } = useQuery({
+  const { data: allConnections = [], isLoading: isLoadingAll } = useQuery<Connection[]>({
     queryKey: ["/api/connections"],
     refetchInterval: 30000,
   });
@@ -246,7 +281,7 @@ export function ConnectionsPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <UserCheck className="h-5 w-5" />
-                  Todas as Conexões
+                  Todas as Conexões ({allConnections.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -255,15 +290,107 @@ export function ConnectionsPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
                     <p className="mt-4 text-gray-500">Carregando conexões...</p>
                   </div>
-                ) : (
+                ) : allConnections.length === 0 ? (
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      Lista de conexões
+                      Nenhuma conexão ainda
                     </h3>
                     <p className="text-gray-500">
-                      A visualização de todas as conexões será implementada em breve.
+                      Você ainda não tem conexões. Comece conectando com outros membros!
                     </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {allConnections.map((connection) => {
+                      // Determinar qual usuário exibir (o outro usuário da conexão)
+                      const otherUser = connection.requesterId === user?.id 
+                        ? connection.receiver 
+                        : connection.requester;
+                      
+                      return (
+                        <div
+                          key={connection.id}
+                          className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow"
+                        >
+                          <div className="flex items-start gap-3">
+                            <Avatar className="h-12 w-12">
+                              {otherUser.profilePicture ? (
+                                <img 
+                                  src={otherUser.profilePicture} 
+                                  alt={otherUser.fullName}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <AvatarFallback>
+                                  {getInitials(otherUser.fullName)}
+                                </AvatarFallback>
+                              )}
+                            </Avatar>
+                            
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                                  {otherUser.fullName}
+                                </h3>
+                                {otherUser.planName && (
+                                  <Badge variant="outline" className="text-xs">
+                                    {otherUser.planName}
+                                  </Badge>
+                                )}
+                              </div>
+                              
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                @{otherUser.username}
+                              </p>
+                              
+                              {otherUser.professionalTitle && (
+                                <p className="text-xs text-gray-500 mb-1 truncate">
+                                  {otherUser.professionalTitle}
+                                </p>
+                              )}
+                              
+                              {otherUser.area && (
+                                <p className="text-xs text-gray-500 truncate">
+                                  {otherUser.area}
+                                </p>
+                              )}
+                              
+                              {(otherUser.city || otherUser.state) && (
+                                <p className="text-xs text-gray-400 mt-1">
+                                  {otherUser.city && otherUser.state 
+                                    ? `${otherUser.city}, ${otherUser.state}`
+                                    : otherUser.city || otherUser.state
+                                  }
+                                </p>
+                              )}
+                              
+                              <p className="text-xs text-gray-400 mt-2">
+                                Conectado em {formatDate(connection.createdAt)}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex gap-2 mt-3">
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => window.location.href = `/profile/${otherUser.id}`}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Ver Perfil
+                            </Button>
+                            {user?.planName !== "Público" && (
+                              <Button size="sm" variant="outline" className="flex-1">
+                                <Mail className="h-4 w-4 mr-1" />
+                                Mensagem
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
