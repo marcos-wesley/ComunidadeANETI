@@ -38,6 +38,20 @@ export default function AuthPage() {
   const { toast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [selectedState, setSelectedState] = useState<string>("");
+  
+  // Check for success parameter
+  const urlParams = new URLSearchParams(window.location.search);
+  const successParam = urlParams.get('success');
+  
+  // Show success message if redirected from registration
+  if (successParam === 'registration') {
+    toast({
+      title: "Cadastro Realizado com Sucesso!",
+      description: "Sua solicitação foi enviada para aprovação. Aguarde o contato da equipe ANETI.",
+    });
+    // Clear the URL parameter
+    window.history.replaceState({}, '', '/auth');
+  }
 
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),

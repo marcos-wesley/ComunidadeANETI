@@ -512,7 +512,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         description: "Sua solicitação de associação foi enviada com sucesso e está aguardando aprovação.",
       });
       
-      // Return application data for redirect
+      // Return application data
       return application;
       
     } catch (error) {

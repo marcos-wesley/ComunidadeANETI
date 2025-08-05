@@ -68,14 +68,18 @@ export function IntegratedStripePayment({
         description: "Finalizando sua solicitação...",
       });
 
-      const result = await onPaymentAndSubmit();
+      await onPaymentAndSubmit();
       
-      // Redirect to pending approval with application ID
-      if (result && result.id) {
-        setLocation(`/pending-approval?app=${result.id}`);
-      } else {
-        setLocation("/pending-approval");
-      }
+      // Show success message and redirect
+      toast({
+        title: "Cadastro Concluído!",
+        description: "Redirecionando para página de aprovação...",
+      });
+      
+      // Simple redirect to login page with success message
+      setTimeout(() => {
+        setLocation("/auth?success=registration");
+      }, 2000);
 
     } catch (error) {
       console.error("Payment error:", error);
