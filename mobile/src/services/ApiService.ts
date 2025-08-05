@@ -126,14 +126,14 @@ class ApiService {
 
   // Auth
   async login(username: string, password: string): Promise<User> {
-    return this.request('/api/auth/login', {
+    return this.request('/api/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),
     });
   }
 
   async logout(): Promise<void> {
-    await this.request('/api/auth/logout', { method: 'POST' });
+    await this.request('/api/logout', { method: 'POST' });
   }
 
   async getCurrentUser(): Promise<User> {

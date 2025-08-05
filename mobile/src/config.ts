@@ -1,5 +1,6 @@
-// Configuration for the mobile app
-export const API_BASE_URL = 'https://1499df28-3452-4a92-ad60-fc326af9bc45-00-mdwdxh8.riker.replit.dev';
+// Configuration for the mobile app  
+// Use the Replit dev URL which should work once deployed
+export const API_BASE_URL = 'https://workspace-maarcoswesleey.replit.app';
 
 export const COLORS = {
   primary: '#012d6a',
