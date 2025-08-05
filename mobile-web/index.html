@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ANETI Mobile</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .login-container {
+            background: #012d6a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .logo-container {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 100px;
+            height: 100px;
+            border-radius: 50px;
+            background: #25a244;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+        }
+        
+        .logo-text {
+            font-size: 28px;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .tagline {
+            color: white;
+            font-size: 16px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .form-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+        }
+        
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #012d6a;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .input {
+            width: 100%;
+            border: 1px solid #f5f5f5;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            background: white;
+        }
+        
+        .button {
+            width: 100%;
+            background: #012d6a;
+            border: none;
+            border-radius: 10px;
+            padding: 15px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        
+        .hint {
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+            margin-top: 20px;
+            font-style: italic;
+        }
+        
+        .header {
+            background: #012d6a;
+            padding: 20px;
+            color: white;
+            text-align: center;
+        }
+        
+        .header-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .content {
+            padding: 15px;
+            flex: 1;
+            overflow-y: auto;
+            max-height: calc(100vh - 160px);
+        }
+        
+        .welcome-text {
+            font-size: 22px;
+            font-weight: bold;
+            color: #012d6a;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #012d6a;
+            margin-bottom: 10px;
+        }
+        
+        .card-description {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.4;
+        }
+        
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            display: flex;
+            border-top: 1px solid #f5f5f5;
+            padding: 5px 0;
+        }
+        
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 8px 2px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin: 0 2px;
+        }
+        
+        .tab.active {
+            background: rgba(1, 45, 106, 0.1);
+        }
+        
+        .tab-text {
+            font-size: 10px;
+            color: #666;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+        
+        .tab.active .tab-text {
+            color: #012d6a;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        @media (max-width: 420px) {
+            .container {
+                margin: 0;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="login-container">
+            <div class="logo-container">
+                <div class="logo">
+                    <div class="logo-text">ANETI</div>
+                </div>
+                <div class="tagline">Associação Nacional dos<br>Especialistas em TI</div>
+            </div>
+            
+            <div class="form-container">
+                <div class="title">Entrar na Comunidade</div>
+                <input type="text" id="username" class="input" placeholder="Nome de usuário">
+                <input type="password" id="password" class="input" placeholder="Senha">
+                <button class="button" onclick="login()">Entrar</button>
+                <div class="hint">💡 Digite qualquer usuário e senha para testar o app</div>
+            </div>
+        </div>
+        
+        <!-- Main Screen -->
+        <div id="mainScreen" class="hidden">
+            <div class="header">
+                <div class="header-title">ANETI Mobile</div>
+            </div>
+            
+            <div class="content" id="content">
+                <!-- Content will be loaded here -->
+            </div>
+            
+            <div class="tab-bar">
+                <div class="tab active" onclick="switchTab('home', this)">
+                    <div class="tab-text">🏠<br>Início</div>
+                </div>
+                <div class="tab" onclick="switchTab('feed', this)">
+                    <div class="tab-text">📰<br>Feed</div>
+                </div>
+                <div class="tab" onclick="switchTab('groups', this)">
+                    <div class="tab-text">👥<br>Grupos</div>
+                </div>
+                <div class="tab" onclick="switchTab('forums', this)">
+                    <div class="tab-text">💬<br>Fóruns</div>
+                </div>
+                <div class="tab" onclick="switchTab('profile', this)">
+                    <div class="tab-text">👤<br>Perfil</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        
+        function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username && password) {
+                currentUser = {
+                    fullName: 'Usuário ANETI',
+                    username: username
+                };
+                
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('mainScreen').classList.remove('hidden');
+                
+                switchTab('home');
+            } else {
+                alert('Preencha usuário e senha');
+            }
+        }
+        
+        function switchTab(tab, element) {
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            
+            // Add active class to clicked tab
+            if (element) {
+                element.classList.add('active');
+            }
+            
+            const content = document.getElementById('content');
+            
+            switch(tab) {
+                case 'home':
+                    content.innerHTML = `
+                        <div class="welcome-text">Olá, ${currentUser?.fullName}! 👋</div>
+                        
+                        <div class="card">
+                            <div class="card-title">🏠 Página Inicial</div>
+                            <div class="card-description">
+                                Bem-vindo à ANETI! Aqui você encontra todas as atualizações e novidades da nossa comunidade de profissionais de TI.
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">📊 Estatísticas</div>
+                            <div class="card-description">
+                                • Membros ativos: 250+<br>
+                                • Grupos de discussão: 15<br>
+                                • Posts no feed: 50 esta semana
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">🎯 Próximos Eventos</div>
+                            <div class="card-description">
+                                • Webinar sobre IA - 15/08<br>
+                                • Meetup de DevOps - 22/08<br>
+                                • Workshop React Native - 30/08
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'feed':
+                    content.innerHTML = `
+                        <div class="card">
+                            <div class="card-title">📰 Feed da Comunidade</div>
+                            <div class="card-description">
+                                Acompanhe as últimas novidades, posts e discussões dos membros da ANETI.
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">Ana Silva</div>
+                            <div class="card-description">
+                                Acabei de finalizar um projeto incrível usando React Native! 
+                                Alguém mais trabalhando com mobile?
+                            </div>
+                            <div style="font-size: 12px; color: #999; margin-top: 5px;">2 horas atrás</div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">Carlos Mendes</div>
+                            <div class="card-description">
+                                Compartilhando artigo sobre as tendências de DevOps para 2025. 
+                                Vale muito a pena ler!
+                            </div>
+                            <div style="font-size: 12px; color: #999; margin-top: 5px;">5 horas atrás</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'groups':
+                    content.innerHTML = `
+                        <div class="card">
+                            <div class="card-title">👥 Meus Grupos</div>
+                            <div class="card-description">
+                                Participe de grupos de discussão por área de interesse e conecte-se com profissionais da sua área.
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">💻 Desenvolvimento Frontend</div>
+                            <div class="card-description">45 membros • 12 posts esta semana</div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">☁️ Cloud Computing</div>
+                            <div class="card-description">38 membros • 8 posts esta semana</div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">🤖 Inteligência Artificial</div>
+                            <div class="card-description">52 membros • 15 posts esta semana</div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'forums':
+                    content.innerHTML = `
+                        <div class="card">
+                            <div class="card-title">💬 Fóruns de Discussão</div>
+                            <div class="card-description">
+                                Participe das discussões técnicas e troque experiências com outros profissionais.
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">🔧 Dúvidas Técnicas</div>
+                            <div class="card-description">
+                                Tire suas dúvidas e ajude outros membros<br>
+                                <small style="color: #999;">234 tópicos • 1.2k respostas</small>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">💼 Carreira em TI</div>
+                            <div class="card-description">
+                                Discussões sobre desenvolvimento profissional<br>
+                                <small style="color: #999;">156 tópicos • 890 respostas</small>
+                            </div>
+                        </div>
+                    `;
+                    break;
+                    
+                case 'profile':
+                    content.innerHTML = `
+                        <div class="card" style="text-align: center;">
+                            <div style="width: 80px; height: 80px; border-radius: 40px; background: #25a244; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center;">
+                                <span style="font-size: 32px; font-weight: bold; color: white;">${currentUser?.fullName?.[0]}</span>
+                            </div>
+                            <div style="font-size: 20px; font-weight: bold; color: #012d6a; margin-bottom: 5px;">${currentUser?.fullName}</div>
+                            <div style="font-size: 14px; color: #666;">@${currentUser?.username}</div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-title">📊 Estatísticas do Perfil</div>
+                            <div class="card-description">
+                                • Posts publicados: 12<br>
+                                • Comentários: 45<br>
+                                • Conexões: 28<br>
+                                • Grupos participando: 3
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <button style="width: 100%; background: #dc3545; border: none; border-radius: 10px; padding: 15px; color: white; font-size: 16px; font-weight: bold; cursor: pointer;" onclick="logout()">
+                                Sair da Conta
+                            </button>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+        
+        function logout() {
+            currentUser = null;
+            document.getElementById('mainScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+        
+        // Allow Enter key to login
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !document.getElementById('loginScreen').classList.contains('hidden')) {
+                login();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -5274,6 +5274,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Serve mobile app
+  app.get("/mobile", async (req, res) => {
+    try {
+      const mobileAppPath = path.join(process.cwd(), 'mobile-web', 'index.html');
+      const content = await fs.readFile(mobileAppPath, 'utf-8');
+      res.setHeader('Content-Type', 'text/html');
+      res.send(content);
+    } catch (error) {
+      console.error('Error serving mobile app:', error);
+      res.status(404).send('Mobile app not found');
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
