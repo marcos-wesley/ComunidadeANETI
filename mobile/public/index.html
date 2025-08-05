@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+  <title>ANETI Mobile Preview</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+      background-color: #f5f5f5;
+    }
+    
+    .mobile-container {
+      max-width: 375px;
+      margin: 20px auto;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+      overflow: hidden;
+      min-height: 667px;
+    }
+    
+    .mobile-header {
+      background: #012d6a;
+      color: white;
+      padding: 10px;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    #root {
+      min-height: 100vh;
+    }
+    
+    @media (max-width: 420px) {
+      .mobile-container {
+        margin: 0;
+        border-radius: 0;
+        min-height: 100vh;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="mobile-header">ANETI Mobile App Preview</div>
+  <div class="mobile-container">
+    <div id="root">Carregando app...</div>
+  </div>
+</body>
+</html>
