@@ -4852,7 +4852,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if user has access to forums (Junior, Pleno, Senior, Honra, Diretivo)
-      const allowedPlans = ['Junior', 'Pleno', 'Senior', 'Honra', 'Diretivo', 'Plano Diretivo'];
+      const allowedPlans = ['Junior', 'Pleno', 'Senior', 'Honra', 'Diretivo'];
       if (!user.planName || !allowedPlans.includes(user.planName)) {
         return res.status(403).json({
           success: false,
