@@ -129,7 +129,7 @@ export default function AdminMembershipPlans() {
   // Create plan mutation
   const createPlanMutation = useMutation({
     mutationFn: (planData: PlanFormData) => 
-      apiRequest('/api/admin/membership-plans', 'POST', planData),
+      apiRequest('POST', '/api/admin/membership-plans', planData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/membership-plans'] });
       setShowCreateDialog(false);
@@ -151,7 +151,7 @@ export default function AdminMembershipPlans() {
   // Update plan mutation
   const updatePlanMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: PlanFormData }) => 
-      apiRequest(`/api/admin/membership-plans/${id}`, 'PUT', data),
+      apiRequest('PUT', `/api/admin/membership-plans/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/membership-plans'] });
       setEditingPlan(null);
@@ -173,7 +173,7 @@ export default function AdminMembershipPlans() {
   // Delete plan mutation
   const deletePlanMutation = useMutation({
     mutationFn: (id: string) => 
-      apiRequest(`/api/admin/membership-plans/${id}`, 'DELETE'),
+      apiRequest('DELETE', `/api/admin/membership-plans/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/membership-plans'] });
       toast({
@@ -193,7 +193,7 @@ export default function AdminMembershipPlans() {
   // Toggle plan status mutation
   const togglePlanStatusMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => 
-      apiRequest(`/api/admin/membership-plans/${id}/toggle-status`, 'PATCH', { isActive }),
+      apiRequest('PATCH', `/api/admin/membership-plans/${id}/toggle-status`, { isActive }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/admin/membership-plans'] });
       toast({

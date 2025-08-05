@@ -608,7 +608,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     <div className="space-y-6">
       <StepIndicator />
       
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <div className="space-y-6">
         {/* Step 1: Personal Data */}
         {currentStep === 1 && (
           <Card>
@@ -1259,7 +1259,17 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
               {/* Only show submit button for free plans or to prepare payment */}
               {(!selectedPlanData?.requiresPayment || !clientSecret) && (
                 <Button 
-                  type="submit" 
+                  type="button" 
+                  onClick={async () => {
+                    const formData = form.getValues();
+                    if (selectedPlanData?.requiresPayment) {
+                      // Prepare payment
+                      await onSubmit(formData);
+                    } else {
+                      // Submit free plan directly
+                      await submitApplicationAfterPayment(formData);
+                    }
+                  }}
                   disabled={isSubmitting || !form.watch("acceptTerms")}
                 >
                   {isSubmitting ? (
@@ -1278,7 +1288,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
             </>
           )}
         </div>
-      </form>
+      </div>
     </div>
   );
 }
