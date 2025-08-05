@@ -3,6 +3,7 @@ import {
   membershipPlans, 
   memberApplications, 
   documents,
+  planChangeRequests,
   posts,
   comments,
   likes,
@@ -38,6 +39,8 @@ import {
   type InsertMemberApplication, 
   type Document, 
   type InsertDocument,
+  type PlanChangeRequest,
+  type InsertPlanChangeRequest,
   type Post,
   type InsertPost,
   type Comment,
@@ -158,6 +161,15 @@ export interface IStorage {
   getApplicationAppeals(applicationId: string): Promise<ApplicationAppeal[]>;
   getApplicationById(id: string): Promise<MemberApplication | undefined>;
   updateApplication(id: string, updates: Partial<MemberApplication>): Promise<MemberApplication | undefined>;
+
+  // Plan Change Requests
+  createPlanChangeRequest(request: InsertPlanChangeRequest): Promise<PlanChangeRequest>;
+  getPlanChangeRequest(id: string): Promise<PlanChangeRequest | undefined>;
+  getUserPlanChangeRequest(userId: string): Promise<PlanChangeRequest | undefined>;
+  updatePlanChangeRequest(id: string, updates: Partial<PlanChangeRequest>): Promise<PlanChangeRequest | undefined>;
+  getPlanChangeRequests(): Promise<PlanChangeRequest[]>;
+  approvePlanChangeRequest(id: string, adminId: string, adminNotes?: string): Promise<PlanChangeRequest | undefined>;
+  rejectPlanChangeRequest(id: string, adminId: string, adminNotes?: string): Promise<PlanChangeRequest | undefined>;
 
   // Social Feed
   getFeedPosts(userId: string): Promise<PostWithDetails[]>;
@@ -1006,6 +1018,77 @@ export class DatabaseStorage implements IStorage {
       .where(eq(memberApplications.id, id))
       .returning();
     return application || undefined;
+  }
+
+  // Plan Change Requests
+  async createPlanChangeRequest(insertRequest: InsertPlanChangeRequest): Promise<PlanChangeRequest> {
+    const [request] = await db
+      .insert(planChangeRequests)
+      .values(insertRequest)
+      .returning();
+    return request;
+  }
+
+  async getPlanChangeRequest(id: string): Promise<PlanChangeRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(planChangeRequests)
+      .where(eq(planChangeRequests.id, id));
+    return request || undefined;
+  }
+
+  async getUserPlanChangeRequest(userId: string): Promise<PlanChangeRequest | undefined> {
+    const [request] = await db
+      .select()
+      .from(planChangeRequests)
+      .where(and(
+        eq(planChangeRequests.userId, userId),
+        eq(planChangeRequests.status, 'pending')
+      ));
+    return request || undefined;
+  }
+
+  async updatePlanChangeRequest(id: string, updates: Partial<PlanChangeRequest>): Promise<PlanChangeRequest | undefined> {
+    const [request] = await db
+      .update(planChangeRequests)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(planChangeRequests.id, id))
+      .returning();
+    return request || undefined;
+  }
+
+  async getPlanChangeRequests(): Promise<PlanChangeRequest[]> {
+    return await db
+      .select()
+      .from(planChangeRequests)
+      .orderBy(desc(planChangeRequests.createdAt));
+  }
+
+  async approvePlanChangeRequest(id: string, adminId: string, adminNotes?: string): Promise<PlanChangeRequest | undefined> {
+    const request = await this.getPlanChangeRequest(id);
+    if (!request) return undefined;
+
+    // Update user's plan
+    await this.updateUser(request.userId, { 
+      currentPlanId: request.requestedPlanId 
+    });
+
+    // Update request status
+    return await this.updatePlanChangeRequest(id, {
+      status: 'approved',
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+      adminNotes
+    });
+  }
+
+  async rejectPlanChangeRequest(id: string, adminId: string, adminNotes?: string): Promise<PlanChangeRequest | undefined> {
+    return await this.updatePlanChangeRequest(id, {
+      status: 'rejected',
+      reviewedBy: adminId,
+      reviewedAt: new Date(),
+      adminNotes
+    });
   }
 
   // Social Feed Methods
