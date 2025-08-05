@@ -25,7 +25,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 export default function PendingApprovalDashboard() {
-  const { user, logout } = useAuth();
+  const { user, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
 
   const { data: application, isLoading, error } = useQuery({
@@ -33,9 +33,12 @@ export default function PendingApprovalDashboard() {
     retry: false,
   });
 
-  const handleLogout = async () => {
-    await logout();
-    setLocation("/auth");
+  const handleLogout = () => {
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        setLocation("/auth");
+      }
+    });
   };
 
   if (isLoading) {
