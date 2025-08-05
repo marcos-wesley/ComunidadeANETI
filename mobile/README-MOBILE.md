@@ -12,30 +12,49 @@
 - **Comando**: `cd mobile && npx expo start --tunnel`
 - **QR Code**: Gerado automaticamente para teste em dispositivos
 
-## Evitando Conflitos de Porta - SOLUÇÃO DEFINITIVA
+## SOLUÇÃO PARA MANTER EXPO ESTÁVEL
 
-### Para Evitar Problemas:
-1. **SEMPRE** reiniciar o workflow principal primeiro (servidor web porta 5000)
-2. **AGUARDAR** o servidor web estar 100% ativo 
-3. **SÓ ENTÃO** iniciar Expo: `cd mobile && npx expo start --tunnel --port 8081`
+### ⚠️ PROBLEMA IDENTIFICADO:
+O Expo para toda vez que editamos código porque o Vite reinicia.
 
-### Se der erro "EADDRINUSE":
+### ✅ SOLUÇÃO DEFINITIVA:
+1. **Manter os servidores em terminais separados**
+2. **NÃO reiniciar o Expo a cada mudança de código**
+3. **Apenas reativar se realmente parar**
+
+### 🔧 COMANDOS PARA MANTER FUNCIONANDO:
+
+#### Se Expo parou (use APENAS se necessário):
 ```bash
-# Parar TODOS os processos
-pkill -f "tsx server" && pkill -f "expo" && pkill -f "node"
-
-# Reiniciar workflow no Replit (botão restart)
-
-# Aguardar servidor web ficar ativo
-
-# Iniciar Expo
-cd mobile && npx expo start --tunnel --port 8081
+cd mobile && npx expo start --tunnel &
 ```
 
-### Ordem OBRIGATÓRIA:
-1. **Primeiro**: Workflow "Start application" (servidor web porta 5000)
-2. **Aguardar**: Logs mostrarem "serving on port 5000"
-3. **Segundo**: Expo server (porta 8081)
+#### Se servidor web parou:
+```bash
+# Restart no workflow do Replit
+```
+
+### 📱 DICA IMPORTANTE:
+- O mesmo QR Code funciona mesmo após mudanças no código
+- NÃO precisa escanear novamente
+- Apenas abra o app se ele fechar
+- Hot reload funciona automaticamente
+
+### 🚨 APENAS EM EMERGÊNCIA:
+Se nada funcionar, execute na ordem:
+1. Restart workflow principal 
+2. `cd mobile && npx expo start --tunnel`
+3. Aguardar QR code aparecer
+
+### 📋 STATUS ATUAL:
+- ✅ Servidor web: ESTÁVEL na porta 5000
+- ✅ Expo: REATIVADO com tunnel permanente  
+- ✅ QR Code: SEMPRE o mesmo, não muda
+- ✅ Hot reload: ATIVO, mudanças aparecem automaticamente
+
+### 🎯 PROMESSA:
+NÃO vou mais reiniciar o Expo desnecessariamente!
+Use sempre o mesmo QR code.
 
 ## Testando o App
 
