@@ -3,7 +3,7 @@
     <linearGradient id="mgmtCoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#84CC16;stop-opacity:1" />
       <stop offset="50%" style="stop-color:#65A30D;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#365314;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4D7C0F;stop-opacity:1" />
     </linearGradient>
   </defs>
   
@@ -11,24 +11,14 @@
   
   <!-- Background elements -->
   <g opacity="0.2">
-    <!-- Agile sprint timeline -->
-    <path d="M100 100 L700 100" stroke="white" stroke-width="3"/>
-    <circle cx="200" cy="100" r="8" fill="white"/>
-    <circle cx="400" cy="100" r="8" fill="white"/>
-    <circle cx="600" cy="100" r="8" fill="white"/>
-    
-    <!-- Kanban columns -->
-    <rect x="120" y="200" width="80" height="60" rx="5" stroke="white" stroke-width="2" fill="none"/>
-    <rect x="250" y="200" width="80" height="60" rx="5" stroke="white" stroke-width="2" fill="none"/>
-    <rect x="380" y="200" width="80" height="60" rx="5" stroke="white" stroke-width="2" fill="none"/>
-    
-    <!-- Network nodes -->
-    <circle cx="650" cy="180" r="15" stroke="white" stroke-width="2" fill="none"/>
-    <circle cx="680" cy="220" r="10" stroke="white" stroke-width="2" fill="none"/>
-    <path d="M650 180 L680 220" stroke="white" stroke-width="2"/>
+    <rect x="100" y="80" width="120" height="80" rx="5" stroke="white" stroke-width="2" fill="none"/>
+    <rect x="250" y="80" width="120" height="80" rx="5" stroke="white" stroke-width="2" fill="none"/>
+    <rect x="400" y="80" width="120" height="80" rx="5" stroke="white" stroke-width="2" fill="none"/>
+    <path d="M200 120 L250 120" stroke="white" stroke-width="3"/>
+    <path d="M370 120 L400 120" stroke="white" stroke-width="3"/>
   </g>
   
   <!-- Main title -->
   <text x="400" y="160" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="white" text-anchor="middle">Gestão de Projetos em TI</text>
-  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Liderando equipes rumo ao sucesso</text>
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Liderando a transformação digital</text>
 </svg>

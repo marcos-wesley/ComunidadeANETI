@@ -141,7 +141,7 @@ function GroupCard({ group }: { group: Group }) {
     return eligiblePlans.includes(user?.planName || '');
   };
 
-  const membershipStatus = getMembershipStatus(membership);
+  const membershipStatus = getMembershipStatus(membership || null);
   const canJoin = group.isPublic || canJoinPrivateGroups();
   const isJoining = joiningGroupId === group.id;
 

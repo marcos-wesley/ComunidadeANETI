@@ -3,37 +3,24 @@
     <linearGradient id="securityCoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" style="stop-color:#DC2626;stop-opacity:1" />
       <stop offset="50%" style="stop-color:#B91C1C;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#7F1D1D;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#991B1B;stop-opacity:1" />
     </linearGradient>
   </defs>
   
   <rect width="800" height="300" fill="url(#securityCoverGradient)"/>
   
-  <!-- Background elements -->
-  <g opacity="0.15">
-    <!-- Security network -->
-    <circle cx="200" cy="100" r="20" stroke="white" stroke-width="2" fill="none"/>
-    <circle cx="400" cy="80" r="25" stroke="white" stroke-width="2" fill="none"/>
-    <circle cx="600" cy="120" r="18" stroke="white" stroke-width="2" fill="none"/>
-    <path d="M200 100 L400 80 L600 120" stroke="white" stroke-width="2"/>
+  <!-- Background security elements -->
+  <g opacity="0.2">
+    <path d="M150 100 L190 120 L190 160 C190 180 170 200 150 210 C130 200 110 180 110 160 L110 120 Z" fill="white"/>
+    <path d="M650 80 L690 100 L690 140 C690 160 670 180 650 190 C630 180 610 160 610 140 L610 100 Z" fill="white"/>
     
-    <!-- Binary security code -->
-    <text x="50" y="200" font-family="monospace" font-size="10" fill="white">10110100 11010001 00110111</text>
-    <text x="450" y="220" font-family="monospace" font-size="10" fill="white">01101011 10010110 11100010</text>
-    <text x="50" y="240" font-family="monospace" font-size="10" fill="white">11010100 01110011 10001101</text>
-    <text x="450" y="260" font-family="monospace" font-size="10" fill="white">00111010 11001010 01110110</text>
-    
-    <!-- Firewalls -->
-    <rect x="100" y="180" width="4" height="40" fill="white"/>
-    <rect x="120" y="170" width="4" height="50" fill="white"/>
-    <rect x="140" y="185" width="4" height="35" fill="white"/>
-    
-    <rect x="650" y="180" width="4" height="40" fill="white"/>
-    <rect x="670" y="170" width="4" height="50" fill="white"/>
-    <rect x="690" y="185" width="4" height="35" fill="white"/>
+    <!-- Binary pattern -->
+    <text x="300" y="80" font-family="monospace" font-size="12" fill="white">1011001010</text>
+    <text x="300" y="100" font-family="monospace" font-size="12" fill="white">0110101101</text>
+    <text x="300" y="120" font-family="monospace" font-size="12" fill="white">1101010110</text>
   </g>
   
   <!-- Main title -->
   <text x="400" y="160" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="white" text-anchor="middle">Segurança da Informação</text>
-  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Protegendo dados, garantindo confiança</text>
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Protegendo dados e sistemas críticos</text>
 </svg>
