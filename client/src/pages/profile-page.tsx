@@ -498,7 +498,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         const { imagePath } = uploadData;
         
         console.log('Updating profile with imagePath:', imagePath);
-        const updateResponse = await apiRequest("/api/profile/profile-picture", "PUT", {
+        const updateResponse = await apiRequest("PUT", "/api/profile/profile-picture", {
           imagePath
         });
         
@@ -566,7 +566,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         const { imagePath } = uploadData;
         
         console.log('Updating cover with imagePath:', imagePath);
-        const updateResponse = await apiRequest("/api/profile/cover-photo", "PUT", {
+        const updateResponse = await apiRequest("PUT", "/api/profile/cover-photo", {
           imagePath
         });
         
