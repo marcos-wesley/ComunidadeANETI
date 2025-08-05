@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -8,14 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Link } from "wouter";
-import { CheckCircle, AlertCircle, ArrowLeft } from "lucide-react";
+import { CheckCircle, AlertCircle, ArrowLeft, Mail } from "lucide-react";
 
 const resetRequestSchema = z.object({
   username: z.string().min(1, "Nome de usuário é obrigatório"),
 });
 
 const resetPasswordSchema = z.object({
-  username: z.string().min(1, "Nome de usuário é obrigatório"),
+  username: z.string().optional(),
   newPassword: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
   confirmPassword: z.string().min(6, "Confirmação de senha é obrigatória"),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -29,9 +29,21 @@ type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 export default function PasswordResetPage() {
   const [step, setStep] = useState<'request' | 'reset'>('request');
   const [username, setUsername] = useState('');
+  const [resetToken, setResetToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
+
+  // Check for token in URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    if (token) {
+      setResetToken(token);
+      setStep('reset');
+    }
+  }, []);
 
   const requestForm = useForm<ResetRequestForm>({
     resolver: zodResolver(resetRequestSchema),
@@ -64,7 +76,8 @@ export default function PasswordResetPage() {
           setStep('reset');
           setMessage('Usuário migrado do sistema antigo. Defina uma nova senha abaixo.');
         } else {
-          setMessage('Instruções de reset foram enviadas para o seu email (se disponível).');
+          setEmailSent(true);
+          setMessage('E-mail de redefinição enviado com sucesso! Verifique sua caixa de entrada e spam.');
         }
       } else {
         setError(result.error || 'Erro ao processar solicitação');
@@ -82,13 +95,20 @@ export default function PasswordResetPage() {
     setMessage('');
 
     try {
+      const requestBody: any = {
+        newPassword: data.newPassword,
+      };
+
+      if (resetToken) {
+        requestBody.token = resetToken;
+      } else {
+        requestBody.username = data.username || username;
+      }
+
       const response = await fetch('/api/password-reset', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: data.username,
-          newPassword: data.newPassword,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const result = await response.json();
@@ -114,15 +134,22 @@ export default function PasswordResetPage() {
         <Card className="shadow-2xl border-0">
           <CardHeader className="text-center pb-4">
             <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle className="w-8 h-8 text-blue-600" />
+              {emailSent ? (
+                <Mail className="w-8 h-8 text-blue-600" />
+              ) : (
+                <CheckCircle className="w-8 h-8 text-blue-600" />
+              )}
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">
-              {step === 'request' ? 'Redefinir Senha' : 'Nova Senha'}
+              {emailSent ? 'E-mail Enviado' : (step === 'request' ? 'Redefinir Senha' : 'Nova Senha')}
             </CardTitle>
             <CardDescription className="text-gray-600">
-              {step === 'request' 
-                ? 'Digite seu nome de usuário para verificar se precisa redefinir a senha'
-                : 'Defina sua nova senha para acessar a plataforma'
+              {emailSent 
+                ? 'Verifique sua caixa de entrada para continuar'
+                : (step === 'request' 
+                  ? 'Digite seu nome de usuário para verificar se precisa redefinir a senha'
+                  : 'Defina sua nova senha para acessar a plataforma'
+                )
               }
             </CardDescription>
           </CardHeader>
@@ -142,7 +169,28 @@ export default function PasswordResetPage() {
               </Alert>
             )}
 
-            {step === 'request' ? (
+            {emailSent ? (
+              <div className="text-center space-y-4">
+                <p className="text-gray-600">
+                  Enviamos um e-mail com as instruções para redefinir sua senha. 
+                  O link expira em 15 minutos por segurança.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Não recebeu o e-mail? Verifique sua pasta de spam ou tente novamente.
+                </p>
+                <Button 
+                  onClick={() => {
+                    setEmailSent(false);
+                    setMessage('');
+                    setError('');
+                  }}
+                  variant="outline"
+                  className="w-full"
+                >
+                  Tentar Novamente
+                </Button>
+              </div>
+            ) : step === 'request' ? (
               <form onSubmit={requestForm.handleSubmit(handleResetRequest)} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Nome de Usuário</Label>

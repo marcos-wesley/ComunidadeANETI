@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupAuth, isAuthenticated, isAdminAuthenticated, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
+import { emailService } from "./emailService";
 import { ObjectPermission } from "./objectAcl";
 import { NotificationService } from "./notificationService";
 import { 
@@ -255,13 +256,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if user has WordPress password hash (needs reset)
       const needsReset = user.password?.startsWith('$wp$2y$10$') || user.password?.startsWith('$P$B');
       
-      res.json({ 
-        success: true,
-        needsReset,
-        message: needsReset 
-          ? "Usuário migrado do sistema antigo. É necessário redefinir a senha."
-          : "Usuário encontrado. Instruções de reset enviadas."
-      });
+      if (needsReset) {
+        // For migrated users, allow direct password reset without email
+        res.json({ 
+          success: true,
+          needsReset: true,
+          message: "Usuário migrado do sistema antigo. É necessário redefinir a senha."
+        });
+      } else {
+        // For regular users, send email with reset token
+        if (!user.email) {
+          return res.status(400).json({ error: "E-mail não encontrado para este usuário" });
+        }
+
+        const resetToken = emailService.generateResetToken(user.id);
+        const emailSent = await emailService.sendPasswordResetEmail(user.email, user.username, resetToken);
+        
+        if (emailSent) {
+          res.json({ 
+            success: true,
+            needsReset: false,
+            message: "E-mail de redefinição de senha enviado com sucesso. Verifique sua caixa de entrada."
+          });
+        } else {
+          res.status(500).json({ error: "Erro ao enviar e-mail. Tente novamente mais tarde." });
+        }
+      }
     } catch (error) {
       console.error("Error in password reset request:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
@@ -271,19 +291,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Password reset endpoint
   app.post("/api/password-reset", async (req, res) => {
     try {
-      const { username, newPassword } = req.body;
+      const { username, newPassword, token } = req.body;
       
-      if (!username || !newPassword) {
-        return res.status(400).json({ error: "Nome de usuário e nova senha são obrigatórios" });
+      if (!newPassword) {
+        return res.status(400).json({ error: "Nova senha é obrigatória" });
       }
 
       if (newPassword.length < 6) {
         return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres" });
       }
 
-      const user = await storage.getUserByUsername(username);
-      if (!user) {
-        return res.status(404).json({ error: "Usuário não encontrado" });
+      let user;
+
+      if (token) {
+        // Token-based reset (for regular users via email)
+        const userId = emailService.validateResetToken(token);
+        if (!userId) {
+          return res.status(400).json({ error: "Token inválido ou expirado" });
+        }
+        
+        user = await storage.getUserById(userId);
+        if (!user) {
+          return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+
+        // Consume the token to prevent reuse
+        emailService.consumeResetToken(token);
+      } else if (username) {
+        // Username-based reset (for migrated users)
+        user = await storage.getUserByUsername(username);
+        if (!user) {
+          return res.status(404).json({ error: "Usuário não encontrado" });
+        }
+
+        // Only allow direct username reset for migrated users
+        const isMigrated = user.password?.startsWith('$wp$2y$10$') || user.password?.startsWith('$P$B');
+        if (!isMigrated) {
+          return res.status(400).json({ error: "Este usuário deve usar o link de reset enviado por e-mail" });
+        }
+      } else {
+        return res.status(400).json({ error: "Token ou nome de usuário é obrigatório" });
       }
 
       // Hash the new password
