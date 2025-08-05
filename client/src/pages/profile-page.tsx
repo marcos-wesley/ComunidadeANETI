@@ -605,20 +605,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             }}
           />
         )}
-        {/* Plan Badge Seal - Bottom Right of Cover */}
-        {profile.planBadgeImageUrl && (
-          <div className="absolute bottom-4 right-4 z-30">
-            <img 
-              src={profile.planBadgeImageUrl}
-              alt={`Selo ${profile.planName}`}
-              className="w-24 h-24 object-contain drop-shadow-2xl"
-              onError={(e) => {
-                console.error('Error loading badge image:', profile.planBadgeImageUrl);
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
-        )}
+
         {isOwnProfile && (
           <div className="absolute top-4 left-4 flex gap-2 z-20">
             <CoverPhotoUploader />
@@ -658,6 +645,21 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             )}
           </div>
         </div>
+
+        {/* Plan Badge Seal - White area, aligned with profile photo */}
+        {profile.planBadgeImageUrl && (
+          <div className="absolute -top-20 right-6 flex items-center justify-center">
+            <img 
+              src={profile.planBadgeImageUrl}
+              alt={`Selo ${profile.planName}`}
+              className="w-32 h-32 object-contain drop-shadow-2xl"
+              onError={(e) => {
+                console.error('Error loading badge image:', profile.planBadgeImageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
 
         <div className="ml-48">
           <div className="flex items-start justify-between">
