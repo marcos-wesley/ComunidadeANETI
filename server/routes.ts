@@ -19,7 +19,7 @@ import {
   recommendations 
 } from "@shared/schema";
 import { db } from "./db";
-import { users, applications, documents, subscriptions, notifications, posts, postReactions, experiences, educations, skills, userSkills, certifications, projects, languages, connections } from "../shared/schema";
+import { users, documents, notifications, posts, experiences, educations, skills, certifications, projects, languages, connections } from "../shared/schema";
 import { eq, and, or } from "drizzle-orm";
 import express from "express";
 import path from "path";
@@ -33,7 +33,7 @@ if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
 }
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: "2024-06-20",
+  apiVersion: "2025-07-30.basil",
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -601,6 +601,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create new post
   app.post("/api/posts", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user?.id;
+      const { content, mediaType, mediaUrl, visibility, mentionedUsers } = req.body;
+
+      if (!content || content.trim().length === 0) {
+        return res.status(400).json({ error: "Content is required" });
+      }
+
+      // Check if user can post globally (only Diretivo plan)
+      if (visibility === "global") {
+        const user = await storage.getUser(userId!);
+        if (user?.planName !== "Diretivo") {
+          return res.status(403).json({ error: "Only Diretivo members can post globally" });
+        }
+      }
+
+      const post = await storage.createPost({
+        authorId: userId!,
+        content,
+        mediaType,
+        mediaUrl,
+        visibility: visibility || "connections",
+        mentionedUsers: mentionedUsers || [],
+      });
+
+      const postWithDetails = await storage.getPostWithDetails(post.id);
+      res.status(201).json(postWithDetails);
+    } catch (error) {
+      console.error("Error creating post:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
+  // Publish post (alias for create post)
+  app.post("/api/posts/publish", isAuthenticated, async (req, res) => {
     try {
       const userId = req.user?.id;
       const { content, mediaType, mediaUrl, visibility, mentionedUsers } = req.body;
@@ -2467,6 +2502,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // User logout
+  app.post("/api/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Logout error:", err);
+        return res.status(500).json({ success: false, message: "Failed to logout" });
+      }
+      res.json({ success: true, message: "Logged out successfully" });
+    });
+  });
+
   // Admin logout
   app.post("/api/admin/logout", (req, res) => {
     req.session.adminUser = null;
@@ -3583,6 +3629,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to fetch group" 
+      });
+    }
+  });
+
+  // Request access to join a group (alias for join)
+  app.post("/api/groups/:groupId/request-access", isAuthenticated, async (req, res) => {
+    try {
+      const groupId = req.params.groupId;
+      const userId = req.user.id;
+      
+      // Check if user is eligible to join groups (not Público level)
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({
+          success: false,
+          message: "Usuário não encontrado"
+        });
+      }
+
+      const group = await storage.getGroupById(groupId);
+      if (!group) {
+        return res.status(404).json({
+          success: false,
+          message: "Grupo não encontrado"
+        });
+      }
+
+      // For private groups, only Junior, Pleno, Sênior, Honra, and Diretivo can join
+      if (!group.isPublic) {
+        const eligiblePlans = ['Junior', 'Pleno', 'Sênior', 'Honra', 'Diretivo'];
+        if (!eligiblePlans.includes(user.planName || '')) {
+          return res.status(403).json({
+            success: false,
+            message: "Apenas membros com planos Junior, Pleno, Sênior, Honra ou Diretivo podem solicitar acesso a grupos privados"
+          });
+        }
+      }
+
+      // Check if user is already a member
+      const existingMembership = await storage.getGroupMembership(groupId, userId);
+      if (existingMembership) {
+        return res.status(400).json({
+          success: false,
+          message: "Você já é membro deste grupo"
+        });
+      }
+
+      // Add user to group
+      await storage.joinGroup(groupId, userId);
+
+      res.json({
+        success: true,
+        message: "Solicitação de acesso enviada com sucesso"
+      });
+    } catch (error) {
+      console.error("Error requesting group access:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to request group access" 
       });
     }
   });

@@ -10,6 +10,16 @@ import { User as SelectUser } from "@shared/schema";
 declare global {
   namespace Express {
     interface User extends SelectUser {}
+    namespace Session {
+      interface SessionData {
+        adminUser?: {
+          adminUserId: string;
+          username: string;
+          role: string;
+          isAuthenticated: boolean;
+        };
+      }
+    }
   }
 }
 
@@ -39,6 +49,10 @@ async function comparePasswords(supplied: string, stored: string | null | undefi
   const hashedBuf = Buffer.from(hashed, "hex");
   const suppliedBuf = (await scryptAsync(supplied, salt, 64)) as Buffer;
   return timingSafeEqual(hashedBuf, suppliedBuf);
+}
+
+export async function verifyPassword(supplied: string, stored: string | null | undefined) {
+  return comparePasswords(supplied, stored);
 }
 
 export function setupAuth(app: Express) {
