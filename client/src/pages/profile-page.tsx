@@ -595,7 +595,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
         <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-800"></div>
         {profile.coverPhoto && (
           <img 
-            src={`http://localhost:5000${profile.coverPhoto}?t=${new Date().getTime()}`} 
+            src={`${profile.coverPhoto}?t=${new Date().getTime()}`} 
             alt="Foto de capa" 
             className="absolute inset-0 w-full h-full object-cover"
             onLoad={() => console.log('✓ Foto de capa carregada:', profile.coverPhoto)}
@@ -628,7 +628,7 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             <span className="absolute inset-0 flex items-center justify-center">{getInitials(profile.fullName)}</span>
             {profile.profilePicture && (
               <img 
-                src={`http://localhost:5000${profile.profilePicture}?t=${new Date().getTime()}`} 
+                src={`${profile.profilePicture}?t=${new Date().getTime()}`} 
                 alt={profile.fullName}
                 className="absolute inset-0 w-full h-full rounded-full object-cover"
                 onLoad={() => console.log('✓ Foto de perfil carregada:', profile.profilePicture)}

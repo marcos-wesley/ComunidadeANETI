@@ -1232,7 +1232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      const imagePath = `/images/profile-images/${req.file.filename}`;
+      const imagePath = `/uploads/profile-images/${req.file.filename}`;
       res.json({ fileName: req.file.filename, imagePath });
     } catch (error) {
       console.error("Error uploading profile image:", error);
@@ -1247,7 +1247,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "No file uploaded" });
       }
       
-      const imagePath = `/images/cover-images/${req.file.filename}`;
+      const imagePath = `/uploads/cover-images/${req.file.filename}`;
       res.json({ fileName: req.file.filename, imagePath });
     } catch (error) {
       console.error("Error uploading cover image:", error);
