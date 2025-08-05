@@ -60,8 +60,6 @@ export function ConnectionsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("pending");
-  
-  console.log("ConnectionsPage rendered:", { activeTab, pendingRequestsLength: pendingRequests.length, allConnectionsLength: allConnections.length });
 
   // Fetch current user
   const { data: user } = useQuery({
@@ -169,7 +167,7 @@ export function ConnectionsPage() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="pending" className="flex items-center gap-2">
               <Clock className="h-4 w-4" />
               Pendentes
@@ -314,7 +312,7 @@ export function ConnectionsPage() {
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {allConnections.map((connection) => {
                       // Determinar qual usuário exibir (o outro usuário da conexão)
-                      const otherUser = connection.requesterId === (user as any)?.id 
+                      const otherUser = connection.requesterId === user?.id 
                         ? connection.receiver 
                         : connection.requester;
                       
@@ -391,7 +389,7 @@ export function ConnectionsPage() {
                               <Eye className="h-4 w-4 mr-1" />
                               Ver Perfil
                             </Button>
-                            {(user as any)?.planName !== "Público" && (
+                            {user?.planName !== "Público" && (
                               <Button size="sm" variant="outline" className="flex-1">
                                 <Mail className="h-4 w-4 mr-1" />
                                 Mensagem
