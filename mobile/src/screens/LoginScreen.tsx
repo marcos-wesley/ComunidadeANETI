@@ -27,11 +27,14 @@ const LoginScreen: React.FC = () => {
       return;
     }
 
+    console.log('🔐 Tentando login com:', username.trim());
     setIsLoading(true);
     try {
       await login(username.trim(), password);
+      console.log('✅ Login bem-sucedido!');
     } catch (error) {
-      Alert.alert('Erro de Login', 'Usuário ou senha incorretos');
+      console.log('❌ Erro de login:', error);
+      Alert.alert('Erro de Login', 'Usuário ou senha incorretos. Verifique suas credenciais.');
     } finally {
       setIsLoading(false);
     }

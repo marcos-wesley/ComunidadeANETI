@@ -56,6 +56,18 @@ Se nada funcionar, execute na ordem:
 NÃO vou mais reiniciar o Expo desnecessariamente!
 Use sempre o mesmo QR code.
 
+### 🔧 LOGS ADICIONADOS:
+- ✅ Logs detalhados no ApiService
+- ✅ Logs detalhados no LoginScreen  
+- ✅ Console mostrará todas as requisições
+- ✅ Fácil debug do problema de autenticação
+
+### 🧪 TESTE CONFIRMADO:
+- ✅ Servidor funcionando: curl testado
+- ✅ Credenciais válidas: marcos.wesley/123456
+- ✅ API retorna usuário completo
+- 🔍 Próximo: logs do app mobile
+
 ## Testando o App
 
 ### Credenciais de Teste:

@@ -107,6 +107,9 @@ class ApiService {
   async request(endpoint: string, options: RequestInit = {}): Promise<any> {
     const url = `${this.baseURL}${endpoint}`;
     
+    console.log('🔗 API Request:', url);
+    console.log('📦 Request Options:', options);
+    
     const defaultOptions: RequestInit = {
       credentials: 'include',
       headers: {
@@ -119,15 +122,21 @@ class ApiService {
 
     const response = await fetch(url, { ...defaultOptions, ...options });
 
+    console.log('📱 Response Status:', response.status);
+    console.log('📱 Response Headers:', Object.fromEntries(response.headers.entries()));
+
     if (!response.ok) {
       if (response.status === 401) {
-        // Handle unauthorized - for now just log it
-        console.log('Unauthorized request to:', endpoint);
+        console.log('❌ Unauthorized request to:', endpoint);
       }
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      const errorText = await response.text();
+      console.log('❌ Error Response:', errorText);
+      throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errorText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('✅ Response Data:', data);
+    return data;
   }
 
   // Auth
