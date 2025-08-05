@@ -454,18 +454,6 @@ export default function AdminPage() {
     }
   };
 
-  // Auto-import orders when component loads (if no orders exist)
-  const [autoImportTriggered, setAutoImportTriggered] = useState(false);
-  
-  // Check if auto-import should run
-  useEffect(() => {
-    if (!autoImportTriggered && ordersData && ordersData.length === 0 && adminUser) {
-      console.log("🚀 Auto-importing orders on first load...");
-      setAutoImportTriggered(true);
-      importOrdersMutation.mutate();
-    }
-  }, [ordersData, adminUser, autoImportTriggered]);
-
   // Import orders mutation
   const importOrdersMutation = useMutation({
     mutationFn: async () => {
@@ -489,6 +477,18 @@ export default function AdminPage() {
       });
     },
   });
+
+  // Auto-import orders when component loads (if no orders exist)
+  const [autoImportTriggered, setAutoImportTriggered] = useState(false);
+  
+  // Check if auto-import should run
+  useEffect(() => {
+    if (!autoImportTriggered && orders && orders.length === 0 && adminUser && !loadingOrders) {
+      console.log("🚀 Auto-importing orders on first load...");
+      setAutoImportTriggered(true);
+      importOrdersMutation.mutate();
+    }
+  }, [orders, adminUser, autoImportTriggered, loadingOrders]);
 
   const handleImportOrders = () => {
     if (window.confirm('Deseja importar todos os pedidos da planilha CSV? Isso irá substituir todos os pedidos existentes na base de dados.')) {
