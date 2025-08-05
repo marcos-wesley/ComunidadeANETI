@@ -443,6 +443,16 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   // Submit application after payment (called from IntegratedStripePayment)
   const submitApplicationAfterPayment = async (data: RegistrationForm) => {
     try {
+      // Double check that terms are accepted
+      if (!data.acceptTerms) {
+        toast({
+          title: "Erro",
+          description: "Você deve aceitar os termos e condições para continuar.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Create the application with user data and payment info
       const applicationData: any = {
         fullName: data.fullName,
@@ -1174,7 +1184,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="text-lg font-semibold text-blue-900 mb-2">Pagamento</h3>
                     <p className="text-blue-800">
-                      O pagamento de <strong>R$ {selectedPlanData.price.toFixed(2)}/ano</strong> será processado ao confirmar a solicitação.
+                      O pagamento de <strong>R$ {(selectedPlanData.price / 100).toFixed(2).replace('.', ',')}/ano</strong> será processado ao confirmar a solicitação.
                     </p>
                     <p className="text-blue-700 text-sm mt-1">
                       Clique em "Preparar Pagamento" para continuar.
@@ -1212,7 +1222,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                     <li>Sua solicitação será enviada para análise</li>
                     <li>Nossa equipe revisará seus documentos</li>
                     {selectedPlanData?.requiresPayment && (
-                      <li>Você receberá um link para pagamento por email</li>
+                      <li>O pagamento será processado após a confirmação</li>
                     )}
                     <li>Após aprovação, você receberá acesso completo à plataforma</li>
                   </ol>

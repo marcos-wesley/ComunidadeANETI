@@ -27,7 +27,14 @@ export function IntegratedStripePayment({
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePaymentAndSubmit = async () => {
-    if (!stripe || !elements || isProcessing || isSubmitting) {
+    if (!stripe || !elements || isProcessing || isSubmitting || disabled) {
+      if (disabled) {
+        toast({
+          title: "Atenção",
+          description: "Você deve aceitar os termos e condições para continuar.",
+          variant: "destructive",
+        });
+      }
       return;
     }
 
@@ -81,7 +88,7 @@ export function IntegratedStripePayment({
           <strong>Plano:</strong> {planName}
         </p>
         <p className="text-blue-800">
-          <strong>Valor:</strong> R$ {planPrice.toFixed(2)}/ano
+          <strong>Valor:</strong> R$ {(planPrice / 100).toFixed(2).replace('.', ',')}/ano
         </p>
         <p className="text-blue-700 text-sm mt-1">
           Sua assinatura será renovada automaticamente a cada ano.
