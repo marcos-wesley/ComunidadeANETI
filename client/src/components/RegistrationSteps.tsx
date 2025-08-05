@@ -250,40 +250,75 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
     return true;
   };
 
-  // Dummy function for upload parameters (not needed with direct upload)
+  // Get upload parameters from object storage service
   const handleGetUploadParameters = async () => {
-    return {
-      method: "POST" as const,
-      url: "/api/documents/upload-registration",
-    };
+    try {
+      const response = await apiRequest("POST", "/api/documents/upload");
+      return {
+        method: "PUT" as const,
+        url: response.uploadURL,
+      };
+    } catch (error) {
+      console.error("Error getting upload parameters:", error);
+      throw error;
+    }
   };
 
   // Handle identity document upload
   const handleIdentityUploadComplete = (result: any) => {
-    setIdentityDocument(result.fileId || result.fileName || "uploaded");
-    toast({
-      title: "Documento enviado!",
-      description: "Documento de identidade carregado com sucesso.",
-    });
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const uploadURL = uploadedFile.uploadURL;
+      setIdentityDocument(uploadURL);
+      toast({
+        title: "Documento enviado!",
+        description: "Documento de identidade carregado com sucesso.",
+      });
+    } else {
+      toast({
+        title: "Erro no upload",
+        description: "Falha ao carregar documento de identidade.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle experience document upload
   const handleExperienceUploadComplete = (result: any) => {
-    const newDoc = result.fileId || result.fileName || "uploaded";
-    setExperienceDocuments(prev => [...prev, newDoc]);
-    toast({
-      title: "Documento enviado!",
-      description: "Comprovante de experiência carregado com sucesso.",
-    });
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const uploadURL = uploadedFile.uploadURL;
+      setExperienceDocuments(prev => [...prev, uploadURL]);
+      toast({
+        title: "Documento enviado!",
+        description: "Comprovante de experiência carregado com sucesso.",
+      });
+    } else {
+      toast({
+        title: "Erro no upload",
+        description: "Falha ao carregar comprovante de experiência.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Handle student document upload
   const handleStudentUploadComplete = (result: any) => {
-    setStudentDocument(result.fileId || result.fileName || "uploaded");
-    toast({
-      title: "Documento enviado!",
-      description: "Comprovante de matrícula carregado com sucesso.",
-    });
+    if (result.successful && result.successful.length > 0) {
+      const uploadedFile = result.successful[0];
+      const uploadURL = uploadedFile.uploadURL;
+      setStudentDocument(uploadURL);
+      toast({
+        title: "Documento enviado!",
+        description: "Comprovante de matrícula carregado com sucesso.",
+      });
+    } else {
+      toast({
+        title: "Erro no upload",
+        description: "Falha ao carregar comprovante de matrícula.",
+        variant: "destructive",
+      });
+    }
   };
 
   // Remove experience document
@@ -947,12 +982,14 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   RG, CNH ou outro documento oficial com foto. Essencial para validação da conta e verificação.
                 </p>
                 <ObjectUploader
-                  getUploadParameters={handleGetUploadParameters}
-                  onUploadComplete={handleIdentityUploadComplete}
-                  allowedFileTypes={['image/*', 'application/pdf']}
-                  maxFiles={1}
-                  restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
-                />
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleIdentityUploadComplete}
+                  maxNumberOfFiles={1}
+                  maxFileSize={10 * 1024 * 1024}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Documento de Identidade
+                </ObjectUploader>
                 {identityDocument && (
                   <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
                     ✓ Documento de identidade carregado
@@ -980,12 +1017,14 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                   )}
                 </div>
                 <ObjectUploader
-                  getUploadParameters={handleGetUploadParameters}
-                  onUploadComplete={handleExperienceUploadComplete}
-                  allowedFileTypes={['image/*', 'application/pdf']}
-                  maxFiles={5}
-                  restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
-                />
+                  onGetUploadParameters={handleGetUploadParameters}
+                  onComplete={handleExperienceUploadComplete}
+                  maxNumberOfFiles={5}
+                  maxFileSize={10 * 1024 * 1024}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Enviar Comprovantes de Experiência
+                </ObjectUploader>
                 {experienceDocuments.length > 0 && (
                   <div className="mt-3 space-y-2">
                     <p className="text-sm font-medium">Documentos carregados:</p>
@@ -1019,12 +1058,14 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
                     Documento que comprove que você está matriculado em uma instituição de ensino
                   </p>
                   <ObjectUploader
-                    getUploadParameters={handleGetUploadParameters}
-                    onUploadComplete={handleStudentUploadComplete}
-                    allowedFileTypes={['image/*', 'application/pdf']}
-                    maxFiles={1}
-                    restrictions={{ maxFileSize: 10 * 1024 * 1024 }}
-                  />
+                    onGetUploadParameters={handleGetUploadParameters}
+                    onComplete={handleStudentUploadComplete}
+                    maxNumberOfFiles={1}
+                    maxFileSize={10 * 1024 * 1024}
+                  >
+                    <Upload className="h-4 w-4 mr-2" />
+                    Enviar Comprovante de Matrícula
+                  </ObjectUploader>
                   {studentDocument && (
                     <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded text-sm text-green-700">
                       ✓ Comprovante de matrícula carregado
