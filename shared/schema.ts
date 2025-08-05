@@ -103,6 +103,25 @@ export const documents = pgTable("documents", {
   uploadedAt: timestamp("uploaded_at").defaultNow(),
 });
 
+export const planChangeRequests = pgTable("plan_change_requests", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  currentPlanId: varchar("current_plan_id").references(() => membershipPlans.id),
+  requestedPlanId: varchar("requested_plan_id").references(() => membershipPlans.id).notNull(),
+  status: text("status").default("pending"), // pending, approved, rejected
+  documents: json("documents").$type<Array<{
+    id: string;
+    name: string;
+    url: string;
+    type: string;
+  }>>().default([]),
+  adminNotes: text("admin_notes"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Social Feed Tables
 export const connections = pgTable("connections", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -918,6 +937,16 @@ export const insertApplicationAppealSchema = createInsertSchema(applicationAppea
   adminResponse: true,
 });
 
+export const insertPlanChangeRequestSchema = createInsertSchema(planChangeRequests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true,
+  adminNotes: true,
+  reviewedBy: true,
+  reviewedAt: true,
+});
+
 // Main types
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -1005,3 +1034,7 @@ export type AdminUser = typeof adminUsers.$inferSelect;
 // Application appeal types
 export type ApplicationAppeal = typeof applicationAppeals.$inferSelect;
 export type InsertApplicationAppeal = z.infer<typeof insertApplicationAppealSchema>;
+
+// Plan change request types
+export type PlanChangeRequest = typeof planChangeRequests.$inferSelect;
+export type InsertPlanChangeRequest = z.infer<typeof insertPlanChangeRequestSchema>;

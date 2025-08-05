@@ -23,6 +23,7 @@ import EditProfilePage from "./pages/edit-profile-page";
 import { AccountPage } from "./pages/account-page";
 import { AccountEditPage } from "./pages/account-edit-page";
 import { AccountChangePasswordPage } from "./pages/account-change-password-page";
+import { AccountChangePlanPage } from "./pages/account-change-plan-page";
 
 import ChatPage from "./pages/chat-page";
 import { ConnectionsPage } from "./pages/connections-page";
@@ -52,6 +53,7 @@ function MainLayout(): JSX.Element {
         
         <ProtectedRoute path="/account/edit" component={AccountEditPage} />
         <ProtectedRoute path="/account/change-password" component={AccountChangePasswordPage} />
+        <ProtectedRoute path="/account/change-plan" component={AccountChangePlanPage} />
         <ProtectedRoute path="/account" component={AccountPage} />
 
         <ProtectedRoute path="/chat" component={ChatPage} />

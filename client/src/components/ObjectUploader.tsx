@@ -64,7 +64,6 @@ export function ObjectUploader({
       restrictions: {
         maxNumberOfFiles,
         maxFileSize,
-        allowedFileTypes: ['image/*'], // Only allow images for credentials
       },
       autoProceed: false,
     })
@@ -74,18 +73,12 @@ export function ObjectUploader({
       })
       .on("complete", (result) => {
         onComplete?.(result);
-        setShowModal(false);
       })
   );
 
   return (
     <div>
-      <Button 
-        type="button"
-        onClick={() => setShowModal(true)} 
-        className={buttonClassName}
-        variant="outline"
-      >
+      <Button onClick={() => setShowModal(true)} className={buttonClassName}>
         {children}
       </Button>
 
