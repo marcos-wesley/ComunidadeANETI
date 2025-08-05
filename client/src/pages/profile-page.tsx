@@ -487,17 +487,10 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           imagePath
         });
         
-        console.log('Update response status:', updateResponse.status);
-        if (updateResponse.ok) {
-          console.log('Profile update successful, reloading...');
-          // Clear all caches and force reload
-          queryClient.clear();
-          window.location.reload();
-        } else {
-          const errorData = await updateResponse.text();
-          console.error('Update failed:', errorData);
-          throw new Error(`Falha ao atualizar perfil: ${updateResponse.status}`);
-        }
+        console.log('Profile update successful, reloading...');
+        // Clear all caches and force reload
+        queryClient.clear();
+        window.location.reload();
       } catch (error) {
         console.error('Profile upload error:', error);
         toast({
@@ -562,17 +555,10 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
           imagePath
         });
         
-        console.log('Cover update response status:', updateResponse.status);
-        if (updateResponse.ok) {
-          console.log('Cover update successful, reloading...');
-          // Clear all caches and force reload
-          queryClient.clear();
-          window.location.reload();
-        } else {
-          const errorData = await updateResponse.text();
-          console.error('Cover update failed:', errorData);
-          throw new Error(`Falha ao atualizar capa: ${updateResponse.status}`);
-        }
+        console.log('Cover update successful, reloading...');
+        // Clear all caches and force reload
+        queryClient.clear();
+        window.location.reload();
       } catch (error) {
         console.error('Cover upload error:', error);
         toast({
