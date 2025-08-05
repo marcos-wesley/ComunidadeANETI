@@ -424,21 +424,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/register-application", async (req, res) => {
     try {
-      // Hash the user's password for the registration
-      const { hashPassword } = await import("./auth");
-      const hashedPassword = await hashPassword(req.body.password || "temp-password");
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      let tempUser;
       
-      // Create a user with the actual registration data
-      const tempUser = await storage.createUser({
-        fullName: req.body.fullName,
-        email: req.body.email,
-        username: req.body.username,
-        city: req.body.city || "",
-        state: req.body.state || "",
-        area: req.body.area || "",
-        phone: req.body.phone || "",
-        password: hashedPassword,
-      });
+      if (existingUser) {
+        // User already exists, use existing user
+        tempUser = existingUser;
+      } else {
+        // Hash the user's password for the registration
+        const { hashPassword } = await import("./auth");
+        const hashedPassword = await hashPassword(req.body.password || "temp-password");
+        
+        // Create a new user with the actual registration data
+        tempUser = await storage.createUser({
+          fullName: req.body.fullName,
+          email: req.body.email,
+          username: req.body.username,
+          city: req.body.city || "",
+          state: req.body.state || "",
+          area: req.body.area || "",
+          phone: req.body.phone || "",
+          password: hashedPassword,
+        });
+      }
 
       const validatedData = insertMemberApplicationSchema.parse({
         ...req.body,
