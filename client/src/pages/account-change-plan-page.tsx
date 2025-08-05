@@ -304,7 +304,7 @@ export function AccountChangePlanPage() {
                 ))}
               </ul>
               
-              {plan.documentsRequired.length > 0 && (
+              {plan.documentsRequired && plan.documentsRequired.length > 0 && (
                 <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                   <p className="text-sm font-medium text-amber-800 dark:text-amber-200 mb-2">
                     Documentos obrigatórios:
@@ -330,14 +330,14 @@ export function AccountChangePlanPage() {
               Documentos
             </CardTitle>
             <CardDescription>
-              {plans.find(p => p.id === selectedPlan)?.documentsRequired.length > 0
+              {plans.find(p => p.id === selectedPlan)?.documentsRequired && plans.find(p => p.id === selectedPlan)?.documentsRequired.length > 0
                 ? "Envie os documentos obrigatórios para seu novo plano"
                 : "Nenhum documento obrigatório para este plano"
               }
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {plans.find(p => p.id === selectedPlan)?.documentsRequired.length > 0 && (
+            {plans.find(p => p.id === selectedPlan)?.documentsRequired && plans.find(p => p.id === selectedPlan)?.documentsRequired.length > 0 && (
               <ObjectUploader
                 maxNumberOfFiles={5}
                 maxFileSize={10485760} // 10MB
