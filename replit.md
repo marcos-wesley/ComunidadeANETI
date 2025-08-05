@@ -2,6 +2,15 @@
 
 This is a membership platform for ANETI (Associação Nacional dos Especialistas em TI) - a Brazilian IT professionals association. The platform provides member registration, payment processing, document management, and administrative approval workflows. Built as a full-stack web application with React frontend and Express backend, it features membership tier management, document upload capabilities, and admin dashboard functionality.
 
+## Database Migration Status (August 5, 2025)
+**MIGRATION COMPLETED SUCCESSFULLY**
+- Successfully migrated 1,864 users from WordPress/BuddyPress legacy system
+- Migrated user profiles with complete professional information including areas of expertise, locations, and membership levels
+- Created 4 membership plans (Público, Júnior, Pleno, Sênior) based on legacy data
+- All users set as active and pre-approved, with marcos.wesley designated as admin
+- Legacy password system converted - users must reset passwords on first login
+- Migration script and documentation created for future reference
+
 ## Mobile App Status (August 5, 2025)
 **SUSPENDED DUE TO EXPO INSTABILITY**
 - React Native mobile app development attempted but abandoned due to persistent Expo tunnel connection issues
