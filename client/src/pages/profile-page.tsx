@@ -648,11 +648,11 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
 
         {/* Plan Badge Seal - White area, aligned with profile photo */}
         {profile.planBadgeImageUrl && (
-          <div className="absolute -top-10 right-6 flex items-center justify-center">
+          <div className="absolute -top-20 right-6 flex items-center justify-center h-40">
             <img 
               src={profile.planBadgeImageUrl}
               alt={`Selo ${profile.planName}`}
-              className="w-35 h-35 object-contain drop-shadow-2xl"
+              className="object-contain drop-shadow-2xl"
               style={{ width: '140px', height: '140px' }}
               onError={(e) => {
                 console.error('Error loading badge image:', profile.planBadgeImageUrl);
