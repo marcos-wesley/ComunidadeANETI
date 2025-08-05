@@ -74,7 +74,7 @@ export default function AdminOrdersPage() {
       order.planName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.billingName?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = !statusFilter || order.status === statusFilter;
+    const matchesStatus = !statusFilter || statusFilter === "all" || order.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   }) || [];
@@ -210,12 +210,12 @@ export default function AdminOrdersPage() {
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter || undefined} onValueChange={(value) => setStatusFilter(value || "")}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filtrar por status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="completed">Concluído</SelectItem>
                 <SelectItem value="free">Gratuito</SelectItem>
                 <SelectItem value="pending">Pendente</SelectItem>
