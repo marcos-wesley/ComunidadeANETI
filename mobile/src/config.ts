@@ -1,6 +1,6 @@
 // Configuration for the mobile app  
-// Use the Replit dev URL which should work once deployed
-export const API_BASE_URL = 'https://workspace-maarcoswesleey.replit.app';
+// Use localhost during development via Expo tunnel
+export const API_BASE_URL = 'http://172.31.116.226:5000';
 
 export const COLORS = {
   primary: '#012d6a',
