@@ -600,21 +600,22 @@ export default function MembersPage(): JSX.Element {
                       )}
                     </div>
                   
-                    <div className="text-center mt-3">
-                      <Link href={`/profile/${member.id}`}>
-                        <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer text-white">{member.fullName}</CardTitle>
-                      </Link>
-                      <p className="text-sm text-white/80">@{member.username}</p>
-                      
-                      {member.planName && (
-                        <Badge 
-                          variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
-                          className="mt-2"
-                        >
-                          {member.planName}
-                        </Badge>
-                      )}
-                    </div>
+                  </div>
+                  
+                  <div className="text-center mt-3 relative z-10">
+                    <Link href={`/profile/${member.id}`}>
+                      <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
+                    </Link>
+                    <p className="text-sm text-muted-foreground">@{member.username}</p>
+                    
+                    {member.planName && (
+                      <Badge 
+                        variant={member.planName === 'Diretivo' ? 'default' : 'secondary'} 
+                        className="mt-2"
+                      >
+                        {member.planName}
+                      </Badge>
+                    )}
                   </div>
                 </CardHeader>
 
