@@ -4863,6 +4863,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Name and price are required" });
       }
 
+      // Convert price from decimal to cents
+      if (planData.price && typeof planData.price === 'number') {
+        planData.price = Math.round(planData.price * 100);
+      }
+
       const newPlan = await storage.createMembershipPlan({
         ...planData,
         id: undefined, // Let database generate ID
@@ -4879,6 +4884,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { id } = req.params;
       const updateData = req.body;
+
+      // Convert price from decimal to cents if it's a number
+      if (updateData.price && typeof updateData.price === 'number') {
+        updateData.price = Math.round(updateData.price * 100);
+      }
 
       const updatedPlan = await storage.updateMembershipPlan(id, updateData);
       

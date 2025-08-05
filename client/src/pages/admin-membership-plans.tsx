@@ -212,7 +212,7 @@ export default function AdminMembershipPlans() {
     form.reset({
       name: plan.name,
       description: plan.description || '',
-      price: plan.price,
+      price: plan.price / 100, // Convert from cents to reais
       minExperienceYears: plan.minExperienceYears,
       maxExperienceYears: plan.maxExperienceYears,
       requiresPayment: plan.requiresPayment,
