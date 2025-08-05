@@ -2154,6 +2154,7 @@ export class DatabaseStorage implements IStorage {
   } = {}) {
     const { page = 1, limit = 20, sortBy = 'recent', filters = {} } = options;
     // Get all members except current user
+    // Include users who are directly approved OR have approved applications
     const allMembers = await db
       .select({
         id: users.id,
@@ -2164,7 +2165,7 @@ export class DatabaseStorage implements IStorage {
         gender: users.gender,
         city: users.city,
         state: users.state,
-        planName: membershipPlans.name,
+        planName: sql<string>`COALESCE(${membershipPlans.name}, ${users.planName})`.as('planName'),
         profilePicture: users.profilePicture,
         coverPhoto: users.coverPhoto,
         professionalTitle: users.professionalTitle,
@@ -2175,14 +2176,14 @@ export class DatabaseStorage implements IStorage {
       .where(and(
         eq(users.isActive, true),
         ne(users.id, currentUserId),
-        eq(memberApplications.status, "approved"),
-        // Only include members with approved applications and valid membership plans
-        isNotNull(memberApplications.planId),
-        isNotNull(membershipPlans.name),
-        eq(membershipPlans.isActive, true),
+        // Include users who are directly approved (migrated users have isApproved = true)
+        eq(users.isApproved, true),
         // Apply filters
         filters.state ? eq(users.state, filters.state) : undefined,
-        filters.plan ? eq(membershipPlans.name, filters.plan) : undefined,
+        filters.plan ? or(
+          eq(membershipPlans.name, filters.plan),
+          eq(users.planName, filters.plan)
+        ) : undefined,
         filters.gender ? eq(users.gender, filters.gender) : undefined,
         filters.area ? like(users.area, `%${filters.area}%`) : undefined,
         filters.search ? or(
