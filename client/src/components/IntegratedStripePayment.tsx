@@ -68,10 +68,14 @@ export function IntegratedStripePayment({
         description: "Finalizando sua solicitação...",
       });
 
-      await onPaymentAndSubmit();
+      const result = await onPaymentAndSubmit();
       
-      // Redirect to pending approval after successful submission
-      setLocation("/pending-approval");
+      // Redirect to pending approval with application ID
+      if (result && result.id) {
+        setLocation(`/pending-approval?app=${result.id}`);
+      } else {
+        setLocation("/pending-approval");
+      }
 
     } catch (error) {
       console.error("Payment error:", error);

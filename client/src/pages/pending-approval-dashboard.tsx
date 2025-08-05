@@ -27,10 +27,18 @@ import { ptBR } from "date-fns/locale";
 export default function PendingApprovalDashboard() {
   const { user, logoutMutation } = useAuth();
   const [, setLocation] = useLocation();
+  
+  // Get application ID from URL params if not authenticated
+  const urlParams = new URLSearchParams(window.location.search);
+  const appId = urlParams.get('app');
 
   const { data: application, isLoading, error } = useQuery({
-    queryKey: ["/api/user/application"],
+    queryKey: user ? ["/api/user/application"] : ["/api/application", appId],
+    queryFn: user 
+      ? undefined // Use default query function for authenticated users
+      : () => appId ? fetch(`/api/application/${appId}`).then(res => res.json()) : Promise.reject("No application ID"),
     retry: false,
+    enabled: !!(user || appId), // Only run query if user is authenticated or appId exists
   });
 
   const handleLogout = () => {

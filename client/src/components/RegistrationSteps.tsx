@@ -512,8 +512,8 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         description: "Sua solicitação de associação foi enviada com sucesso e está aguardando aprovação.",
       });
       
-      // Redirect to pending approval page
-      setLocation("/pending-approval");
+      // Return application data for redirect
+      return application;
       
     } catch (error) {
       console.error("Error submitting application:", error);
