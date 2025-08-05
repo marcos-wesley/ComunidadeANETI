@@ -570,15 +570,9 @@ export default function MembersPage(): JSX.Element {
                         <DropdownMenuItem asChild>
                           <Link href={`/profile/${member.id}`} className="flex items-center cursor-pointer">
                             <Eye className="h-4 w-4 mr-2" />
-                            Ver Detalhes
+                            Ver Perfil
                           </Link>
                         </DropdownMenuItem>
-                        {user?.planName !== "Público" && (
-                          <DropdownMenuItem>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Enviar mensagem
-                          </DropdownMenuItem>
-                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
