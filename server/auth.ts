@@ -36,7 +36,28 @@ async function comparePasswords(supplied: string, stored: string | null | undefi
     return false;
   }
   
-  // Check if it's a bcrypt hash (from migration)
+  // Check if it's a WordPress bcrypt hash ($wp$2y$10$...)
+  if (stored.startsWith('$wp$2y$10$')) {
+    console.log('WordPress bcrypt hash detected for password:', supplied);
+    console.log('Stored hash:', stored);
+    const bcrypt = await import('bcrypt');
+    // Remove the $wp prefix and use standard bcrypt
+    const cleanHash = stored.replace('$wp', '');
+    console.log('Clean hash:', cleanHash);
+    const result = await bcrypt.compare(supplied, cleanHash);
+    console.log('WordPress bcrypt comparison result:', result);
+    return result;
+  }
+  
+  // Check if it's a WordPress PHPass hash ($P$B...)
+  if (stored.startsWith('$P$B')) {
+    // For now, return false and suggest password reset
+    // WordPress PHPass is complex to implement from scratch
+    console.log('WordPress PHPass hash detected, password reset required');
+    return false;
+  }
+  
+  // Check if it's a standard bcrypt hash (from migration)
   if (stored.startsWith('$2b$') || stored.startsWith('$2a$') || stored.startsWith('$2y$')) {
     const bcrypt = await import('bcrypt');
     return bcrypt.compare(supplied, stored);

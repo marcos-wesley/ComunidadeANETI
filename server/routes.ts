@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { setupAuth, isAuthenticated, isAdminAuthenticated } from "./auth";
+import { setupAuth, isAuthenticated, isAdminAuthenticated, hashPassword } from "./auth";
 import { storage } from "./storage";
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
@@ -28,6 +28,7 @@ import { randomUUID } from "crypto";
 import crypto from "crypto";
 import multer from "multer";
 import Stripe from "stripe";
+import passport from "passport";
 
 // Initialize Stripe
 if (!process.env.STRIPE_SECRET_KEY) {
@@ -202,6 +203,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ available });
     } catch (error) {
       console.error("Error checking username:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // User login endpoint
+  app.post("/api/login", passport.authenticate("local"), (req, res) => {
+    if (req.user) {
+      res.json({ 
+        success: true,
+        user: {
+          id: req.user.id,
+          username: req.user.username,
+          email: req.user.email,
+          fullName: req.user.fullName,
+          role: req.user.role
+        }
+      });
+    } else {
+      res.status(401).json({ 
+        success: false,
+        message: "Credenciais inválidas" 
+      });
+    }
+  });
+
+  // User logout endpoint  
+  app.post("/api/logout", (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ success: false, message: "Erro ao fazer logout" });
+      }
+      res.json({ success: true, message: "Logout realizado com sucesso" });
+    });
+  });
+
+  // Password reset request endpoint
+  app.post("/api/password-reset-request", async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ error: "Nome de usuário é obrigatório" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      // Check if user has WordPress password hash (needs reset)
+      const needsReset = user.password?.startsWith('$wp$2y$10$') || user.password?.startsWith('$P$B');
+      
+      res.json({ 
+        success: true,
+        needsReset,
+        message: needsReset 
+          ? "Usuário migrado do sistema antigo. É necessário redefinir a senha."
+          : "Usuário encontrado. Instruções de reset enviadas."
+      });
+    } catch (error) {
+      console.error("Error in password reset request:", error);
+      res.status(500).json({ error: "Erro interno do servidor" });
+    }
+  });
+
+  // Password reset endpoint
+  app.post("/api/password-reset", async (req, res) => {
+    try {
+      const { username, newPassword } = req.body;
+      
+      if (!username || !newPassword) {
+        return res.status(400).json({ error: "Nome de usuário e nova senha são obrigatórios" });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ error: "A senha deve ter pelo menos 6 caracteres" });
+      }
+
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(404).json({ error: "Usuário não encontrado" });
+      }
+
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update user password
+      await storage.updateUserPassword(user.id, hashedPassword);
+      
+      res.json({ 
+        success: true,
+        message: "Senha redefinida com sucesso. Agora você pode fazer login." 
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
       res.status(500).json({ error: "Erro interno do servidor" });
     }
   });

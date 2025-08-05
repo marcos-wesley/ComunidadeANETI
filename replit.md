@@ -8,7 +8,8 @@ This is a membership platform for ANETI (Associação Nacional dos Especialistas
 - Migrated user profiles with complete professional information including areas of expertise, locations, and membership levels
 - Created 4 membership plans (Público, Júnior, Pleno, Sênior) based on legacy data
 - All users set as active and pre-approved, with marcos.wesley designated as admin
-- Legacy password system converted - users must reset passwords on first login
+- **PASSWORD MIGRATION COMPLETED**: Successfully restored 1,863 original WordPress password hashes from legacy system
+- **LOGIN SYSTEM WORKING**: Implemented WordPress bcrypt hash compatibility and password reset system for migrated users
 - **ORDERS MIGRATION 100% COMPLETED**: Successfully imported ALL 2,308 orders with complete payment history and metadata
 - Auto-import system implemented - orders import automatically when admin accesses the system (no manual intervention required)
 - Order management fully integrated into admin interface with filtering and search capabilities
