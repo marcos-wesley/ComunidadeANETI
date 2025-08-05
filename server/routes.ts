@@ -4978,6 +4978,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update user profile
+  app.patch("/api/user/profile", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const updateData = req.body;
+      
+      // Validate the update data
+      const allowedFields = ['fullName', 'phone', 'city', 'state', 'area', 'position', 'bio'];
+      const filteredData: any = {};
+      
+      for (const field of allowedFields) {
+        if (updateData[field] !== undefined) {
+          filteredData[field] = updateData[field];
+        }
+      }
+      
+      if (Object.keys(filteredData).length === 0) {
+        return res.status(400).json({ error: "No valid fields to update" });
+      }
+      
+      const updatedUser = await storage.updateUser(userId, filteredData);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  // Change user password
+  app.post("/api/user/change-password", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+      
+      // Import password utilities
+      const { verifyPassword, hashPassword } = await import("./auth");
+      
+      // Get current user
+      const user = await storage.getUserById(userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      // Verify current password
+      const isCurrentPasswordValid = await verifyPassword(currentPassword, user.password!);
+      if (!isCurrentPasswordValid) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+      
+      // Hash new password
+      const hashedNewPassword = await hashPassword(newPassword);
+      
+      // Update password
+      await storage.updateUser(userId, { password: hashedNewPassword });
+      
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
   // Serve uploaded objects
   app.get("/objects/:objectPath(*)", async (req, res) => {
     const objectStorageService = new ObjectStorageService();

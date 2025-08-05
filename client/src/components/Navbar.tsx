@@ -36,6 +36,7 @@ import {
   LogOut,
   Plus,
   Shield,
+  Edit3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import anetiLogo from "@/assets/aneti-logo.png";
@@ -225,9 +226,15 @@ export function Navbar(): JSX.Element {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/profile/edit" className="flex items-center gap-2 cursor-pointer">
+                  <Link href="/account" className="flex items-center gap-2 cursor-pointer">
                     <Settings className="h-4 w-4" />
-                    Editar perfil
+                    Minha conta
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/account/edit" className="flex items-center gap-2 cursor-pointer">
+                    <Edit3 className="h-4 w-4" />
+                    Editar dados
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
