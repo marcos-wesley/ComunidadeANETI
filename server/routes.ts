@@ -597,9 +597,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`👥 Found ${Object.keys(userMapping).length} users for mapping`);
       console.log(`📋 Found ${Object.keys(planMapping).length} plans for mapping`);
       
-      // Clear existing orders first
-      console.log('🗑️ Clearing existing orders...');
-      await storage.clearAllOrders();
+      // Only clear existing orders if we're doing a manual import
+      const existingOrdersCount = await storage.getAllOrders(1, 0);
+      if (existingOrdersCount.length > 0) {
+        console.log('🗑️ Clearing existing orders...');
+        await storage.clearAllOrders();
+      }
       
       let importedCount = 0;
       let skippedCount = 0;

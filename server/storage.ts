@@ -744,6 +744,11 @@ export class DatabaseStorage implements IStorage {
 
   async clearAllOrders(): Promise<void> {
     try {
+      // First delete order_meta records (child table)
+      await db.delete(orderMeta);
+      console.log("Order metadata cleared successfully");
+      
+      // Then delete membership_orders (parent table)
       await db.delete(membershipOrders);
       console.log("All orders cleared successfully");
     } catch (error) {
