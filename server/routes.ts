@@ -14,7 +14,6 @@ import {
   insertNotificationSchema,
   insertGroupSchema,
   insertExperienceSchema,
-  insertPlanChangeRequestSchema,
   membershipPlans,
   recommendations 
 } from "@shared/schema";
@@ -5042,101 +5041,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error changing password:", error);
       res.status(500).json({ error: "Failed to change password" });
-    }
-  });
-
-  // Plan Change Requests Routes
-  
-  // Get user's current plan change request
-  app.get("/api/user/plan-change-request", isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user!.id;
-      const request = await storage.getUserPlanChangeRequest(userId);
-      
-      if (!request) {
-        return res.status(200).json(null);
-      }
-      
-      res.json(request);
-    } catch (error) {
-      console.error("Error fetching plan change request:", error);
-      res.status(500).json({ error: "Failed to fetch plan change request" });
-    }
-  });
-
-  // Create plan change request
-  app.post("/api/user/plan-change-request", isAuthenticated, async (req, res) => {
-    try {
-      const userId = req.user!.id;
-      
-      // Check if user already has a pending request
-      const existingRequest = await storage.getUserPlanChangeRequest(userId);
-      if (existingRequest) {
-        return res.status(400).json({ error: "You already have a pending plan change request" });
-      }
-      
-      const requestData = insertPlanChangeRequestSchema.parse({
-        ...req.body,
-        userId,
-        currentPlanId: req.user!.currentPlanId
-      });
-      
-      const request = await storage.createPlanChangeRequest(requestData);
-      res.json(request);
-    } catch (error) {
-      console.error("Error creating plan change request:", error);
-      res.status(500).json({ error: "Failed to create plan change request" });
-    }
-  });
-
-  // Admin: Get all plan change requests
-  app.get("/api/admin/plan-change-requests", isAdminAuthenticated, async (req, res) => {
-    try {
-      const requests = await storage.getPlanChangeRequests();
-      res.json(requests);
-    } catch (error) {
-      console.error("Error fetching plan change requests:", error);
-      res.status(500).json({ error: "Failed to fetch plan change requests" });
-    }
-  });
-
-  // Admin: Approve plan change request
-  app.post("/api/admin/plan-change-requests/:id/approve", isAdminAuthenticated, async (req, res) => {
-    try {
-      const adminId = req.user!.id;
-      const { id } = req.params;
-      const { adminNotes } = req.body;
-      
-      const request = await storage.approvePlanChangeRequest(id, adminId, adminNotes);
-      
-      if (!request) {
-        return res.status(404).json({ error: "Plan change request not found" });
-      }
-      
-      res.json(request);
-    } catch (error) {
-      console.error("Error approving plan change request:", error);
-      res.status(500).json({ error: "Failed to approve plan change request" });
-    }
-  });
-
-  // Admin: Reject plan change request
-  app.post("/api/admin/plan-change-requests/:id/reject", isAdminAuthenticated, async (req, res) => {
-    try {
-      const adminId = req.user!.id;
-      const { id } = req.params;
-      const { adminNotes } = req.body;
-      
-      const request = await storage.rejectPlanChangeRequest(id, adminId, adminNotes);
-      
-      if (!request) {
-        return res.status(404).json({ error: "Plan change request not found" });
-      }
-      
-      res.json(request);
-    } catch (error) {
-      console.error("Error rejecting plan change request:", error);
-      res.status(500).json({ error: "Failed to reject plan change request" });
     }
   });
 

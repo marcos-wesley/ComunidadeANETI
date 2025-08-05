@@ -46,7 +46,6 @@ import { RejectApplicationModal } from "@/components/RejectApplicationModal";
 import { CreateMemberModal } from "@/components/CreateMemberModal";
 import { BulkNotificationModal } from "@/components/BulkNotificationModal";
 import { GroupsManagement } from "@/components/admin/GroupsManagement";
-import { PlanChangeRequests } from "@/components/admin/PlanChangeRequests";
 import AdminMembershipPlans from "./admin-membership-plans";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -441,7 +440,7 @@ export default function AdminPage() {
           </div>
         </div>
         <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as any)}>
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview" className="flex items-center space-x-2">
               <BarChart3 className="h-4 w-4" />
               <span>Visão Geral</span>
@@ -453,10 +452,6 @@ export default function AdminPage() {
             <TabsTrigger value="members" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
               <span>Membros</span>
-            </TabsTrigger>
-            <TabsTrigger value="plan-changes" className="flex items-center space-x-2">
-              <Receipt className="h-4 w-4" />
-              <span>Mudanças de Plano</span>
             </TabsTrigger>
             <TabsTrigger value="groups" className="flex items-center space-x-2">
               <Users className="h-4 w-4" />
@@ -2258,10 +2253,6 @@ export default function AdminPage() {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="plan-changes" className="mt-6">
-            <PlanChangeRequests />
           </TabsContent>
 
           <TabsContent value="groups" className="mt-6">

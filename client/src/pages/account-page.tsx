@@ -190,12 +190,10 @@ export function AccountPage() {
                 </ul>
               </div>
 
-              <Link href="/account/change-plan" className="block">
-                <Button className="w-full" variant="outline">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Alterar plano
-                </Button>
-              </Link>
+              <Button className="w-full" variant="outline">
+                <CreditCard className="h-4 w-4 mr-2" />
+                Alterar plano
+              </Button>
             </CardContent>
           </Card>
 
@@ -223,13 +221,6 @@ export function AccountPage() {
                 <Button variant="ghost" className="w-full justify-start">
                   <Lock className="h-4 w-4 mr-2" />
                   Alterar senha
-                </Button>
-              </Link>
-              
-              <Link href="/account/change-plan" className="block">
-                <Button variant="ghost" className="w-full justify-start">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Alterar plano
                 </Button>
               </Link>
             </CardContent>
