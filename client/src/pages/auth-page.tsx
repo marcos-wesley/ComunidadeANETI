@@ -161,6 +161,12 @@ export default function AuthPage() {
                     )}
                     Entrar
                   </Button>
+
+                  <div className="text-center mt-4">
+                    <Link href="/reset-password" className="text-sm text-blue-600 hover:text-blue-700">
+                      Esqueci minha senha / Usuário migrado
+                    </Link>
+                  </div>
                 </form>
               ) : (
                 <form onSubmit={registerForm.handleSubmit(onRegister)} className="space-y-4">

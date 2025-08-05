@@ -10,6 +10,7 @@ import HomePage from "./pages/home-page";
 import NotFound from "./pages/not-found";
 import AuthPage from "./pages/auth-page";
 import RegisterPage from "./pages/register-page";
+import PasswordResetPage from "./pages/password-reset-page";
 import AdminPage from "./pages/admin-page";
 import AdminLogin from "./pages/admin-login";
 import AdminApplicationDetails from "./pages/admin-application-details";
@@ -68,6 +69,7 @@ function MainLayout(): JSX.Element {
 
         <Route path="/auth" component={AuthPage} />
         <Route path="/register" component={RegisterPage} />
+        <Route path="/reset-password" component={PasswordResetPage} />
         <Route path="/pending-approval" component={PendingApprovalDashboard} />
         <Route component={NotFound} />
       </Switch>
