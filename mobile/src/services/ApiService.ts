@@ -111,6 +111,8 @@ class ApiService {
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        // Add any stored auth headers for mobile
         ...options.headers,
       },
     };
@@ -118,6 +120,10 @@ class ApiService {
     const response = await fetch(url, { ...defaultOptions, ...options });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        // Handle unauthorized - for now just log it
+        console.log('Unauthorized request to:', endpoint);
+      }
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
