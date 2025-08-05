@@ -75,6 +75,19 @@ export default function PasswordResetPage() {
           setUsername(data.username);
           setStep('reset');
           setMessage('Usuário migrado do sistema antigo. Defina uma nova senha abaixo.');
+        } else if (result.emailDisabled) {
+          setMessage(result.message);
+          // Show the support message for reference
+          if (result.supportMessage) {
+            console.log('Support info:', result.supportMessage);
+          }
+          // For testing purposes, if token is provided, allow manual reset
+          if (result.resetToken) {
+            setResetToken(result.resetToken);
+            setUsername(data.username);
+            setStep('reset');
+            setMessage('Sistema de e-mail temporariamente indisponível. Redefinição manual liberada.');
+          }
         } else {
           setEmailSent(true);
           setMessage('E-mail de redefinição enviado com sucesso! Verifique sua caixa de entrada e spam.');

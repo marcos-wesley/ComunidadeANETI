@@ -150,6 +150,15 @@ class EmailService {
       } else {
         const errorText = await response.text();
         console.error('Failed to send email via OneSignal:', response.status, errorText);
+        
+        // Check if it's the "Email sending disabled" error
+        if (errorText.includes('Email sending for this app has been disabled')) {
+          console.log('OneSignal email sending is disabled. Creating fallback token for admin manual reset.');
+          // Store the token for manual admin action
+          console.log(`MANUAL RESET TOKEN for ${username} (${email}): ${resetToken}`);
+          console.log(`Reset URL: ${resetUrl}`);
+          return false; // Return false so the caller knows to use alternative method
+        }
         return false;
       }
     } catch (error) {

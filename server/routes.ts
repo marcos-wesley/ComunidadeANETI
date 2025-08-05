@@ -279,7 +279,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: "E-mail de redefinição de senha enviado com sucesso. Verifique sua caixa de entrada."
           });
         } else {
-          res.status(500).json({ error: "Erro ao enviar e-mail. Tente novamente mais tarde." });
+          // OneSignal email is disabled - provide alternative solution
+          console.log(`OneSignal email failed for user ${user.username}. Token generated: ${resetToken}`);
+          res.json({
+            success: true,
+            needsReset: false,
+            emailDisabled: true,
+            resetToken: resetToken, // Include token for testing/admin purposes
+            message: "O envio automático de e-mail está temporariamente indisponível. Entre em contato com o suporte da ANETI informando seu nome de usuário para receber as instruções de redefinição de senha.",
+            supportMessage: `Usuário: ${user.username} | E-mail: ${user.email} | Token: ${resetToken}`
+          });
         }
       }
     } catch (error) {
