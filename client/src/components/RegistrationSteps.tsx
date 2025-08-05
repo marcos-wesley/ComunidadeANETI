@@ -91,7 +91,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
   
   // Payment state
   const [clientSecret, setClientSecret] = useState<string>("");
-  const [subscriptionId, setSubscriptionId] = useState<string>("");
+  const [paymentIntentId, setPaymentIntentId] = useState<string>("");
   const [customerId, setCustomerId] = useState<string>("");
 
   const form = useForm<RegistrationForm>({
@@ -425,7 +425,7 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
 
       const data = await response.json();
       setClientSecret(data.clientSecret);
-      setSubscriptionId(data.subscriptionId);
+      setPaymentIntentId(data.paymentIntentId);
       setCustomerId(data.customerId);
       
       return data;
@@ -459,10 +459,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
         studentProof: data.isStudent ? studentDocument : null,
       };
 
-      // Add subscription info for paid plans
+      // Add payment info for paid plans
       if (selectedPlanData?.requiresPayment) {
         applicationData.stripeCustomerId = customerId;
-        applicationData.stripeSubscriptionId = subscriptionId;
+        applicationData.stripePaymentIntentId = paymentIntentId;
         applicationData.paymentStatus = "completed";
       }
 
@@ -524,10 +524,10 @@ export default function RegistrationSteps({ onComplete }: RegistrationStepsProps
       // For paid plans, prepare payment first
       if (selectedPlanData?.requiresPayment && !clientSecret) {
         try {
-          const subscriptionData = await createSubscription();
-          setCustomerId(subscriptionData.customerId);
-          setSubscriptionId(subscriptionData.subscriptionId);
-          setClientSecret(subscriptionData.clientSecret);
+          const paymentData = await createSubscription();
+          setCustomerId(paymentData.customerId);
+          setPaymentIntentId(paymentData.paymentIntentId);
+          setClientSecret(paymentData.clientSecret);
           
           toast({
             title: "Pagamento Preparado",
