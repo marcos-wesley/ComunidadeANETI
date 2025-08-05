@@ -203,9 +203,17 @@ export function ConnectionsPage() {
                     <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                       Nenhum pedido pendente
                     </h3>
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 mb-4">
                       Você não tem pedidos de conexão aguardando aprovação.
                     </p>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setActiveTab("all")}
+                      className="flex items-center gap-2"
+                    >
+                      <UserCheck className="h-4 w-4" />
+                      Ver todas as conexões
+                    </Button>
                   </div>
                 ) : (
                   <div className="space-y-4">
