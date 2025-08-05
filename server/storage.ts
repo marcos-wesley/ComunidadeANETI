@@ -757,7 +757,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getAllOrders(limit: number = 50, offset: number = 0, statusFilter?: string, searchFilter?: string): Promise<(MembershipOrder & { userName?: string; planName?: string })[]> {
+  async getAllOrders(limit: number = 50, offset: number = 0, statusFilter?: string, searchFilter?: string, periodFilter?: string): Promise<(MembershipOrder & { userName?: string; planName?: string })[]> {
     try {
       let query = db
         .select({
@@ -823,6 +823,34 @@ export class DatabaseStorage implements IStorage {
         );
       }
       
+      if (periodFilter && periodFilter !== 'all') {
+        const now = new Date();
+        let dateCondition;
+        
+        switch (periodFilter) {
+          case '7d':
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, sevenDaysAgo);
+            break;
+          case '30d':
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, thirtyDaysAgo);
+            break;
+          case '90d':
+            const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, ninetyDaysAgo);
+            break;
+          case '1y':
+            const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, oneYearAgo);
+            break;
+        }
+        
+        if (dateCondition) {
+          conditions.push(dateCondition);
+        }
+      }
+      
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
@@ -839,41 +867,94 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getOrdersStatistics(): Promise<{
+  async getOrdersStatistics(periodFilter?: string): Promise<{
     totalOrders: number;
     completedOrders: number;
     freeOrders: number;
     pendingOrders: number;
     failedOrders: number;
     totalRevenue: number;
+    completedRevenue: number;
   }> {
     try {
+      // Apply period filter
+      const conditions = [];
+      if (periodFilter && periodFilter !== 'all') {
+        const now = new Date();
+        let dateCondition;
+        
+        switch (periodFilter) {
+          case '7d':
+            const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, sevenDaysAgo);
+            break;
+          case '30d':
+            const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, thirtyDaysAgo);
+            break;
+          case '90d':
+            const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, ninetyDaysAgo);
+            break;
+          case '1y':
+            const oneYearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            dateCondition = gte(membershipOrders.createdAt, oneYearAgo);
+            break;
+        }
+        
+        if (dateCondition) {
+          conditions.push(dateCondition);
+        }
+      }
+
+      const whereCondition = conditions.length > 0 ? and(...conditions) : undefined;
+
       const [stats] = await db
         .select({
           totalOrders: count(),
           totalRevenue: sum(membershipOrders.total),
         })
-        .from(membershipOrders);
+        .from(membershipOrders)
+        .where(whereCondition);
 
       const [completedStats] = await db
-        .select({ count: count() })
+        .select({ 
+          count: count(),
+          revenue: sum(membershipOrders.total)
+        })
         .from(membershipOrders)
-        .where(eq(membershipOrders.status, 'completed'));
+        .where(
+          whereCondition 
+            ? and(eq(membershipOrders.status, 'completed'), whereCondition)
+            : eq(membershipOrders.status, 'completed')
+        );
 
       const [freeStats] = await db
         .select({ count: count() })
         .from(membershipOrders)
-        .where(eq(membershipOrders.status, 'free'));
+        .where(
+          whereCondition 
+            ? and(eq(membershipOrders.status, 'free'), whereCondition)
+            : eq(membershipOrders.status, 'free')
+        );
 
       const [pendingStats] = await db
         .select({ count: count() })
         .from(membershipOrders)
-        .where(eq(membershipOrders.status, 'pending'));
+        .where(
+          whereCondition 
+            ? and(eq(membershipOrders.status, 'pending'), whereCondition)
+            : eq(membershipOrders.status, 'pending')
+        );
 
       const [failedStats] = await db
         .select({ count: count() })
         .from(membershipOrders)
-        .where(eq(membershipOrders.status, 'failed'));
+        .where(
+          whereCondition 
+            ? and(eq(membershipOrders.status, 'failed'), whereCondition)
+            : eq(membershipOrders.status, 'failed')
+        );
 
       return {
         totalOrders: stats.totalOrders || 0,
@@ -882,6 +963,7 @@ export class DatabaseStorage implements IStorage {
         pendingOrders: pendingStats.count || 0,
         failedOrders: failedStats.count || 0,
         totalRevenue: Number(stats.totalRevenue) || 0,
+        completedRevenue: Number(completedStats.revenue) || 0,
       };
     } catch (error) {
       console.error("Error in getOrdersStatistics:", error);

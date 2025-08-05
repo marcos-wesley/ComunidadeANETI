@@ -5289,10 +5289,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const offset = parseInt(req.query.offset as string) || 0;
       const status = req.query.status as string;
       const search = req.query.search as string;
+      const period = req.query.period as string;
       
       console.log("Fetching orders with limit:", limit, "offset:", offset);
-      const orders = await storage.getAllOrders(limit, offset, status, search);
-      const stats = await storage.getOrdersStatistics();
+      const orders = await storage.getAllOrders(limit, offset, status, search, period);
+      const stats = await storage.getOrdersStatistics(period);
       
       console.log("Orders found:", orders.length);
       res.json({

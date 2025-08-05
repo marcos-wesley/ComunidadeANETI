@@ -228,6 +228,7 @@ export default function AdminPage() {
   const [orderFilters, setOrderFilters] = useState({
     search: '',
     status: '',
+    period: '',
     page: 0,
     limit: 100 // Increased from 25 to show more orders
   });
@@ -328,7 +329,8 @@ export default function AdminPage() {
       freeOrders: number,
       pendingOrders: number,
       failedOrders: number,
-      totalRevenue: number
+      totalRevenue: number,
+      completedRevenue: number
     },
     pagination: {
       limit: number,
@@ -346,6 +348,9 @@ export default function AdminPage() {
       }
       if (orderFilters.search.trim()) {
         searchParams.append('search', orderFilters.search);
+      }
+      if (orderFilters.period && orderFilters.period !== 'all') {
+        searchParams.append('period', orderFilters.period);
       }
       
       const response = await fetch(`/api/admin/orders?${searchParams.toString()}`, {
@@ -511,7 +516,8 @@ export default function AdminPage() {
     freeOrders: 0,
     pendingOrders: 0,
     failedOrders: 0,
-    totalRevenue: 0
+    totalRevenue: 0,
+    completedRevenue: 0
   };
   const pagination = ordersResponse?.pagination || { limit: 100, offset: 0, hasMore: false };
 
@@ -2407,55 +2413,7 @@ export default function AdminPage() {
 
           <TabsContent value="orders" className="mt-6">
             <div className="space-y-6">
-              {/* Statistics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
-                    <Receipt className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold">{totalOrders}</div>
-                  </CardContent>
-                </Card>
-                
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pedidos Pagos</CardTitle>
-                    <CreditCard className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">{completedOrders}</div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Pedidos Gratuitos</CardTitle>
-                    <Badge className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-blue-600">{freeOrders}</div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </CardHeader>
-                  <CardContent>
-                    <div className="text-2xl font-bold text-green-600">
-                      {totalRevenue ? new Intl.NumberFormat('pt-BR', {
-                        style: 'currency',
-                        currency: 'BRL'
-                      }).format(totalRevenue / 100) : 'R$ 0,00'}
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Filters */}
+              {/* Filters Above Cards */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
@@ -2488,9 +2446,21 @@ export default function AdminPage() {
                         <SelectItem value="failed">Falhou ({orderStats.failedOrders})</SelectItem>
                       </SelectContent>
                     </Select>
+                    <Select value={orderFilters.period || "all"} onValueChange={(value) => setOrderFilters(prev => ({ ...prev, period: value, page: 0 }))}>
+                      <SelectTrigger className="w-full sm:w-48">
+                        <SelectValue placeholder="Período" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Todos os períodos</SelectItem>
+                        <SelectItem value="7d">Últimos 7 dias</SelectItem>
+                        <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                        <SelectItem value="90d">Últimos 90 dias</SelectItem>
+                        <SelectItem value="1y">Último ano</SelectItem>
+                      </SelectContent>
+                    </Select>
                     
                     {/* Active filters indicator */}
-                    {(orderFilters.search.trim() || (orderFilters.status && orderFilters.status !== 'all')) && (
+                    {(orderFilters.search.trim() || (orderFilters.status && orderFilters.status !== 'all') || (orderFilters.period && orderFilters.period !== 'all')) && (
                       <div className="flex items-center gap-2 ml-4">
                         <span className="text-sm text-muted-foreground">Filtros:</span>
                         {orderFilters.search.trim() && (
@@ -2513,10 +2483,21 @@ export default function AdminPage() {
                             />
                           </Badge>
                         )}
+                        {orderFilters.period && orderFilters.period !== 'all' && (
+                          <Badge variant="secondary" className="flex items-center gap-1">
+                            {orderFilters.period === '7d' ? 'Últimos 7 dias' : 
+                             orderFilters.period === '30d' ? 'Últimos 30 dias' : 
+                             orderFilters.period === '90d' ? 'Últimos 90 dias' : 'Último ano'}
+                            <X 
+                              className="h-3 w-3 cursor-pointer" 
+                              onClick={() => setOrderFilters(prev => ({ ...prev, period: "", page: 0 }))}
+                            />
+                          </Badge>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => setOrderFilters(prev => ({ ...prev, search: "", status: "", page: 0 }))}
+                          onClick={() => setOrderFilters(prev => ({ ...prev, search: "", status: "", period: "", page: 0 }))}
                           className="text-xs"
                         >
                           Limpar
@@ -2526,6 +2507,67 @@ export default function AdminPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total de Pedidos</CardTitle>
+                    <Receipt className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">{totalOrders}</div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pedidos Pagos</CardTitle>
+                    <CreditCard className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">{completedOrders}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pedidos Gratuitos</CardTitle>
+                    <div className="relative">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      <div className="absolute -top-1 -right-1 h-2 w-2 bg-blue-500 rounded-full"></div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-blue-600">{freeOrders}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Pedidos Pendentes</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-orange-600">{orderStats.pendingOrders}</div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Receita Total</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-600">
+                      {orderStats.completedRevenue ? new Intl.NumberFormat('pt-BR', {
+                        style: 'currency',
+                        currency: 'BRL'
+                      }).format(orderStats.completedRevenue / 100) : 'R$ 0,00'}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
               {/* Orders Table */}
               <Card>
