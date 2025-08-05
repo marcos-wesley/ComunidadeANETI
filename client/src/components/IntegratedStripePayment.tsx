@@ -3,6 +3,7 @@ import { useStripe, useElements, PaymentElement } from "@stripe/react-stripe-js"
 import { Button } from "@/components/ui/button";
 import { CreditCard, ChevronRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 interface IntegratedStripePaymentProps {
   clientSecret: string;
@@ -24,6 +25,7 @@ export function IntegratedStripePayment({
   const stripe = useStripe();
   const elements = useElements();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handlePaymentAndSubmit = async () => {
@@ -67,6 +69,9 @@ export function IntegratedStripePayment({
       });
 
       await onPaymentAndSubmit();
+      
+      // Redirect to pending approval after successful submission
+      setLocation("/pending-approval");
 
     } catch (error) {
       console.error("Payment error:", error);
