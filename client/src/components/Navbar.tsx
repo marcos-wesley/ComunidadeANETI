@@ -26,8 +26,6 @@ import {
   Users,
   MessageSquare,
   BookOpen,
-  GraduationCap,
-  Briefcase,
   Search,
   Mail,
   Bell,
@@ -52,8 +50,6 @@ const navItems = [
   { path: "/chat", icon: Mail, label: "Mensagens", key: "chat" },
   { path: "/groups", icon: MessageSquare, label: "Grupos", key: "groups" },
   { path: "/forums", icon: BookOpen, label: "Fóruns", key: "forums" },
-  { path: "/training", icon: GraduationCap, label: "Treinamentos", key: "training" },
-  { path: "/jobs", icon: Briefcase, label: "Vagas", key: "jobs" },
 ];
 
 export function Navbar(): JSX.Element {

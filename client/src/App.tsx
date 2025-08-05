@@ -64,8 +64,6 @@ function MainLayout(): JSX.Element {
         <ProtectedRoute path="/forums/:forumId/topics/:topicId" component={TopicDetailPage} />
         <ProtectedRoute path="/forums/:forumId" component={ForumDetailPage} />
         <ProtectedRoute path="/forums" component={ForumsListPage} />
-        <ProtectedRoute path="/training" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Treinamentos - Em desenvolvimento</h1></div>} />
-        <ProtectedRoute path="/jobs" component={() => <div className="p-8 text-center"><h1 className="text-2xl">Vagas - Em desenvolvimento</h1></div>} />
 
         <Route path="/auth" component={AuthPage} />
         <Route path="/register" component={RegisterPage} />
