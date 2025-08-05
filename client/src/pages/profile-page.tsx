@@ -65,6 +65,14 @@ const skillSchema = z.object({
 
 type SkillFormData = z.infer<typeof skillSchema>;
 
+// Language form schema
+const languageSchema = z.object({
+  language: z.string().min(1, "Idioma é obrigatório"),
+  proficiency: z.enum(["Nível básico", "Nível básico a intermediário", "Nível intermediário", "Nível avançado", "Fluente ou nativo"])
+});
+
+type LanguageFormData = z.infer<typeof languageSchema>;
+
 import { 
   User,
   MapPin, 
@@ -2181,13 +2189,6 @@ function LanguagesSection({ languages, isOwnProfile }: { languages: Language[]; 
   const queryClient = useQueryClient();
 
   if (languages.length === 0 && !isOwnProfile) return null;
-
-  const languageSchema = z.object({
-    language: z.string().min(1, "Idioma é obrigatório"),
-    proficiency: z.enum(["Nível básico", "Nível básico a intermediário", "Nível intermediário", "Nível avançado", "Fluente ou nativo"])
-  });
-
-  type LanguageFormData = z.infer<typeof languageSchema>;
 
   const form = useForm<LanguageFormData>({
     resolver: zodResolver(languageSchema),
