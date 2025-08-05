@@ -503,6 +503,24 @@ export default function AdminPage() {
     },
   });
 
+  // Extract data from the new API response first
+  const orders = ordersResponse?.orders || [];
+  const orderStats = ordersResponse?.statistics || {
+    totalOrders: 0,
+    completedOrders: 0,
+    freeOrders: 0,
+    pendingOrders: 0,
+    failedOrders: 0,
+    totalRevenue: 0
+  };
+  const pagination = ordersResponse?.pagination || { limit: 100, offset: 0, hasMore: false };
+
+  // Use the statistics from the API instead of calculating from filtered results
+  const totalRevenue = orderStats.totalRevenue;
+  const completedOrders = orderStats.completedOrders;
+  const freeOrders = orderStats.freeOrders;
+  const totalOrders = orderStats.totalOrders;
+
   // Auto-import orders when component loads (if no orders exist)
   const [autoImportTriggered, setAutoImportTriggered] = useState(false);
   
@@ -520,26 +538,6 @@ export default function AdminPage() {
       importOrdersMutation.mutate();
     }
   };
-
-
-
-  // Extract data from the new API response
-  const orders = ordersResponse?.orders || [];
-  const orderStats = ordersResponse?.statistics || {
-    totalOrders: 0,
-    completedOrders: 0,
-    freeOrders: 0,
-    pendingOrders: 0,
-    failedOrders: 0,
-    totalRevenue: 0
-  };
-  const pagination = ordersResponse?.pagination || { limit: 100, offset: 0, hasMore: false };
-
-  // Use the statistics from the API instead of calculating from filtered results
-  const totalRevenue = orderStats.totalRevenue;
-  const completedOrders = orderStats.completedOrders;
-  const freeOrders = orderStats.freeOrders;
-  const totalOrders = orderStats.totalOrders;
 
   // Loading state
   if (isLoading) {
