@@ -205,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create Stripe subscription for paid plans
+  // Create Stripe payment intent for paid plans
   app.post("/api/create-subscription", async (req, res) => {
     try {
       const { planId, email, fullName } = req.body;
@@ -215,6 +215,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!plan || !plan.requiresPayment) {
         return res.status(400).json({ error: "Plano inválido ou gratuito" });
       }
+
+      console.log('Creating payment for plan:', {
+        planId: planId,
+        planName: plan.name,
+        price: plan.price,
+        email: email
+      });
 
       // Create Stripe customer
       const customer = await stripe.customers.create({
@@ -226,73 +233,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // First create a price for this plan if not exists
-      let priceId = plan.stripePriceId;
-      
-      if (!priceId) {
-        // Create product first
-        const product = await stripe.products.create({
-          name: `ANETI - ${plan.name}`,
-          description: plan.description || `Plano ${plan.name} da ANETI`,
-          metadata: {
-            planId: planId
-          }
-        });
+      console.log('Customer created:', customer.id);
 
-        // Create price
-        const price = await stripe.prices.create({
-          unit_amount: plan.price, // price already in cents
-          currency: 'brl',
-          recurring: {
-            interval: 'year'
-          },
-          product: product.id,
-          metadata: {
-            planId: planId
-          }
-        });
-
-        priceId = price.id;
-
-        // Update plan with Stripe IDs
-        await db.update(membershipPlans)
-          .set({ 
-            stripePriceId: price.id, 
-            stripeProductId: product.id 
-          })
-          .where(eq(membershipPlans.id, planId));
-      }
-
-      // Create subscription
-      const subscription = await stripe.subscriptions.create({
+      // Create a simple payment intent for one-time payment
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: plan.price, // price already in cents
+        currency: 'brl',
         customer: customer.id,
-        items: [{
-          price: priceId
-        }],
-        payment_behavior: 'default_incomplete',
-        payment_settings: {
-          save_default_payment_method: 'on_subscription'
+        automatic_payment_methods: {
+          enabled: true,
         },
-        expand: ['latest_invoice.payment_intent'],
         metadata: {
           planId: planId,
-          planName: plan.name
+          planName: plan.name,
+          customerId: customer.id,
+          email: email
         }
       });
 
-      const invoice = subscription.latest_invoice as Stripe.Invoice;
-      const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+      console.log('Payment intent created successfully:', {
+        id: paymentIntent.id,
+        amount: paymentIntent.amount,
+        status: paymentIntent.status,
+        client_secret: paymentIntent.client_secret ? 'exists' : 'missing'
+      });
 
       res.json({
-        subscriptionId: subscription.id,
+        paymentIntentId: paymentIntent.id,
         customerId: customer.id,
         clientSecret: paymentIntent.client_secret,
-        status: subscription.status
+        status: paymentIntent.status,
+        amount: paymentIntent.amount
       });
 
     } catch (error) {
-      console.error("Error creating subscription:", error);
-      res.status(500).json({ error: "Erro ao criar assinatura" });
+      console.error("Error creating payment intent:", error);
+      res.status(500).json({ error: "Erro ao criar pagamento" });
     }
   });
 
