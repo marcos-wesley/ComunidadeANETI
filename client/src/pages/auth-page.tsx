@@ -47,7 +47,7 @@ export default function AuthPage() {
   if (successParam === 'registration') {
     toast({
       title: "Cadastro Realizado com Sucesso!",
-      description: "Sua solicitação foi enviada para aprovação. Aguarde o contato da equipe ANETI.",
+      description: "Sua solicitação foi enviada para aprovação. Aguarde o contato da equipe ANETI. Você pode fazer login e acompanhar o processo.",
     });
     // Clear the URL parameter
     window.history.replaceState({}, '', '/auth');
