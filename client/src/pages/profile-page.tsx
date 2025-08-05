@@ -605,6 +605,20 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             }}
           />
         )}
+        {/* Plan Badge Seal - Upper Right */}
+        {profile.planBadgeImageUrl && (
+          <div className={`absolute top-4 z-30 ${isOwnProfile ? 'right-80' : 'right-4'}`}>
+            <img 
+              src={profile.planBadgeImageUrl}
+              alt={`Selo ${profile.planName}`}
+              className="w-16 h-16 object-contain drop-shadow-lg"
+              onError={(e) => {
+                console.error('Error loading badge image:', profile.planBadgeImageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          </div>
+        )}
         {isOwnProfile && (
           <div className="absolute top-4 right-4 flex gap-2 z-20">
             <CoverPhotoUploader />
@@ -691,27 +705,13 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
                   }
                 </span>
                 {profile.planName && (
-                  <div className="flex items-center gap-2">
-                    {profile.planBadgeImageUrl && (
-                      <img 
-                        src={profile.planBadgeImageUrl}
-                        alt={`Selo ${profile.planName}`}
-                        className="w-6 h-6 object-contain"
-                        onLoad={() => console.log('Badge image loaded successfully:', profile.planBadgeImageUrl)}
-                        onError={(e) => {
-                          console.error('Error loading badge image:', profile.planBadgeImageUrl);
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    )}
-                    <Badge 
-                      variant={getPlanBadgeVariant(profile.planName)} 
-                      className="text-xs"
-                      style={profile.planBadgeColor ? { backgroundColor: profile.planBadgeColor, color: 'white' } : {}}
-                    >
-                      Membro {profile.planName}
-                    </Badge>
-                  </div>
+                  <Badge 
+                    variant={getPlanBadgeVariant(profile.planName)} 
+                    className="text-xs"
+                    style={profile.planBadgeColor ? { backgroundColor: profile.planBadgeColor, color: 'white' } : {}}
+                  >
+                    Membro {profile.planName}
+                  </Badge>
                 )}
               </div>
 
@@ -3241,12 +3241,7 @@ export default function ProfilePage() {
     );
   }
 
-  // Debug log for badge data
-  console.log('Profile badge data:', {
-    planName: profile.planName,
-    planBadgeImageUrl: profile.planBadgeImageUrl,
-    planBadgeColor: profile.planBadgeColor
-  });
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
