@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { BadgeImageUpload } from '@/components/BadgeImageUpload';
 
 const planFormSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
@@ -691,11 +692,11 @@ export default function AdminMembershipPlans() {
                     name="badgeImageUrl"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>URL da Imagem do Selo</FormLabel>
                         <FormControl>
-                          <Input 
-                            placeholder="https://exemplo.com/selo.png"
-                            {...field}
+                          <BadgeImageUpload
+                            value={field.value}
+                            onChange={field.onChange}
+                            disabled={createPlanMutation.isPending || updatePlanMutation.isPending}
                           />
                         </FormControl>
                         <FormMessage />

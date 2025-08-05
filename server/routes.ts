@@ -1197,7 +1197,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for local file uploads
   const uploadStorage = multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadType = req.url.includes('profile-image') ? 'profile-images' : 'cover-images';
+      let uploadType = 'cover-images';
+      if (req.url.includes('profile-image')) {
+        uploadType = 'profile-images';
+      } else if (req.url.includes('badge-image')) {
+        uploadType = 'badge-images';
+      }
       const uploadPath = path.join(process.cwd(), 'public/uploads', uploadType);
       cb(null, uploadPath);
     },
@@ -1247,6 +1252,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error uploading cover image:", error);
       res.status(500).json({ error: "Failed to upload image" });
+    }
+  });
+
+  // Upload badge image for membership plans
+  app.post("/api/admin/upload-badge-image", isAuthenticated, upload.single('image'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "Nenhuma imagem enviada" });
+      }
+      
+      const imagePath = `/uploads/badge-images/${req.file.filename}`;
+      res.json({ 
+        success: true,
+        fileName: req.file.filename, 
+        imagePath,
+        size: req.file.size,
+        type: req.file.mimetype
+      });
+    } catch (error) {
+      console.error("Error uploading badge image:", error);
+      res.status(500).json({ error: "Falha no upload da imagem do selo" });
     }
   });
 
