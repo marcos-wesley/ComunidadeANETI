@@ -1748,6 +1748,9 @@ export class DatabaseStorage implements IStorage {
         city: users.city,
         state: users.state,
         planName: membershipPlans.name,
+        profilePicture: users.profilePicture,
+        coverPhoto: users.coverPhoto,
+        professionalTitle: users.professionalTitle,
       })
       .from(users)
       .leftJoin(memberApplications, eq(users.id, memberApplications.userId))

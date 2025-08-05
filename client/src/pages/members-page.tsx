@@ -54,6 +54,9 @@ type Member = {
   followersCount?: number;
   connectionsCount?: number;  
   followingCount?: number;
+  profilePicture?: string;
+  coverPhoto?: string;
+  professionalTitle?: string;
 };
 
 export default function MembersPage(): JSX.Element {
@@ -566,11 +569,21 @@ export default function MembersPage(): JSX.Element {
                     </DropdownMenu>
                   </div>
 
-                  <Avatar className="h-20 w-20 mx-auto border-4 border-background shadow-lg">
-                    <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
-                      {getInitials(member.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="relative h-20 w-20 mx-auto">
+                    {member.profilePicture ? (
+                      <img 
+                        src={member.profilePicture} 
+                        alt={member.fullName}
+                        className="h-20 w-20 rounded-full border-4 border-background shadow-lg object-cover"
+                      />
+                    ) : (
+                      <Avatar className="h-20 w-20 border-4 border-background shadow-lg">
+                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-xl font-semibold">
+                          {getInitials(member.fullName)}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
+                  </div>
                   
                   <div className="text-center mt-3">
                     <Link href={`/profile/${member.id}`}>
@@ -590,10 +603,10 @@ export default function MembersPage(): JSX.Element {
                 </CardHeader>
 
                 <CardContent className="space-y-3 pt-0">
-                  {member.position && (
+                  {member.professionalTitle && (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <Briefcase className="h-4 w-4 flex-shrink-0" />
-                      <span className="truncate">{member.position}</span>
+                      <span className="truncate">{member.professionalTitle}</span>
                     </div>
                   )}
                   
