@@ -114,7 +114,7 @@ import {
   type SelectForumReplyLike,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc, isNotNull, count, sum } from "drizzle-orm";
+import { eq, desc, and, or, like, ilike, sql, inArray, ne, asc, isNotNull, count, sum, gte } from "drizzle-orm";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
 import { pool } from "./db";
