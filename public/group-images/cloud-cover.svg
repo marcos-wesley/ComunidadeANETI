@@ -1,0 +1,22 @@
+<svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="cloudCoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#06B6D4;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#0891B2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#164E63;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="300" fill="url(#cloudCoverGradient)"/>
+  
+  <!-- Cloud shapes -->
+  <g opacity="0.2">
+    <path d="M80 100 C70 100 65 95 65 85 C65 75 75 70 85 70 C90 65 100 65 105 70 C115 65 125 65 130 70 C140 70 150 75 150 85 C150 90 145 95 140 95 L155 95 C165 95 170 100 170 110 C170 120 165 125 155 125 L95 125 C85 125 80 120 80 110 Z" fill="white"/>
+    
+    <path d="M580 180 C570 180 565 175 565 165 C565 155 575 150 585 150 C590 145 600 145 605 150 C615 145 625 145 630 150 C640 150 650 155 650 165 C650 170 645 175 640 175 L655 175 C665 175 670 180 670 190 C670 200 665 205 655 205 L595 205 C585 205 580 200 580 190 Z" fill="white"/>
+  </g>
+  
+  <!-- Main title -->
+  <text x="400" y="160" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="white" text-anchor="middle">Infraestrutura e Cloud</text>
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Escalando soluções para o infinito</text>
+</svg>

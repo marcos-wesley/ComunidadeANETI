@@ -1,0 +1,25 @@
+<svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="devCoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1D4ED8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E3A8A;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="300" fill="url(#devCoverGradient)"/>
+  
+  <!-- Code pattern background -->
+  <g opacity="0.1">
+    <text x="50" y="50" font-family="monospace" font-size="16" fill="white">function createAwesome() {</text>
+    <text x="70" y="80" font-family="monospace" font-size="16" fill="white">return innovation;</text>
+    <text x="50" y="110" font-family="monospace" font-size="16" fill="white">}</text>
+    
+    <text x="450" y="150" font-family="monospace" font-size="16" fill="white">const future = await build();</text>
+    <text x="450" y="180" font-family="monospace" font-size="16" fill="white">deploy(future);</text>
+  </g>
+  
+  <!-- Main title -->
+  <text x="400" y="160" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="white" text-anchor="middle">Desenvolvimento de Software</text>
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Construindo o futuro através do código</text>
+</svg>

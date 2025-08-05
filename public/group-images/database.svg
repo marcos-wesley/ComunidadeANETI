@@ -1,0 +1,29 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="databaseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#DB2777;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="200" height="200" rx="20" fill="url(#databaseGradient)"/>
+  
+  <!-- Database cylinder -->
+  <ellipse cx="100" cy="80" rx="40" ry="12" fill="white" opacity="0.9"/>
+  <rect x="60" y="80" width="80" height="60" fill="white" opacity="0.9"/>
+  <ellipse cx="100" cy="140" rx="40" ry="12" fill="white" opacity="0.9"/>
+  
+  <!-- Database layers -->
+  <ellipse cx="100" cy="95" rx="40" ry="8" fill="url(#databaseGradient)" opacity="0.3"/>
+  <ellipse cx="100" cy="110" rx="40" ry="8" fill="url(#databaseGradient)" opacity="0.3"/>
+  <ellipse cx="100" cy="125" rx="40" ry="8" fill="url(#databaseGradient)" opacity="0.3"/>
+  
+  <!-- Connection points -->
+  <circle cx="75" cy="100" r="3" fill="url(#databaseGradient)" opacity="0.6"/>
+  <circle cx="125" cy="100" r="3" fill="url(#databaseGradient)" opacity="0.6"/>
+  <circle cx="100" cy="115" r="3" fill="url(#databaseGradient)" opacity="0.6"/>
+  
+  <!-- Title -->
+  <text x="100" y="175" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">Banco de</text>
+  <text x="100" y="190" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">Dados</text>
+</svg>

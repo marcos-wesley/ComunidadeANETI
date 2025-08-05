@@ -1,0 +1,22 @@
+<svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="analysisCoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6B21A8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="300" fill="url(#analysisCoverGradient)"/>
+  
+  <!-- Background elements -->
+  <g opacity="0.2">
+    <circle cx="150" cy="80" r="30" stroke="white" stroke-width="2" fill="none"/>
+    <rect x="600" y="50" width="120" height="80" rx="5" stroke="white" stroke-width="2" fill="none"/>
+    <path d="M100 200 L200 180 L300 220 L400 190" stroke="white" stroke-width="3" fill="none"/>
+  </g>
+  
+  <!-- Main title -->
+  <text x="400" y="160" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="white" text-anchor="middle">Análise de Sistemas</text>
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Transformando requisitos em soluções</text>
+</svg>

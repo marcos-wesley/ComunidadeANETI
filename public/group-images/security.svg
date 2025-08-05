@@ -1,0 +1,32 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="securityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#DC2626;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#B91C1C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="200" height="200" rx="20" fill="url(#securityGradient)"/>
+  
+  <!-- Shield shape -->
+  <path d="M100 50 L140 70 L140 110 C140 130 120 150 100 160 C80 150 60 130 60 110 L60 70 Z" fill="white" opacity="0.9"/>
+  
+  <!-- Lock inside shield -->
+  <rect x="90" y="100" width="20" height="25" rx="3" fill="url(#securityGradient)" opacity="0.8"/>
+  <path d="M85 100 L85 95 C85 88 92 82 100 82 C108 82 115 88 115 95 L115 100" stroke="url(#securityGradient)" stroke-width="3" fill="none" opacity="0.8"/>
+  
+  <!-- Security elements -->
+  <circle cx="75" cy="90" r="3" fill="url(#securityGradient)" opacity="0.6"/>
+  <circle cx="125" cy="90" r="3" fill="url(#securityGradient)" opacity="0.6"/>
+  <circle cx="100" cy="80" r="3" fill="url(#securityGradient)" opacity="0.6"/>
+  
+  <!-- Binary code background -->
+  <text x="30" y="40" font-family="monospace" font-size="8" fill="white" opacity="0.3">10110</text>
+  <text x="150" y="45" font-family="monospace" font-size="8" fill="white" opacity="0.3">01101</text>
+  <text x="25" y="180" font-family="monospace" font-size="8" fill="white" opacity="0.3">11010</text>
+  <text x="145" y="185" font-family="monospace" font-size="8" fill="white" opacity="0.3">00111</text>
+  
+  <!-- Title -->
+  <text x="100" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">Segurança da</text>
+  <text x="100" y="195" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">Informação</text>
+</svg>

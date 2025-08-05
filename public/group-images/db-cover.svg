@@ -1,0 +1,30 @@
+<svg width="800" height="300" viewBox="0 0 800 300" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dbCoverGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EC4899;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#DB2777;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#831843;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="800" height="300" fill="url(#dbCoverGradient)"/>
+  
+  <!-- Background elements -->
+  <g opacity="0.2">
+    <!-- Database connection lines -->
+    <path d="M150 150 L250 120 L350 180 L450 140 L550 170 L650 130" stroke="white" stroke-width="3" fill="none"/>
+    
+    <!-- Data tables -->
+    <rect x="100" y="80" width="60" height="40" rx="3" stroke="white" stroke-width="2" fill="none"/>
+    <rect x="300" y="200" width="60" height="40" rx="3" stroke="white" stroke-width="2" fill="none"/>
+    <rect x="600" y="90" width="60" height="40" rx="3" stroke="white" stroke-width="2" fill="none"/>
+    
+    <!-- Binary data flow -->
+    <text x="50" y="50" font-family="monospace" font-size="12" fill="white">SELECT * FROM innovation;</text>
+    <text x="500" y="280" font-family="monospace" font-size="12" fill="white">WHERE performance = 'optimal';</text>
+  </g>
+  
+  <!-- Main title -->
+  <text x="400" y="160" font-family="system-ui, sans-serif" font-size="48" font-weight="700" fill="white" text-anchor="middle">Banco de Dados</text>
+  <text x="400" y="200" font-family="system-ui, sans-serif" font-size="20" font-weight="400" fill="white" text-anchor="middle" opacity="0.9">Organizando informações, otimizando performance</text>
+</svg>

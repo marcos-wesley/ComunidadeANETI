@@ -1,0 +1,23 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="devGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1D4ED8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <rect width="200" height="200" rx="20" fill="url(#devGradient)"/>
+  
+  <!-- Code brackets -->
+  <path d="M50 70 L30 100 L50 130" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M150 70 L170 100 L150 130" stroke="white" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Code lines -->
+  <rect x="70" y="85" width="60" height="4" rx="2" fill="white" opacity="0.8"/>
+  <rect x="70" y="100" width="40" height="4" rx="2" fill="white" opacity="0.6"/>
+  <rect x="70" y="115" width="50" height="4" rx="2" fill="white" opacity="0.7"/>
+  
+  <!-- Title -->
+  <text x="100" y="165" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">Desenvolvimento</text>
+  <text x="100" y="180" font-family="system-ui, sans-serif" font-size="14" font-weight="600" fill="white" text-anchor="middle">de Software</text>
+</svg>
