@@ -454,6 +454,18 @@ export default function AdminPage() {
     }
   };
 
+  // Auto-import orders when component loads (if no orders exist)
+  const [autoImportTriggered, setAutoImportTriggered] = useState(false);
+  
+  // Check if auto-import should run
+  useEffect(() => {
+    if (!autoImportTriggered && ordersData && ordersData.length === 0 && adminUser) {
+      console.log("🚀 Auto-importing orders on first load...");
+      setAutoImportTriggered(true);
+      importOrdersMutation.mutate();
+    }
+  }, [ordersData, adminUser, autoImportTriggered]);
+
   // Import orders mutation
   const importOrdersMutation = useMutation({
     mutationFn: async () => {

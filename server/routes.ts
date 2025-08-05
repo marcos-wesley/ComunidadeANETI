@@ -539,26 +539,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Auto-import orders on startup (admin only)
+  app.get('/api/admin/auto-import-orders', isAdminAuthenticated, async (req, res) => {
+    // Execute the import automatically
+    return await executeOrdersImport(req, res);
+  });
+
   // Import all orders from CSV data (admin only)
   app.post('/api/admin/import-orders', isAdminAuthenticated, async (req, res) => {
+    return await executeOrdersImport(req, res);
+  });
+
+  async function executeOrdersImport(req, res) {
     try {
       console.log('🚀 Starting complete orders import...');
       
       const fs = await import('fs');
       const { parse } = await import('csv-parse/sync');
       
-      // Load orders data from CSV files
-      const ordersCSV = fs.readFileSync('./attached_assets/aneti_pmpro_membership_orders_1754416415728.csv', 'utf8');
-      const ordersData = parse(ordersCSV, {
-        columns: true,
-        skip_empty_lines: true
-      });
+      // Load orders data from JSON files (they have .csv extension but contain JSON)
+      const ordersJSON = fs.readFileSync('./attached_assets/aneti_pmpro_membership_orders_1754416415728.csv', 'utf8');
+      const ordersData = JSON.parse(ordersJSON);
       
-      const orderMetaCSV = fs.readFileSync('./attached_assets/aneti_pmpro_membership_ordermeta_1754416415727.csv', 'utf8');
-      const orderMetaData = parse(orderMetaCSV, {
-        columns: true,
-        skip_empty_lines: true
-      });
+      const orderMetaJSON = fs.readFileSync('./attached_assets/aneti_pmpro_membership_ordermeta_1754416415727.csv', 'utf8');
+      const orderMetaData = JSON.parse(orderMetaJSON);
       
       console.log(`📊 Loaded ${ordersData.length} orders from main table`);
       console.log(`📊 Loaded ${orderMetaData.length} metadata records`);
@@ -698,7 +702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('❌ Import error:', error);
       res.status(500).json({ error: 'Import failed', details: error.message });
     }
-  });
+  }
 
   // Reject application with notes (admin only)
   app.post("/api/admin/applications/:id/reject", isAdminAuthenticated, async (req, res) => {
