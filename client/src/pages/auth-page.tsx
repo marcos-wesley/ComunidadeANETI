@@ -107,12 +107,10 @@ export default function AuthPage() {
       {/* Left side - Form */}
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-52 h-52 mx-auto mb-4 flex items-center justify-center">
+          <div className="text-center mb-12">
+            <div className="w-64 h-64 mx-auto flex items-center justify-center">
               <img src={anetiLogo} alt="ANETI Logo" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">ANETI</h1>
-            <p className="text-gray-600">Associação Nacional dos Especialistas em TI</p>
           </div>
 
           <Card>
