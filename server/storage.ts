@@ -2200,6 +2200,7 @@ export class DatabaseStorage implements IStorage {
         profilePicture: users.profilePicture,
         coverPhoto: users.coverPhoto,
         professionalTitle: users.professionalTitle,
+        isVerified: users.isVerified,
       })
       .from(users)
       .leftJoin(memberApplications, eq(users.id, memberApplications.userId))

@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
+import { VerificationBadge } from "@/components/VerificationBadge";
 
 type Member = {
   id: string;
@@ -57,6 +58,7 @@ type Member = {
   profilePicture?: string;
   coverPhoto?: string;
   professionalTitle?: string;
+  isVerified?: boolean;
 };
 
 type MembersResponse = {
@@ -494,7 +496,7 @@ export default function MembersPage(): JSX.Element {
                 <SelectContent>
                   <SelectItem value="all">Todos os planos</SelectItem>
                   {plans.map(plan => (
-                    <SelectItem key={plan} value={plan}>{plan}</SelectItem>
+                    <SelectItem key={plan} value={plan || ""}>{plan}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -611,7 +613,10 @@ export default function MembersPage(): JSX.Element {
                   
                   <div className="text-center mt-3 relative z-10">
                     <Link href={`/profile/${member.id}`}>
-                      <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer">{member.fullName}</CardTitle>
+                      <CardTitle className="text-lg font-semibold hover:text-blue-600 cursor-pointer flex items-center justify-center gap-1">
+                        {member.fullName}
+                        {member.isVerified && <VerificationBadge isVerified={true} />}
+                      </CardTitle>
                     </Link>
                     <p className="text-sm text-muted-foreground">@{member.username}</p>
                     
