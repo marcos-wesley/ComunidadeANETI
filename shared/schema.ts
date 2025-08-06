@@ -27,6 +27,7 @@ export const users = pgTable("users", {
   professionalTitle: text("professional_title"),
   isApproved: boolean("is_approved").default(false),
   isActive: boolean("is_active").default(true),
+  isVerified: boolean("is_verified").default(false),
   role: text("role").default("member"), // member, admin
   currentPlanId: varchar("current_plan_id").references(() => membershipPlans.id),
   planName: text("plan_name"),

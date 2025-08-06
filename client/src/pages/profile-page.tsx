@@ -119,6 +119,7 @@ type UserProfile = {
   planBadgeImageUrl?: string;
   planBadgeColor?: string;
   createdAt: string;
+  isVerified?: boolean;
   connectionsCount?: number;
   experiences: Experience[];
   educations: Education[];
@@ -688,9 +689,26 @@ function ProfileHeader({ profile, isOwnProfile }: { profile: UserProfile; isOwnP
             <div className="flex-1">
               {/* Main Profile Info */}
               <div className="space-y-1">
-                <h1 className="text-3xl font-semibold text-gray-900 dark:text-white leading-tight">
-                  {profile.fullName}
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-semibold text-gray-900 dark:text-white leading-tight">
+                    {profile.fullName}
+                  </h1>
+                  {profile.isVerified && (
+                    <div className="inline-flex items-center">
+                      <svg
+                        className="h-6 w-6 text-blue-600 fill-current"
+                        viewBox="0 0 20 20"
+                        aria-label="Conta verificada"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                  )}
+                </div>
                 <ProfessionalTitleEditor 
                   profile={profile} 
                   isOwnProfile={isOwnProfile} 

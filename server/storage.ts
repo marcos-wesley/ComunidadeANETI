@@ -2433,6 +2433,7 @@ export class DatabaseStorage implements IStorage {
       languages: await this.getUserLanguages(user.id),
       highlights: [],
       connectionsCount,
+      isVerified: user.isVerified || false,
     };
   }
 
