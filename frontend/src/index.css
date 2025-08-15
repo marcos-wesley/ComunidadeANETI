@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* ANETI Brand Colors */
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(0, 0%, 12%); /* #1f1f1f */
+  --muted: hsl(0, 0%, 96%); /* #f5f5f5 */
+  --muted-foreground: hsl(0, 0%, 45%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(0, 0%, 12%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(0, 0%, 12%);
+  --border: hsl(0, 0%, 88%); /* #e0e0e0 */
+  --input: hsl(0, 0%, 88%);
+  
+  /* Primary: ANETI Blue #012d6a */
+  --primary: hsl(215, 96%, 21%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  
+  /* Secondary: ANETI Green #25a244 */
+  --secondary: hsl(133, 62%, 39%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  
+  --accent: hsl(0, 0%, 88%);
+  --accent-foreground: hsl(0, 0%, 12%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --ring: hsl(215, 96%, 21%); /* ANETI Blue */
+  --radius: 0.75rem;
+}
+
+.dark {
+  --background: hsl(0, 0%, 12%); /* #1f1f1f */
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(0, 0%, 20%);
+  --muted-foreground: hsl(0, 0%, 65%);
+  --popover: hsl(0, 0%, 12%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(0, 0%, 12%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(0, 0%, 25%);
+  --input: hsl(0, 0%, 25%);
+  
+  /* Primary: ANETI Blue (lighter for dark mode) */
+  --primary: hsl(215, 96%, 31%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  
+  /* Secondary: ANETI Green (lighter for dark mode) */
+  --secondary: hsl(133, 62%, 49%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  
+  --accent: hsl(0, 0%, 25%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 63%, 31%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(215, 96%, 31%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply antialiased bg-background text-foreground;
+    font-family: 'Inter', 'Roboto', 'Open Sans', system-ui, sans-serif;
+  }
+}
+
+/* ANETI Brand Utilities */
+.shadow-aneti {
+  box-shadow: 0 2px 8px rgba(1, 45, 106, 0.1), 0 4px 16px rgba(1, 45, 106, 0.08);
+}
+
+.shadow-aneti-lg {
+  box-shadow: 0 4px 16px rgba(1, 45, 106, 0.12), 0 8px 32px rgba(1, 45, 106, 0.1);
+}
+
+.bg-aneti-gradient {
+  background: linear-gradient(135deg, hsl(215, 96%, 21%) 0%, hsl(133, 62%, 39%) 100%);
+}
+
+/* Ensure proper spacing for form elements */
+.space-y-6 > * + * {
+  margin-top: 1.5rem;
+}
+
+.space-y-4 > * + * {
+  margin-top: 1rem;
+}
+
+.space-y-3 > * + * {
+  margin-top: 0.75rem;
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem;
+}
+
+.space-y-1 > * + * {
+  margin-top: 0.25rem;
+}

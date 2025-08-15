@@ -37,7 +37,7 @@ import {
   Edit3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-// Logo import removed - using text instead
+import anetiLogo from "@/assets/aneti-logo.png";
 import { FloatingChat } from "./FloatingChat";
 import { NotificationBell } from "./NotificationBell";
 import { MessageNotificationBell } from "./MessageNotificationBell";
@@ -96,11 +96,8 @@ export function Navbar(): JSX.Element {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/feed">
-              <div className="flex items-center cursor-pointer space-x-2">
-                <div className="h-10 w-10 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">A</span>
-                </div>
-                <span className="text-xl font-bold text-primary">ANETI</span>
+              <div className="flex items-center cursor-pointer">
+                <img src={anetiLogo} alt="ANETI Comunidade" className="h-10 w-auto" />
               </div>
             </Link>
           </div>

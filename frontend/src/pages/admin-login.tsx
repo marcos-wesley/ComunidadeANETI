@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Shield, Lock, User } from "lucide-react";
+import logoUrl from "@assets/logo-branca_1754061080203.png";
 
 const adminLoginSchema = z.object({
   username: z.string().min(1, "Nome de usuário é obrigatório"),
@@ -75,9 +76,7 @@ export default function AdminLogin() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="h-16 w-16 mx-auto mb-4 bg-white rounded-full flex items-center justify-center">
-            <Shield className="h-8 w-8 text-blue-600" />
-          </div>
+          <img src={logoUrl} alt="ANETI" className="h-16 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-white mb-2">Painel Administrativo</h1>
           <p className="text-blue-100">Acesso restrito para administradores</p>
         </div>

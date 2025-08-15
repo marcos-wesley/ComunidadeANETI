@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { useLocation } from "wouter";
 import { LogOut, User, Home, UserPlus, Shield } from "lucide-react";
-// Logo imports removed - using SVG icons instead
+import anetiLogoBlue from "@assets/17_1754061080202.png";
+import anetiLogoWhite from "@assets/logo-branca_1754061080203.png";
 
 export function Header() {
   const { user, logoutMutation } = useAuth();
@@ -17,10 +18,16 @@ export function Header() {
       <div className="container mx-auto px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-6">
           <div className="flex items-center space-x-3">
-            <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
-            </div>
-            <span className="text-lg font-bold text-primary">ANETI</span>
+            <img 
+              src={anetiLogoBlue} 
+              alt="ANETI Logo" 
+              className="h-8 w-auto block dark:hidden"
+            />
+            <img 
+              src={anetiLogoWhite} 
+              alt="ANETI Logo" 
+              className="h-8 w-auto hidden dark:block"
+            />
           </div>
           <nav className="hidden md:flex space-x-2">
             <Button
